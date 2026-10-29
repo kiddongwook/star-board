@@ -1,0 +1,52 @@
+name: Collect & Deploy Star Board
+
+on:
+  schedule:
+    - cron: '0 21 * * *'   # 매일 06:00 KST
+  workflow_dispatch: {}     # Actions 탭에서 수동 실행 가능
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: star-board
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Collect GitHub data
+        run: node collect.mjs
+        env:
+          # 개인 토큰(STAR_BOARD_TOKEN 시크릿)이 있으면 우선 사용, 없으면 Actions 기본 토큰
+          GITHUB_TOKEN: ${{ secrets.STAR_BOARD_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Commit snapshots
+        run: |
+          git config user.name "star-board-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git commit -m "data: $(date -u +%F)" || echo "no changes"
+          git push
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

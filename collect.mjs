@@ -404,29 +404,35 @@ function scoreRepo(r, tg) {
   if (ageDays != null && ageDays >= 180) bo++;
   bo += ln2(r.s) + ln2(D?.ppl) + ln2(D?.c365) + ln2(r.f) + ln2(r.dl?.m) + ln2(r.ub?.r) + ln2(D?.w) + ln2(D?.ci);
 
-  const why = [];
+  // 근거: why = [부호, 한국어 문장] (요약/API용), wc = [부호, 코드, 값] (대시보드 다국어 렌더링용)
+  const why = [], wc = [];
+  const W = (s, code, p, text) => { why.push([s, text]); wc.push([s, code, p]); };
   const fmt = n => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(Math.round(n)));
-  if (g7 != null && g7 >= 500) why.push(['+', `최근 7일 약 +${fmt(g7)} 스타`]);
-  if (D?.c90 != null) D.c90 >= 50 ? why.push(['+', `90일 커밋 ${fmt(D.c90)}개`]) : D.c90 < 5 && why.push(['-', `90일 커밋 ${D.c90}개 (개발 정체)`]);
-  if (D) D.ppl >= 100 ? why.push(['+', `참여자 ${fmt(D.ppl)}명`]) : D.ppl <= 3 && r.s > 2000 && why.push(['-', `스타 ${fmt(r.s)}개에 참여자 ${D.ppl}명`]);
-  if (D && issTot >= 10) D.ci / issTot >= 0.8 ? why.push(['+', `이슈 해결률 ${Math.round((D.ci / issTot) * 100)}%`]) : D.ci / issTot < 0.4 && why.push(['-', `이슈 해결률 ${Math.round((D.ci / issTot) * 100)}%`]);
-  if (r.ub && r.ub.r + r.ub.p > 0) why.push([r.ub.r >= 1000 || r.ub.p >= 50 ? '+' : '·', `Used by 저장소 ${fmt(r.ub.r)}개 · 패키지 ${fmt(r.ub.p)}개`]);
-  if (r.dl) why.push([r.dl.m >= 1e5 ? '+' : '·', `${r.dl.e} 월 ${fmt(r.dl.m)} 다운로드`]);
-  if (D) { if (D.stable && lrDays != null && lrDays <= 180) why.push(['+', `안정 릴리스 ${D.tag || ''} (${Math.round(lrDays)}일 전)`]); else if (!D.rel && !isDoc && r.s > 2000) why.push(['·', '릴리스 없음']); }
-  if (forkRatio != null && forkRatio < 0.03 && r.s > 2000 && !r.dl && !r.ub?.r && !isDoc) why.push(['-', `포크/스타 ${(forkRatio * 100).toFixed(1)}% (북마크성 스타 가능성)`]);
-  if (act === 'dead') why.push(['-', `1년 넘게 push 없음 (사실상 중단)`]); else if (act === 'inactive') why.push(['-', `6개월 넘게 push 없음 (비활성)`]);
-  if (isNew) why.push(['·', `생성 ${Math.round(ageDays)}일차 신규 프로젝트 (검증 기간 짧음)`]);
-  if (suspPct != null) suspPct >= 0.25 ? why.push(['-', `최근 스타 계정 ${Math.round(suspPct * 100)}%가 가짜 의심 패턴`]) : suspPct <= 0.08 && why.push(['+', '최근 스타 계정 품질 양호']);
-  if (D && D.sgN >= 10 && D.sgSpan > 3 && D.sgBurst / D.sgN > 0.5) why.push(['-', `최근 스타 ${D.sgBurst}/${D.sgN}개가 24시간 안에 몰림`]);
+  if (g7 != null && g7 >= 500) W('+', 'g7', { n: Math.round(g7) }, `최근 7일 약 +${fmt(g7)} 스타`);
+  if (D?.c90 != null) { if (D.c90 >= 50) W('+', 'c90hi', { n: D.c90 }, `90일 커밋 ${fmt(D.c90)}개`); else if (D.c90 < 5) W('-', 'c90lo', { n: D.c90 }, `90일 커밋 ${D.c90}개 (개발 정체)`); }
+  if (D) { if (D.ppl >= 100) W('+', 'pplhi', { n: D.ppl }, `참여자 ${fmt(D.ppl)}명`); else if (D.ppl <= 3 && r.s > 2000) W('-', 'ppllo', { s: r.s, n: D.ppl }, `스타 ${fmt(r.s)}개에 참여자 ${D.ppl}명`); }
+  if (D && issTot >= 10) { const p = Math.round((D.ci / issTot) * 100); if (p >= 80) W('+', 'iss', { p }, `이슈 해결률 ${p}%`); else if (p < 40) W('-', 'iss', { p }, `이슈 해결률 ${p}%`); }
+  if (r.ub && r.ub.r + r.ub.p > 0) W(r.ub.r >= 1000 || r.ub.p >= 50 ? '+' : '·', 'ub', { r: r.ub.r, p: r.ub.p }, `Used by 저장소 ${fmt(r.ub.r)}개 · 패키지 ${fmt(r.ub.p)}개`);
+  if (r.dl) W(r.dl.m >= 1e5 ? '+' : '·', 'dl', { e: r.dl.e, n: r.dl.m }, `${r.dl.e} 월 ${fmt(r.dl.m)} 다운로드`);
+  if (D) {
+    if (D.stable && lrDays != null && lrDays <= 180) W('+', 'rel', { tag: D.tag || '', d: Math.round(lrDays) }, `안정 릴리스 ${D.tag || ''} (${Math.round(lrDays)}일 전)`);
+    else if (!D.rel && !isDoc && r.s > 2000) W('·', 'norel', {}, '릴리스 없음');
+  }
+  if (forkRatio != null && forkRatio < 0.03 && r.s > 2000 && !r.dl && !r.ub?.r && !isDoc) W('-', 'forklo', { p: +(forkRatio * 100).toFixed(1) }, `포크/스타 ${(forkRatio * 100).toFixed(1)}% (북마크성 스타 가능성)`);
+  if (act === 'dead') W('-', 'dead', {}, '1년 넘게 push 없음 (사실상 중단)'); else if (act === 'inactive') W('-', 'inactive', {}, '6개월 넘게 push 없음 (비활성)');
+  if (isNew) W('·', 'new', { d: Math.round(ageDays) }, `생성 ${Math.round(ageDays)}일차 신규 프로젝트 (검증 기간 짧음)`);
+  if (suspPct != null) { if (suspPct >= 0.25) W('-', 'susp', { p: Math.round(suspPct * 100) }, `최근 스타 계정 ${Math.round(suspPct * 100)}%가 가짜 의심 패턴`); else if (suspPct <= 0.08) W('+', 'suspok', {}, '최근 스타 계정 품질 양호'); }
+  if (D && D.sgN >= 10 && D.sgSpan > 3 && D.sgBurst / D.sgN > 0.5) W('-', 'burst', { b: D.sgBurst, n: D.sgN }, `최근 스타 ${D.sgBurst}/${D.sgN}개가 24시간 안에 몰림`);
   if (!isDoc) {
-    if (lk === 'none') why.push(['-', '라이선스 없음 (원칙적으로 사용 권한 없음)']);
-    else if (lk === 'copyleft') why.push(['·', `${r.lic}: 카피레프트 (배포 시 소스 공개 의무 검토)`]);
-    else if (lk === 'other') why.push(['·', `라이선스 ${r.lic}: 비표준/제한형일 수 있어 원문 확인 필요`]);
+    if (lk === 'none') W('-', 'licnone', {}, '라이선스 없음 (원칙적으로 사용 권한 없음)');
+    else if (lk === 'copyleft') W('·', 'copyleft', { lic: r.lic }, `${r.lic}: 카피레프트 (배포 시 소스 공개 의무 검토)`);
+    else if (lk === 'other') W('·', 'licother', { lic: r.lic }, `라이선스 ${r.lic}: 비표준/제한형일 수 있어 원문 확인 필요`);
   }
 
   r.sc = { pop, util, trust, g7: g7 == null ? null : Math.round(g7), v: v[0], vt: v[1], quick: !D, bo, lk, act, isNew,
     comp: Object.fromEntries(Object.entries(comp).map(([k, [, x]]) => [k, x == null ? null : Math.round(x)])) };
   r.why = why.slice(0, 9);
+  r.wc = wc.slice(0, 9);
 }
 
 // ---------------- 결과 조립 ----------------

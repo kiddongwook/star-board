@@ -1,0 +1,74 @@
+name: Make Videos
+
+# 매일 수집이 끝나면 쇼츠(세로)를 만들고, 월요일(KST)에는 주간 리포트(가로)도 만든다.
+# 결과 영상은 그날의 board-YYYY-MM-DD 릴리스에 첨부된다 (업로드는 직접).
+on:
+  workflow_run:
+    workflows: ["Collect & Deploy Star Board"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      type:
+        description: "shorts | weekly | both"
+        default: "both"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: star-board-video
+  cancel-in-progress: true
+
+jobs:
+  video:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ffmpeg, Korean fonts, TTS, Playwright
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg fonts-noto-cjk
+          pip install edge-tts
+          npm install --no-save playwright@1
+          npx playwright install --with-deps chromium
+
+      - name: Decide video types
+        id: t
+        run: |
+          T="${{ github.event.inputs.type }}"
+          if [ -z "$T" ]; then
+            T=shorts
+            if [ "$(TZ=Asia/Seoul date +%u)" = "1" ]; then T=both; fi
+          fi
+          echo "type=$T" >> "$GITHUB_OUTPUT"
+
+      - name: Make videos
+        run: node video/make-video.mjs --type ${{ steps.t.outputs.type }} --out out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: videos
+          path: out/
+          retention-days: 14
+
+      - name: Attach to today's release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DAY=$(node -e "console.log(require('./data/latest.json').generatedAt.slice(0,10))")
+          TAG="board-$DAY"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Star Board $DAY" --notes "Daily board snapshot" --latest=false
+          gh release upload "$TAG" out/*.mp4 out/*.txt --clobber

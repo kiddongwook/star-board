@@ -50,7 +50,7 @@ jobs:
         run: |
           TAG="board-$(date -u +%F)"
           gh release delete "$TAG" -y --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" --title "Star Board $(date -u +%F)" --notes-file data/changes.md --latest || echo "release skipped"
+          gh release create "$TAG" --title "Star Board $(date -u +%F)" --notes-file data/changes.md --latest=false || echo "release skipped"
 
       - uses: actions/configure-pages@v5
 

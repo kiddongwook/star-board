@@ -19,7 +19,7 @@ const nk = n => { // 한국어로 읽기 좋은 숫자 (12,345 -> 1만 2천)
 const short = n => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(n || 0)));
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const spokenName = n => { const [o, r] = n.split('/'); return `${o.replace(/[-_.]/g, ' ')}의 ${r.replace(/[-_.]/g, ' ')}`; };
-const VKO = { good: '검증된 인기', mature: '성숙/유지보수', gem: '숨은 보석', hype: '하이프 주의', early: '초기/정체', bad: '스타 조작 의심', doc: '학습/문서형', dead: '사실상 중단', archived: '아카이브됨', quick: '분석 대기', na: '데이터 부족' };
+const VKO = { good: '검증된 인기', mature: '성숙/유지보수', gem: '숨은 보석', hype: '하이프 주의', early: '초기/정체', bad: '참여 대비 스타 과다', doc: '학습/문서형', dead: '사실상 중단', archived: '아카이브됨', quick: '분석 대기', na: '데이터 부족' };
 const VCOLOR = { good: '#3fb950', mature: '#a371f7', gem: '#a371f7', hype: '#d29922', bad: '#f85149', doc: '#39c5cf', dead: '#8b949e', archived: '#8b949e', early: '#8b949e', quick: '#8b949e', na: '#8b949e' };
 
 // 근거 코드 -> 읽기 좋은 한국어 문장
@@ -40,7 +40,7 @@ function verdictLine(r, max = 2) {
   if (v === 'mature') return `개발은 느려졌지만 ${pos.join(', ') || '실사용이 많아요'}. 성숙한 프로젝트예요.`;
   if (v === 'doc') return `코드보다는 읽는 자료에 가까운 학습형 저장소예요.`;
   if (v === 'dead') return `하지만 1년 넘게 업데이트가 없어서 사실상 멈춘 프로젝트예요.`;
-  if (v === 'bad') return `최근 스타 계정 패턴이 수상해서 조작 의심이에요.`;
+  if (v === 'bad') return `그런데 스타에 비해 지켜보는 사람, 포크, 이슈 같은 참여가 같은 규모 저장소보다 크게 적어요. 참여 대비 스타 과다예요.`;
   return `${neg[0] || pos[0] || '아직 판단할 근거가 부족해요'}.`;
 }
 const reasonChips = r => (r.why || []).filter(w => w[0] !== '·').slice(0, 3);

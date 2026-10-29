@@ -14,7 +14,7 @@
 - +728 [makecindy/cindy](https://github.com/makecindy/cindy) ★8.4k · 검증된 인기 · 실효 80 · Consider it done. The open-source AI agent that works out of the box · 想到，就能做到。开
 - +1.1k [nightly-labs/openbot](https://github.com/nightly-labs/openbot) ★3.5k · 검증된 인기 · 실효 78 · A local-first desktop workspace for persistent AI teammates. Run Codex, Claude, 
 - +1.5k [togg53192-cmd/jailbreaks](https://github.com/togg53192-cmd/jailbreaks) ★7.6k · 학습/문서형 · 실효 47 · LIST OF ALL MY JAILBREAKS
-- +1.6k [hmjz100/LinkSwift](https://github.com/hmjz100/LinkSwift) ★35.6k · 검증된 인기 · 실효 61 · 一个基于 JavaScript 的网盘文件下载地址获取工具。基于【网盘直链下载助手】修改 ，支持 百度网盘 / 阿里云盘 / 中国移动云盘 / 天翼云盘 / 迅
+- +1.6k [hmjz100/LinkSwift](https://github.com/hmjz100/LinkSwift) ★35.7k · 검증된 인기 · 실효 61 · 一个基于 JavaScript 的网盘文件下载地址获取工具。基于【网盘直链下载助手】修改 ，支持 百度网盘 / 阿里云盘 / 中国移动云盘 / 天翼云盘 / 迅
 - +90 [expo/skills](https://github.com/expo/skills) ★3.7k · 하이프 주의 · 실효 54 · A collection of AI agent skills for working with Expo projects and Expo Applicat
 - +557 [ruvnet/RuView](https://github.com/ruvnet/RuView) ★101.3k · 검증된 인기 · 실효 74 · π RuView turns commodity WiFi signals into real-time spatial intelligence, vital
 - +148 [xiaolai/the-craft-of-selfteaching](https://github.com/xiaolai/the-craft-of-selfteaching) ★18.7k · 하이프 주의 · 실효 53 · One has no future if one couldn't teach themself.

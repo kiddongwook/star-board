@@ -11,6 +11,7 @@ const RATE = ENV.TTS_RATE || '+4%';
 const HEAD = 0.3, GAP = 0.16, TAIL = 0.4;
 
 // ---------------- helpers ----------------
+const tfetch = (u, o = {}) => fetch(u, { ...o, signal: (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(20000) : undefined });
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const short = n => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(n || 0)));
 const say = n => { n = Math.round(n || 0); if (n >= 1e6) return `${(n / 1e6).toFixed(1).replace(/\.0$/, '')} million`; if (n >= 1e4) return `${Math.round(n / 1e3)} thousand`; return n.toLocaleString('en-US'); };
@@ -431,7 +432,7 @@ const fixKo = s => String(s).replace(/별(을|를)/g, '스타를').replace(/별(
 async function translateKo(texts) {
   if (!texts.length) return [];
   try {
-    const r = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=' + encodeURIComponent(texts.map(t => t.replace(/\n/g, ' ')).join('\n')));
+    const r = await tfetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=' + encodeURIComponent(texts.map(t => t.replace(/\n/g, ' ')).join('\n')));
     const j = await r.json(); const parts = j[0].map(x => x[0]).join('').split('\n').map(s => s.trim());
     return (parts.length === texts.length ? parts : texts).map(fixKo);
   } catch { return texts; }
@@ -470,7 +471,7 @@ async function main() {
     const cands = (data.trending['daily:all'] || []).filter(x => R[x.n]?.sc && !['doc', 'archived', 'dead'].includes(R[x.n].sc.v)).slice(0, 3);
     for (const { n } of cands) {
       try {
-        const raw = await (await fetch(`https://raw.githubusercontent.com/${n}/HEAD/README.md`)).text();
+        const raw = await (await tfetch(`https://raw.githubusercontent.com/${n}/HEAD/README.md`)).text();
         const info = extractReadme(raw, n);
         const ko = await translateKo(info.feats.map(f => f.t));
         infos[n] = { ...info, featsKo: ko };
@@ -484,8 +485,9 @@ async function main() {
     const dir = path.join(OUT, 'projects', spec0.id), assets = path.join(dir, 'assets');
     await fs.mkdir(assets, { recursive: true });
     await fs.writeFile(path.join(assets, 'gsap.min.js'), gsapJs);
-    const local = async (url, name) => { try { const r = await fetch(url, { redirect: 'follow' }); if (!r.ok) return null; const b = Buffer.from(await r.arrayBuffer()); if (b.length < 500) return null; await fs.writeFile(path.join(assets, name), b); return `assets/${name}`; } catch { return null; } };
+    const local = async (url, name) => { try { const r = await tfetch(url, { redirect: 'follow' }); if (!r.ok) return null; const b = Buffer.from(await r.arrayBuffer()); if (b.length < 500) return null; await fs.writeFile(path.join(assets, name), b); return `assets/${name}`; } catch { return null; } };
     // avatars
+    console.log(`prep: ${spec0.id} avatars/media`);
     const avs = {};
     for (const { r } of spec0.list) avs[r.n] = await local(`https://github.com/${ownerName(r.n)}.png?size=200`, `av-${ownerName(r.n).replace(/[^\w-]/g, '')}.png`);
     if (spec0.repo) {
@@ -493,11 +495,11 @@ async function main() {
       // page screenshot of the repo on GitHub (shows README as people see it)
       if (await shoot(`https://github.com/${spec0.repo}`, path.join(assets, 'page.png'))) info.media = { kind: 'page', src: 'assets/page.png' };
       // README demo: GIF/MP4 -> video clip, image -> zoom
-      const cands = (await (async () => { try { const raw = await (await fetch(`https://raw.githubusercontent.com/${spec0.repo}/HEAD/README.md`)).text(); return extractReadme(raw, spec0.repo).mediaUrls; } catch { return []; } })());
+      const cands = (await (async () => { try { const raw = await (await tfetch(`https://raw.githubusercontent.com/${spec0.repo}/HEAD/README.md`)).text(); return extractReadme(raw, spec0.repo).mediaUrls; } catch { return []; } })());
       let demo = null;
       for (const [k, u] of cands.entries()) {
         try {
-          const r = await fetch(u, { redirect: 'follow' }); if (!r.ok) continue;
+          const r = await tfetch(u, { redirect: 'follow' }); if (!r.ok) continue;
           const ct = r.headers.get('content-type') || ''; const buf = Buffer.from(await r.arrayBuffer());
           if (buf.length < 8000 || buf.length > 25e6) continue;
           if (/gif/.test(ct) || /\.gif(\?|$)/i.test(u) || /video|mp4|quicktime|webm/.test(ct)) {
@@ -514,6 +516,7 @@ async function main() {
     }
     const spec = buildSpecs(data, types, site, { ...infos, ...Object.fromEntries(Object.entries(avs).map(([k, v]) => [k, { ...(infos[k] || {}), avatar: v }])) }).find(s => s.id === spec0.id);
 
+    console.log(`prep: ${spec.id} assets ready, translating + tts`);
     // Korean subtitles
     const allSay = spec.scenes.flatMap(s => s.say), allKo = await translateKo(allSay);
     let q = 0; for (const s of spec.scenes) s.ko = s.say.map(() => allKo[q++]);
@@ -524,9 +527,9 @@ async function main() {
       for (const [j, txt] of s.say.entries()) {
         const f = `assets/a${i}_${j}.mp3`; let dur = 0;
         for (let a = 0; a < 3 && !dur; a++) {
-          try { await run('edge-tts', ['--voice', VOICE, `--rate=${RATE}`, '--text', txt, '--write-media', path.join(dir, f)], { timeout: 60000 });
+          try { await run('edge-tts', ['--voice', VOICE, `--rate=${RATE}`, '--text', txt, '--write-media', path.join(dir, f)], { timeout: 30000 });
             const { stdout } = await run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path.join(dir, f)]); dur = parseFloat(stdout) || 0;
-          } catch { await new Promise(r => setTimeout(r, 2500)); }
+          } catch (e) { console.log(`  tts retry ${a + 1} (${spec.id} ${i}.${j}): ${String(e.message).split('\n')[0].slice(0, 160)}`); await new Promise(r => setTimeout(r, 2500)); }
         }
         if (!dur) { dur = Math.max(1.5, txt.split(/\s+/).length / 2.6); await run('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono', '-t', String(dur), path.join(dir, f)]); }
         M.push(t); sents.push({ start: t, dur, audio: f, text: txt, ko: s.ko[j] }); t += dur + GAP;

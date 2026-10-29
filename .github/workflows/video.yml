@@ -48,9 +48,6 @@ jobs:
           pip install edge-tts
           npm install --no-save hyperframes gsap playwright@1
           npx playwright install --with-deps chromium
-          # HyperFrames 고속 캡처(BeginFrame)용 chrome-headless-shell
-          CHS=$(npx -y @puppeteer/browsers install chrome-headless-shell@stable --path "$HOME/.chs" | tail -1 | awk '{print $2}')
-          if [ -x "$CHS" ]; then echo "HYPERFRAMES_BROWSER_PATH=$CHS" >> "$GITHUB_ENV"; echo "chrome-headless-shell: $CHS"; fi
           npx hyperframes doctor || true
 
       - name: Decide video types

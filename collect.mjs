@@ -211,6 +211,7 @@ async function enrich(ctx, names) {
     try {
       const j = await gql(ctx, q, { s90, s365, sg: ctx.config.enrich.stargazerSample });
       chunk.forEach((n, k) => { const d = j.data?.[`r${k}`]; if (d) { applyGql(ctx, n, d); done++; } });
+      for (const er of j.errors || []) { const msg = `${(er.path || []).slice(1).join('.')}: ${er.type || ''} ${er.message}`.slice(0, 200); if (!ctx.gqlErr) ctx.gqlErr = new Set(); if (ctx.gqlErr.size < 8 && !ctx.gqlErr.has(msg)) { ctx.gqlErr.add(msg); ctx.log('  GraphQL 오류: ' + msg); } }
       i += chunk.length;
       if (batch < ctx.config.enrich.batch) batch++;
       if (j.data?.rateLimit && i % 120 < batch) ctx.log(`  심층 분석 ${i}/${names.length} (GraphQL 잔여 ${j.data.rateLimit.remaining})`);

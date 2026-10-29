@@ -435,6 +435,58 @@ function scoreRepo(r, tg) {
   r.wc = wc.slice(0, 9);
 }
 
+// ---------------- 스타 정합성 (간접 신호) ----------------
+// GitHub가 stargazer 목록을 막은 뒤의 대안. 계정을 직접 보지 않고, 스타 대비 참여 비율을 "비슷한 스타 규모"의 저장소들과 비교한다.
+// 비율: watchers/스타, 포크/스타, 이슈/스타, 참여자/1천 스타, 머지 PR/스타 -> 구간 내 백분위.
+// 하위 10% 신호가 3개 이상(watchers 또는 포크 포함)이고 성장 속도가 같은 구간 상위 20%일 때만 판정('bad' = 참여 대비 스타 과다)에 반영.
+const CONS_KINDS = {
+  watchers: { ko: '스타 대비 watchers', f: (r, D) => D.w / r.s, fmt: v => `${(v * 100).toFixed(2)}%` },
+  forks: { ko: '스타 대비 포크', f: (r, D) => (r.f || 0) / r.s, fmt: v => `${(v * 100).toFixed(1)}%` },
+  issues: { ko: '스타 대비 이슈', f: (r, D) => (D.oi + D.ci) / r.s, fmt: v => `${(v * 100).toFixed(2)}%` },
+  ppl: { ko: '스타 1천개당 참여자', f: (r, D) => (D.ppl / r.s) * 1000, fmt: v => `${v.toFixed(1)}명` },
+  prs: { ko: '스타 대비 머지 PR', f: (r, D) => D.mp / r.s, fmt: v => `${(v * 100).toFixed(2)}%` },
+};
+const BANDS = [[1e3, 5e3], [5e3, 2e4], [2e4, 1e5], [1e5, Infinity]];
+function starConsistency(repos) {
+  const now = Date.now();
+  const elig = Object.values(repos).filter(r => r.deep && r.s >= 1000 && r.sc && !['doc', 'archived'].includes(r.sc.v));
+  const speed = r => Math.max((r.sc.g7 ?? 0) / 7, r.c ? r.s / Math.max(1, (now - Date.parse(r.c)) / DAY) : 0);
+  const bandOf = s => BANDS.findIndex(([a, b]) => s >= a && s < b);
+  const groups = BANDS.map((_, i) => elig.filter(r => bandOf(r.s) === i));
+  // 표본이 적은 구간은 인접 구간과 합쳐서 비교 (최소 40개)
+  const peers = i => { let g = groups[i], lo = i, hi = i; while (g.length < 40 && (lo > 0 || hi < groups.length - 1)) { if (lo > 0) lo--; if (hi < groups.length - 1) hi++; g = groups.slice(lo, hi + 1).flat(); } return g; };
+  const pctRank = (arr, v) => arr.length ? arr.filter(x => x < v).length / arr.length : 0.5;
+  const cache = {};
+  let flagged = 0;
+  for (const r of elig) {
+    const bi = bandOf(r.s), D = r.deep;
+    if (!cache[bi]) { const pg = peers(bi); cache[bi] = { n: pg.length, speed: pg.map(speed), ...Object.fromEntries(Object.entries(CONS_KINDS).map(([k, c]) => [k, pg.map(x => c.f(x, x.deep))])) }; }
+    const P = cache[bi];
+    const sig = Object.entries(CONS_KINDS).map(([k, c]) => { const v = c.f(r, D); return { k, v, p: pctRank(P[k], v) }; });
+    const low = sig.filter(s => s.p < 0.10);
+    const sp = pctRank(P.speed, speed(r));
+    const highGrowth = sp >= 0.8;
+    const pen = sig.reduce((a, s) => a + (s.p < 0.10 ? 1 : s.p < 0.25 ? 0.5 : 0), 0);
+    const score = Math.round(clamp(100 - pen * 18 - (highGrowth && low.length >= 2 ? 10 : 0)));
+    r.sc.cons = { score, low: low.map(s => s.k), growthPct: Math.round(sp * 100), peers: P.n };
+    if (r.sc.trust == null) r.sc.trust = score; // stargazer 검사가 불가능하므로 정합성 점수로 대체
+    for (const s of low.sort((a, b) => a.p - b.p)) {
+      const pp = Math.max(1, Math.round(s.p * 100)), vtxt = CONS_KINDS[s.k].fmt(s.v);
+      r.why.push(['-', `${CONS_KINDS[s.k].ko} ${vtxt} (같은 규모 하위 ${pp}%)`]);
+      r.wc.push(['-', 'ratio', { k: s.k, v: vtxt, p: pp }]);
+    }
+    // 이슈/PR/참여자만 낮은 경우는 '기여를 받지 않는 공개 코드'가 흔해서, watchers나 포크 중 하나는 반드시 낮아야 판정에 반영
+    const audience = low.some(s => s.k === 'watchers' || s.k === 'forks');
+    if (low.length >= 3 && audience && highGrowth && ['good', 'hype', 'gem', 'mature', 'early'].includes(r.sc.v)) {
+      r.sc.v = 'bad'; r.sc.vt = VERDICTS_BAD; flagged++;
+      r.why.unshift(['-', `스타 증가 속도는 같은 규모 상위 ${100 - Math.round(sp * 100)}%인데 참여 지표 ${low.length}개가 하위 10%`]);
+      r.wc.unshift(['-', 'consflag', { g: 100 - Math.round(sp * 100), n: low.length }]);
+    }
+  }
+  return { eligible: elig.length, flagged };
+}
+const VERDICTS_BAD = '참여 대비 스타 과다';
+
 // ---------------- 결과 조립 ----------------
 function nearestSnap(ctx, back, before) {
   const dates = Object.keys(ctx.snapshots).filter(d => !before || d < before).sort();
@@ -454,6 +506,8 @@ function finalize(ctx) {
     if (r.s != null) r.g = growthFromHistory(ctx, r.n, r.s);
     scoreRepo(r, tg);
   }
+  const consStat = starConsistency(ctx.repos);
+  ctx.log?.(`스타 정합성: 대상 ${consStat.eligible}개, 판정 반영 ${consStat.flagged}개`);
   // 점수 변화 (best-of trending up/down): 직전 수집 대비, 7일 전 대비
   const prevD = nearestSnap(ctx, null), wkD = nearestSnap(ctx, 7);
   for (const r of Object.values(ctx.repos)) {
@@ -473,7 +527,7 @@ function finalize(ctx) {
   const rookies = {}; for (const d of cfg.rookies.days) rookies[d] = ctx.lists[`new:${d}`] || [];
   const snapDates = Object.keys(ctx.snapshots).sort();
   return {
-    generatedAt: new Date().toISOString(), mode: ctx.token ? 'deep' : 'quick', starCheck: !!ctx.token && !ctx.noSG,
+    generatedAt: new Date().toISOString(), mode: ctx.token ? 'deep' : 'quick', starCheck: !!ctx.token && !ctx.noSG, consCheck: consStat.eligible > 0,
     deepCount: Object.values(ctx.repos).filter(r => r.deep).length,
     history: { days: snapDates.length, first: snapDates[0] || null, prev: prevD, week: wkD },
     trendingLanguages: cfg.trending.languages, topLanguages: cfg.top.languages, rookieDays: cfg.rookies.days,
@@ -517,7 +571,7 @@ function enrichOrder(ctx) {
 }
 
 // ---------------- AI용 조회 파일 (api/, llms.txt) ----------------
-const VERDICTS = { good: '검증된 인기', mature: '성숙/유지보수', gem: '숨은 보석', hype: '하이프 주의', early: '초기/정체', bad: '스타 조작 의심',
+const VERDICTS = { good: '검증된 인기', mature: '성숙/유지보수', gem: '숨은 보석', hype: '하이프 주의', early: '초기/정체', bad: '참여 대비 스타 과다',
   doc: '학습/문서형', dead: '사실상 중단', archived: '아카이브됨', quick: '심층 분석 대기', na: '데이터 부족' };
 const API_FIELDS = ['repo', 'stars', 'growth7d', 'popularity', 'utility', 'trust', 'bestOf', 'verdict', 'license', 'licenseKind', 'activity', 'language', 'isNew'];
 const apiRow = r => { const sc = r.sc || {}; return [r.n, r.s ?? null, sc.g7 ?? null, sc.pop ?? null, sc.util ?? null, sc.trust ?? null, sc.bo ?? null, sc.v ?? null, r.lic ?? null, sc.lk ?? null, sc.act ?? null, r.l ?? null, sc.isNew ? 1 : 0]; };
@@ -532,6 +586,7 @@ function apiRepo(r, gen) {
     starGrowth: { d1: r.g?.d1 ?? null, d7: r.g?.d7 ?? null, d30: r.g?.d30 ?? null, estimated7d: sc.g7 ?? null },
     scores: { popularity: sc.pop, utility: sc.util, trust: sc.trust, bestOf: sc.bo, components: sc.comp, change: r.sd || null },
     verdict: { key: sc.v, label: sc.vt }, activity: sc.act, isNew: !!sc.isNew,
+    starConsistency: sc.cons ? { score: sc.cons.score, lowSignals: sc.cons.low, growthPercentile: sc.cons.growthPct, comparedWith: sc.cons.peers, note: 'indirect signal: engagement ratios vs. similar-size repos, not an account-level check' } : null,
     reasons: (r.why || []).map(([s, t]) => ({ sign: s === '+' ? 'positive' : s === '-' ? 'negative' : 'info', text: t })),
     deep: D ? { commits90d: D.c90, commits365d: D.c365, contributorsApprox: D.ppl, openIssues: D.oi, closedIssues: D.ci, mergedPRs: D.mp, watchers: D.w,
       releases: D.rel, latestRelease: D.lr, latestTag: D.tag, stableRelease: !!D.stable,
@@ -559,7 +614,7 @@ function buildSummary(out, siteUrl) {
   sec('검증된 인기 Top 30 (실효성순)', all.filter(r => r.sc.v === 'good').sort((a, b) => b.sc.util - a.sc.util || b.s - a.s).slice(0, 30).map(r => line(r)));
   sec('숨은 보석', all.filter(r => r.sc.v === 'gem').sort((a, b) => b.sc.util - a.sc.util).slice(0, 20).map(r => line(r)));
   sec('하이프 주의 (스타순)', all.filter(r => r.sc.v === 'hype').sort((a, b) => b.s - a.s).slice(0, 20).map(r => line(r)));
-  sec('스타 조작 의심', all.filter(r => r.sc.v === 'bad').sort((a, b) => b.s - a.s).slice(0, 15).map(r => line(r)));
+  sec('참여 대비 스타 과다 (간접 신호)', all.filter(r => r.sc.v === 'bad').sort((a, b) => b.s - a.s).slice(0, 15).map(r => line(r)));
   for (const c of out.categories) sec(`분야: ${c.name} (스타순 Top 8)`, c.repos.slice(0, 8).map(n => line(R[n])));
   return L.join('\n');
 }
@@ -587,7 +642,7 @@ GitHub 저장소의 인기, 실제 사용 여부, 품질, 라이선스 위험, �
 
 - popularity (0~100): 누적 스타(로그) 60% + 최근 7일 증가 40%
 - utility (0~100): 실제로 쓰이고 관리되는가. 90일 커밋, 실사용량(패키지 월 다운로드 또는 GitHub Used by), 참여자, 이슈 해결률, 릴리스 품질, 최근 push, PR, 포크비, watchers, 나이
-- trust (0~100): 최근 스타 계정 표본의 가짜 패턴. null이면 검사 못 함 (현재 ${out.starCheck ? '켜짐' : 'GitHub 2026-07 정책으로 타인 저장소의 스타 계정 목록을 볼 수 없어 모두 null'}). null을 '안전'으로 해석하지 말 것
+- trust (0~100): 스타 정합성. 스타 대비 watchers/포크/이슈/참여자/머지 PR 비율을 비슷한 스타 규모 저장소와 비교한 간접 신호 (계정을 직접 본 것이 아님. GitHub 2026-07 정책으로 stargazer 목록 비공개). 낮을수록 참여에 비해 스타가 많음. verdict=bad는 하위 10% 신호 3개 이상(watchers 또는 포크 포함) + 성장 속도 상위 20%일 때만. null은 스타 1천 미만이거나 학습형이라 비교 제외
 - bestOf: best-of-lists projectrank 방식 품질 점수 (높을수록 좋음, 보통 10~60)
 - growth7d: 최근 7일 스타 증가 (실측 또는 Trending 기반 추정)
 - verdict: ${Object.entries(VERDICTS).map(([k, v]) => `${k}=${v}`).join(', ')}
@@ -623,7 +678,7 @@ async function writeApi(fs, path, root, out, siteUrl) {
 }
 
 // ---------------- 저장소별 고정 페이지 (검색엔진/AI 크롤러가 읽는 정적 HTML) + 배지 + sitemap ----------------
-const VERDICT_EN = { good: 'Proven popular', mature: 'Mature / maintenance', gem: 'Hidden gem', hype: 'Hype warning', early: 'Early / stalled', bad: 'Suspected fake stars',
+const VERDICT_EN = { good: 'Proven popular', mature: 'Mature / maintenance', gem: 'Hidden gem', hype: 'Hype warning', early: 'Early / stalled', bad: 'Stars outpace engagement',
   doc: 'Learning / docs', dead: 'Abandoned', archived: 'Archived', quick: 'Awaiting deep analysis', na: 'Not enough data' };
 const LIC_EN = { perm: 'permissive', weak: 'weak copyleft', copyleft: 'copyleft', other: 'non-standard', none: 'no license' };
 const ACT_EN = { active: 'active', inactive: 'inactive (no push for 6+ months)', dead: 'abandoned (no push for 12+ months)' };
@@ -636,6 +691,8 @@ const WHY_EN = {
   dead: () => 'No push for over a year', inactive: () => 'No push for over 6 months', new: p => `New project, ${p.d} days old (short track record)`, susp: p => `${p.p}% of recent stargazers look fake`,
   suspok: () => 'Recent stargazers look healthy', burst: p => `${p.b}/${p.n} recent stars landed within 24 hours`, licnone: () => 'No license (no usage rights by default)',
   copyleft: p => `${p.lic} is copyleft (check source-disclosure duties when distributing)`, licother: p => `License ${p.lic} is non-standard or restrictive (read the text)`,
+  ratio: p => `${({ watchers: 'Watchers per star', forks: 'Forks per star', issues: 'Issues per star', ppl: 'Contributors per 1k stars', prs: 'Merged PRs per star' })[p.k]} ${p.v} (bottom ${p.p}% among similar-size repos)`,
+  consflag: p => `Star growth is in the top ${p.g}% for its size, but ${p.n} engagement ratios are in the bottom 10%`,
 };
 const pagePath = n => `r/${n}/`;
 const hesc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -723,7 +780,7 @@ async function writeOutputs(fs, path, dir, out, changes) {
   const day = out.generatedAt.slice(0, 10);
   await fs.mkdir(path.join(dir, 'history'), { recursive: true });
   // 스냅샷: [스타, 인기도, 실효성]
-  const snap = Object.fromEntries(Object.values(out.repos).filter(r => r.s != null).map(r => [r.n, [r.s, r.sc?.pop ?? null, r.sc?.util ?? null]]));
+  const snap = Object.fromEntries(Object.values(out.repos).filter(r => r.s != null).map(r => [r.n, [r.s, r.sc?.pop ?? null, r.sc?.util ?? null, r.sc?.trust ?? null]]));
   await fs.writeFile(path.join(dir, 'history', `${day}.json`), JSON.stringify(snap));
   await fs.writeFile(path.join(dir, 'latest.json'), JSON.stringify(out));
   await fs.writeFile(path.join(dir, 'data.js'), 'window.STAR_BOARD = ' + JSON.stringify(out) + ';\n');

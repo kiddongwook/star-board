@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// GitHub Star Board - HyperFrames video generator v3
+// GitHub Star Board - HyperFrames video generator v4
 //   node video/hf-video.mjs --type daily,spotlight,weekly --out out
 // English narration (edge-tts) + Korean subtitles, a recurring host character (Starby),
 // and "show, don't tell" scenes: why it's trending, what it is, when to use it, real screens/code, real-usage numbers.
@@ -57,21 +57,22 @@ function realityLine(r) {
 }
 function whyFacts(r, gain, info) {
   const now = Date.now(), age = r.c ? (now - Date.parse(r.c)) / DAY : null, out = [];
-  if (age != null && age < 60) out.push([`It's brand new: only ${Math.max(1, Math.round(age))} days old.`, `${Math.round(age)}일 된 신규`]);
-  else if (age != null && age < 180) out.push([`It's only ${Math.round(age / 30)} months old.`, `${Math.round(age / 30)}개월 차`]);
-  if (BIG_ORG.test(ownerName(r.n))) out.push([`It comes from ${ownerName(r.n)}.`, `${ownerName(r.n)} 제작`]);
+  if (age != null && age < 60) out.push([`It's brand new: only ${Math.max(1, Math.round(age))} days old.`, `${Math.round(age)}일 된 신규`, `나온 지 겨우 ${Math.max(1, Math.round(age))}일 된 새 프로젝트예요.`]);
+  else if (age != null && age < 180) out.push([`It's only ${Math.round(age / 30)} months old.`, `${Math.round(age / 30)}개월 차`, `나온 지 ${Math.round(age / 30)}개월밖에 안 됐어요.`]);
+  if (BIG_ORG.test(ownerName(r.n))) out.push([`It comes from ${ownerName(r.n)}.`, `${ownerName(r.n)} 제작`, `${ownerName(r.n)}에서 만들었어요.`]);
   const D = r.deep; const rd = D?.lr ? (now - Date.parse(D.lr)) / DAY : null;
-  if (rd != null && rd <= 10) out.push([`A new release, ${D.tag || 'a new version'}, just shipped.`, `새 버전 ${D.tag || ''}`]);
+  if (rd != null && rd <= 10) out.push([`A new release, ${D.tag || 'a new version'}, just shipped.`, `새 버전 ${D.tag || ''}`, `새 버전${D.tag ? ' ' + D.tag : ''}도 막 나왔고요.`]);
   const tp = (r.t || []).join(' ');
-  const hot = [[/claude-code|coding-agent|ai-coding/, 'AI coding agents'], [/ai-agents?|agent/, 'AI agents'], [/mcp/, 'MCP tools'], [/llm/, 'large language models'], [/rag/, 'RAG']].find(([re]) => re.test(tp));
-  if (hot) out.push([`And it rides the ${hot[1]} wave.`, `${hot[1]} 흐름`]);
-  if (r.dl?.m >= 1e5) out.push([`It already gets ${say(r.dl.m)} downloads a month.`, `월 ${short(r.dl.m)} 다운로드`]);
+  const hot = [[/claude-code|coding-agent|ai-coding/, 'AI coding agents', 'AI 코딩 에이전트'], [/ai-agents?|agent/, 'AI agents', 'AI 에이전트'], [/mcp/, 'MCP tools', 'MCP'], [/\bllm/, 'large language models', 'LLM'], [/\brag\b/, 'RAG', 'RAG']].find(([re]) => re.test(tp));
+  if (hot) out.push([`And it rides the ${hot[1]} wave.`, `${hot[2]} 흐름`, `요즘 뜨는 ${hot[2]} 흐름도 탔어요.`]);
+  if (r.dl?.m >= 1e5) out.push([`It already gets ${say(r.dl.m)} downloads a month.`, `월 ${short(r.dl.m)} 다운로드`, `벌써 한 달 다운로드가 ${short(r.dl.m)}예요.`]);
   return out.slice(0, 2);
 }
+// description match first (what the repo says it is), topics only if the description says nothing; word-start boundaries ("ui" must not match "build")
 function useCases(r, info) {
-  const tp = ((r.t || []).join(' ') + ' ' + (r.d || '')).toLowerCase(), out = [];
-  for (const [re, txt, ko] of TOPIC_USE) if (re.test(tp) && !out.some(o => o.en === txt)) out.push({ en: txt, ko });
-  return out.slice(0, 2);
+  const d = ((r.d || '') + ' ' + (info?.para || '')).toLowerCase(), tp = (r.t || []).join(' ').toLowerCase();
+  const hit = src => TOPIC_USE.filter(([re]) => new RegExp('(^|[^a-z0-9])(?:' + re.source + ')').test(src)).map(([, en, ko]) => ({ en, ko }));
+  const a = hit(d); return (a.length ? a : hit(tp)).slice(0, 2).map(u => ({ ...u, strong: a.length > 0 }));
 }
 function cleanDesc(r, info) {
   let d = noUrl(r.d || info?.para || '');
@@ -113,7 +114,7 @@ function extractReadme(md, n) {
       && !ls.every(l => !l.trim() || INSTALL.test(l.trim()) || /^(cd|git clone|#)/.test(l.trim()))) snippets.push({ lang: lang || 'text', code: body });
   }
   const pri = c => (/--filter|\brun\s+(dev|build|test|lint|start)\b|build:|\b(dev|build|test|lint)$/.test(c) ? 4 : 0) + (c.toLowerCase().includes(rn) ? -1 : 0) + (/^(npm|pnpm|yarn|pip|pipx|uv|uvx|brew|cargo|go|npx|bunx?|gem|winget|scoop|claude|composer|dotnet)\b/.test(c) && !/^(bun|npm|pnpm|yarn) (install|i)$/.test(c) ? 0 : /^curl/.test(c) ? 1 : 2);
-  cmds.sort((a, b) => pri(a) - pri(b) || a.length - b.length);
+  cmds.sort((a, b) => (pri(a) + (a.length > 60 ? 3 : 0)) - (pri(b) + (b.length > 60 ? 3 : 0)) || a.length - b.length);
   const install = cmds[0] ? (cmds[0].length > 80 ? cmds[0].slice(0, 78) + '…' : cmds[0]) : null;
   const usage = snippets.find(x => /^(py|python|js|javascript|ts|typescript|go|rust|rs|java|kotlin|swift|ruby|rb)$/.test(x.lang)) || null;
   const lines = s.split('\n'); let feats = [], inSec = false;
@@ -151,6 +152,11 @@ const STARBY = `<svg viewBox="0 0 200 200" width="100%" height="100%" style="ove
 <ellipse id="sbmouth" cx="100" cy="124" rx="10" ry="4" fill="#7a2e12"/>
 </g></svg>`;
 
+// 3D Starby artwork (video/starby.png, cut out from the Flow render). Eye centers/radii are in image pixels, used for blink lids.
+const STARBY_IMG = { w: 487, h: 505, eyes: [[205, 192], [305, 193]], rx: 30, ry: 33 };
+const starbyImgHtml = src => { const { w, h, eyes, rx, ry } = STARBY_IMG; const pc = (v, t) => (v / t * 100).toFixed(2) + '%';
+  return `<div id="sbbody" class="sbimg"><div id="sbtalk"><img src="${esc(src)}">${eyes.map(([x, y], i) => `<div class="lid" id="lid${i}" style="left:${pc(x - rx, w)};top:${pc(y - ry, h)};width:${pc(rx * 2, w)};height:${pc(ry * 2, h)}"></div>`).join('')}</div></div>`; };
+
 // ---------------- styles ----------------
 const css = F => `
 *{box-sizing:border-box;margin:0;padding:0}
@@ -164,7 +170,7 @@ body,html{background:#0b0f17}
 .cap{position:absolute;left:${F.vert ? 50 : 420}px;right:${F.vert ? 50 : 80}px;bottom:${F.vert ? 120 : 60}px;text-align:center}
 .cap span{display:inline-block;background:#000000d0;border-radius:18px;padding:${F.vert ? '18px 28px' : '14px 26px'};font-size:${F.vert ? 48 : 38}px;line-height:1.35;font-weight:700;color:#fff;box-shadow:0 10px 40px #0008}
 #bot{position:absolute;width:${F.vert ? 300 : 300}px;height:${F.vert ? 300 : 300}px;left:${F.vert ? 40 : 70}px;top:${F.vert ? 1300 : 560}px;transform-origin:50% 100%}
-#bot svg #sbbody{transform-origin:100px 110px}#sbeyes{transform-origin:100px 100px;transform-box:fill-box}#sbbrowL,#sbbrowR{transform-box:fill-box;transform-origin:center}
+
 .avatar{width:${F.vert ? 190 : 150}px;height:${F.vert ? 190 : 150}px;border-radius:40px;border:5px solid #30363d;object-fit:cover;background:#161b22}
 .repo{font-size:${F.vert ? 96 : 84}px;font-weight:900;line-height:1.05;letter-spacing:-1px;word-break:break-word;margin-top:20px}
 .owner{font-size:${F.vert ? 40 : 34}px;color:#8b949e;margin-top:10px}
@@ -199,6 +205,17 @@ body,html{background:#0b0f17}
 .title{font-size:${F.vert ? 110 : 96}px;font-weight:900;line-height:1.05}.title .w{display:inline-block}
 .sub2{font-size:${F.vert ? 44 : 36}px;color:#c9d1d9;margin-top:20px}
 .list{width:100%;max-width:1200px;margin-top:20px}.row{display:flex;gap:20px;align-items:center;background:#161b22e6;border:2px solid #30363d;border-radius:20px;padding:18px 26px;margin-top:14px;text-align:left}
+.stk{display:inline-block;background:#ffc83d;color:#1b1f24;font-weight:900;font-size:${F.vert ? 50 : 42}px;padding:12px 26px;border-radius:12px;box-shadow:0 10px 0 #0007,0 20px 50px #0008;white-space:nowrap}.stk small{font-size:.6em;font-weight:800;opacity:.75}
+.stk.big{font-size:${F.vert ? 110 : 92}px;padding:16px 40px;border-radius:18px}.stk.tag{position:absolute;left:${F.vert ? 60 : 480}px;top:${F.vert ? 150 : 60}px;z-index:5}
+.scene>.repo,.scene>.owner,.scene>.avatar,.scene>.stk:not(.tag),.scene>.frame{position:relative;z-index:2}
+.hook{isolation:isolate}.stk.tag.long{font-size:${F.vert ? 40 : 34}px}
+.hook .frame{transform:perspective(1600px) rotateX(8deg) rotate(-2deg)}.hook .stk.big{margin-top:-60px}
+.hero{position:absolute;left:0;top:0;width:${F.W}px;height:${F.H}px;overflow:hidden;z-index:0;transform-origin:50% 40%}.hero img.cov,.hero video{width:100%;height:100%;object-fit:cover;display:block;filter:blur(28px) brightness(.38) saturate(1.3);transform:scale(1.2)}.hero img.pg{width:100%;display:block}
+.heroshade{position:absolute;left:0;top:0;width:${F.W}px;height:${F.H}px;z-index:1;background:linear-gradient(180deg,#0b0f17cc 0%,#0b0f1744 40%,#0b0f17aa 70%,#0b0f17f2 88%)}
+.pw{position:relative;transform-origin:0 0}.hl{position:absolute;border:5px solid #ffc83d;border-radius:12px;box-shadow:0 0 0 4000px #0009,0 0 30px #ffc83d88;opacity:0}
+.cur{color:#3fb950}
+.sbimg{position:relative;height:100%;aspect-ratio:${STARBY_IMG.w}/${STARBY_IMG.h};margin:0 auto;filter:drop-shadow(0 18px 24px #0009)}#sbtalk{position:absolute;inset:0;transform-origin:50% 100%}#sbtalk img{width:100%;height:100%;display:block}
+.lid{position:absolute;border-radius:50%;background:radial-gradient(ellipse at 50% 35%,#fbd463,#f1aa35);transform:scaleY(0);transform-origin:50% 0}
 .row img{width:64px;height:64px;border-radius:16px}.row .n{font-size:36px;font-weight:800}.row .m{font-size:26px;color:#8b949e}
 `;
 
@@ -208,6 +225,8 @@ const num = (v, prefix = '', suffix = '') => `${prefix}<span class="num">0</span
 const typed = t => [...String(t)].map(c => (c === '\n' ? '<br>' : `<span class="ch">${c === ' ' ? '&nbsp;' : esc(c)}</span>`)).join('');
 const words = t => t.split(/\s+/).map(w => `<span class="w">${esc(w)}</span>`).join(' ');
 const f2 = x => Number(x).toFixed(2);
+// lowercase a sentence-case phrase ("One runtime for x" -> "one runtime for x"), keep Title Case names ("Task Board")
+const lcFirst = s => { const w = String(s).split(/\s+/); const title = w.length > 1 && w.filter(x => /^[a-z]/i.test(x)).every(x => /^[A-Z]/.test(x)); return !title && /^[A-Z][a-z]/.test(s) ? s[0].toLowerCase() + s.slice(1) : s; };
 const A = {
   enter: (p, S) => `tl.from('#${p}',{opacity:0,y:60,duration:.5,ease:'power3.out'},${f2(S)});`,
   exit: (p, S, D) => `tl.to('#${p}',{opacity:0,y:-40,duration:.3,ease:'power2.in'},${f2(S + D - 0.32)});`,
@@ -217,6 +236,7 @@ const A = {
   type: (sel, text, at, dur) => `tl.from('${sel} .ch',{opacity:0,duration:.01,stagger:${(dur / Math.max(1, [...String(text)].length)).toFixed(4)},ease:'none'},${f2(at)});`,
   words: (sel, at) => `tl.from('${sel} .w',{opacity:0,y:80,rotate:5,duration:.55,stagger:.08,ease:'back.out(1.8)'},${f2(at)});`,
   stamp: (sel, at) => `tl.from('${sel}',{scale:2.4,opacity:0,rotate:-16,duration:.45,ease:'back.out(2.2)'},${f2(at)});`,
+  sticker: (sel, at, hold = 1.8, rot = -4) => `tl.fromTo('${sel}',{opacity:0,scale:.3,rotation:${rot - 14}},{opacity:1,scale:1,rotation:${rot},duration:.32,ease:'back.out(2.4)'},${f2(at)});` + (hold ? `tl.to('${sel}',{opacity:0,scale:.85,duration:.18},${f2(at + hold)});` : ''),
   bar: (sel, frac, at) => `tl.fromTo('${sel}',{scaleX:0},{scaleX:${Math.max(0.015, Math.min(1, frac)).toFixed(3)},duration:1,ease:'power3.out'},${f2(at)});`,
 };
 const brand = (extra = '') => `<div class="brand">★ <b>GitHub Star Board</b>${extra ? ' · ' + esc(extra) : ''}</div>`;
@@ -225,79 +245,106 @@ const winBar = t => `<div class="tb"><i style="background:#f85149"></i><i style=
 // ---------------- scenes ----------------
 // scene = { say:[en], html(p,F,t), anim(p,S,D,M,F), mood, bot:'center'|'corner'|'hide', media? }
 function spotlightScenes(r, info, gain, site, F) {
-  const n = r.n, v = r.sc?.v, col = VCOL[v] || '#8b949e', sc = [];
+  const n = r.n, v = r.sc?.v, col = VCOL[v] || '#8b949e', sc = [], G = info.script || {};
   const avatar = info.avatar || '';
   const ageDays = r.c ? Math.max(1, (Date.now() - Date.parse(r.c)) / DAY) : 365;
   const usual = Math.max(1, Math.round((r.s - gain) / ageDays)), mult = Math.round(gain / usual);
-  // 1. hook
-  sc.push({ mood: 'wow', bot: 'center',
-    say: [`This repo got ${say(gain)} stars in a single day.`, `It's ${repoName(n)}, by ${ownerName(n)}. Let's see why.`],
-    html: p => `${brand("today's pick")}${avatar ? `<img class="avatar" id="${p}a" src="${esc(avatar)}">` : ''}<div class="repo" id="${p}n">${esc(n.split('/')[1])}</div><div class="owner">by ${esc(ownerName(n))}</div>
-      <div class="big" id="${p}g">${num(gain, '+')}</div><div class="lbl">⭐ stars today · 오늘 받은 스타</div>`,
-    anim: (p, S, D, M) => [avatar ? A.pop(`#${p}a`, S + 0.1) : '', `tl.from('#${p}n',{opacity:0,y:60,duration:.5,ease:'back.out(1.6)'},${f2(S + 0.2)});`, A.pop(`#${p}g`, S + 0.4), A.count(`#${p}g`, gain, S + 0.45, 1.4)].join('\n') });
-  // 2. why trending
+  const uses = useCases(r, info), page = info.media?.kind === 'page' ? info.media : null;
+  const prod = info.demo || (info.media && !page ? info.media : null) || page; // most "product-looking" visual
+  const VW = F.vert ? 960 : 1100, FH = F.vert ? 980 : 600, VH = FH - 52;
+  const mediaTag = (m, id, t, extra = '') => !m ? '' : m.kind === 'video' ? (t ? '<video class="clip" id="' + id + '" src="' + esc(m.src) + '" muted playsinline data-start="' + f2(t.S) + '" data-duration="' + f2(t.D) + '" data-track-index="3" ' + extra + '></video>' : '') : '<img id="' + id + '" src="' + esc(m.src) + '" ' + extra + '>';
+  // 1. HOOK: real product on frame 1, big number sticker, no intro animation
+  const hookSay = G.hook ? [G.hook] : [uses[0]?.strong ? 'Want to ' + uses[0].en + '? This got ' + say(gain) + ' stars in one day.' : say(gain) + ' stars in a single day.'];
+  hookSay.push('Meet ' + repoName(n) + (BIG_ORG.test(ownerName(n)) ? ', from ' + ownerName(n) : '') + '. Here\'s why it\'s blowing up.');
+  const gainTxt = Math.round(gain).toLocaleString('en-US');
+  const hookKo = G.hook ? [null] : [uses[0]?.strong ? '하루 만에 스타 ' + gainTxt + '개. ' + uses[0].ko + ' 쓰는 도구예요.' : '하루 만에 스타 ' + gainTxt + '개를 받았어요.'];
+  hookKo.push('주인공은 ' + n.split('/')[1] + '. 왜 이렇게 뜨는지 볼까요?');
+  const pfH = F.vert ? 700 : 520;
+  sc.push({ mood: 'wow', bot: 'corner', first: true, say: hookSay, ko0: hookKo,
+    html: (p, F2, t) => '<div class="hero" id="' + p + 'hb">' + (prod ? mediaTag(prod, p + 'hbm', t, 'class="cov"' + (prod === page ? ' style="object-position:50% ' + Math.round(((page.top || 0) / (page.h || 4000)) * 100) + '%"' : '')) : '') + '</div><div class="heroshade"></div>' + brand("today's pick") +
+      (prod ? '<div class="frame" id="' + p + 'pf" style="width:' + VW + 'px;height:' + pfH + 'px">' + winBar(prod === page ? 'github.com/' + n : n.split('/')[1]) + '<div class="vp">' +
+        (prod === page ? '<img src="' + esc(page.src) + '" style="width:100%;display:block;transform:translateY(-' + Math.round((page.top || 0) * (VW / (page.w || 1280))) + 'px)">' : mediaTag(prod, p + 'pm', t, 'class="shot"')) + '</div></div>' : (avatar ? '<img class="avatar" src="' + esc(avatar) + '">' : '')) +
+      '<div class="stk big" id="' + p + 'g" style="transform:rotate(-4deg)">+' + esc(short(gain)) + ' ⭐ <small>하루 만에</small></div>' +
+      '<div class="repo" id="' + p + 'n" style="margin-top:26px">' + esc(n.split('/')[1]) + '</div><div class="owner">by ' + esc(ownerName(n)) + '</div>',
+    anim: (p, S, D) => [prod ? "tl.fromTo('#" + p + "pf',{scale:1},{scale:1.06,duration:" + f2(D) + ",ease:'none'}," + f2(S) + ');' : '',
+      "tl.fromTo('#" + p + "g',{scale:1},{scale:1.12,duration:.18,yoyo:true,repeat:3,ease:'sine.inOut'}," + f2(S + 0.15) + ');'].join('\n') });
+  // 2. WHY: usual vs today, multiplier stamp, fact stickers
   const facts = whyFacts(r, gain, info);
   sc.push({ mood: 'think', bot: 'corner',
-    say: [mult >= 3 ? `That's about ${mult} times its usual daily pace.` : `That's a big day for it.`, ...facts.map(f => f[0])],
-    html: p => `${brand('why it’s trending')}<div class="h">왜 뜨고 있을까?</div>
-      <div class="bars"><div class="bar"><div class="k">평소 하루</div><div class="t"><i id="${p}b1" style="background:#8b949e"></i></div><div class="v">${esc(short(usual))}</div></div>
-      <div class="bar"><div class="k">오늘</div><div class="t"><i id="${p}b2" style="background:#3fb950"></i></div><div class="v" style="color:#3fb950">${esc(short(gain))}</div></div></div>
-      ${mult >= 3 ? `<div class="mult" id="${p}x">×${mult}</div>` : ''}<div class="pills">${facts.map((f, i) => `<div class="pill" id="${p}f${i}">${esc(f[1])}</div>`).join('')}</div>`,
-    anim: (p, S, D, M) => [`tl.from('#${p} .h',{opacity:0,y:40,duration:.4},${f2(S + 0.05)});`, A.bar(`#${p}b1`, usual / gain, S + 0.3), A.bar(`#${p}b2`, 1, S + 0.6), mult >= 3 ? A.stamp(`#${p}x`, S + 1.3) : '',
-      ...facts.map((_, i) => A.pop(`#${p}f${i}`, (M[i + 1] ?? S + 2) + 0.1))].join('\n') });
-  // 3. what it is (show the real page / demo)
-  const desc = cleanDesc(r, info);
-  const media = info.media;
-  sc.push({ mood: 'happy', bot: 'corner', media,
-    say: [desc ? `In one line: ${desc}.` : `Here's what it looks like.`],
-    html: (p, F2, t) => `${brand('what it is')}<div class="frame" id="${p}f">${winBar('github.com/' + n)}<div class="vp">
-      ${media?.kind === 'page' ? `<img class="page" id="${p}pg" src="${esc(media.src)}">` : ''}
-      ${media?.kind === 'image' ? `<img class="shot" id="${p}im" src="${esc(media.src)}">` : ''}
-      ${media?.kind === 'video' && t ? `<video class="clip" id="${p}v" src="${esc(media.src)}" muted playsinline data-start="${f2(t.S + 0.3)}" data-duration="${f2(t.D - 0.3)}" data-track-index="3"></video>` : ''}</div></div>`,
-    anim: (p, S, D) => [`tl.from('#${p}f',{opacity:0,y:140,rotateX:16,duration:.8,ease:'power3.out'},${f2(S + 0.1)});`,
-      media?.kind === 'page' ? `tl.fromTo('#${p}pg',{y:0},{y:-${F.vert ? 900 : 700},duration:${f2(Math.max(1, D - 1.2))},ease:'power1.inOut'},${f2(S + 0.8)});` : '',
-      media?.kind === 'image' ? `tl.fromTo('#${p}im',{scale:1.02},{scale:1.15,duration:${f2(D - 0.5)},ease:'none'},${f2(S + 0.3)});` : ''].join('\n') });
-  // 4. second visual: README demo (if the page screenshot was used above)
-  if (info.demo) {
-    sc.push({ mood: 'wow', bot: 'corner', media: info.demo,
-      say: [`And here it is in action.`],
-      html: (p, F2, t) => `${brand('demo')}<div class="frame" id="${p}f">${winBar(n.split('/')[1] + ' demo')}<div class="vp">
-        ${info.demo.kind === 'image' ? `<img class="shot" id="${p}im" src="${esc(info.demo.src)}">` : ''}
-        ${info.demo.kind === 'video' && t ? `<video class="clip" id="${p}v" src="${esc(info.demo.src)}" muted playsinline data-start="${f2(t.S + 0.2)}" data-duration="${f2(t.D - 0.2)}" data-track-index="3"></video>` : ''}</div></div>`,
-      anim: (p, S, D) => [`tl.from('#${p}f',{opacity:0,scale:.85,duration:.6,ease:'back.out(1.5)'},${f2(S + 0.1)});`, info.demo.kind === 'image' ? `tl.fromTo('#${p}im',{scale:1},{scale:1.18,x:-30,duration:${f2(D)},ease:'none'},${f2(S)});` : ''].join('\n') });
-  }
-  // 5. when to use it
-  const uses = useCases(r, info), feats = (info.feats || []).slice(0, 3);
-  if (uses.length || feats.length >= 2) {
-    const items = uses.length ? uses.map(u => ({ en: u.en, ko: u.ko })) : feats.map((f, i) => ({ en: f.t, ko: info.featsKo?.[i] || f.t }));
+    say: [mult >= 3 ? 'That\'s ' + mult + ' times its usual daily pace.' : 'That\'s a big day for it.', ...facts.map(f => f[0])],
+    ko0: [mult >= 3 ? '평소 하루 평균의 ' + mult + '배예요.' : '오늘 제대로 터졌어요.', ...facts.map(f => f[2] || null)],
+    html: p => brand('why it’s trending') + '<div class="bars"><div class="bar"><div class="k">평소 하루</div><div class="t"><i id="' + p + 'b1" style="background:#8b949e"></i></div><div class="v">' + esc(short(usual)) + '</div></div>' +
+      '<div class="bar"><div class="k">오늘</div><div class="t"><i id="' + p + 'b2" style="background:#3fb950"></i></div><div class="v" style="color:#3fb950">' + esc(short(gain)) + '</div></div></div>' +
+      (mult >= 3 ? '<div class="mult" id="' + p + 'x">×' + mult + '</div>' : '') + '<div class="pills">' + facts.map((f, i) => '<div class="stk" id="' + p + 'f' + i + '" style="transform:rotate(' + (i % 2 ? 4 : -5) + 'deg);background:' + ['#58a6ff', '#f78166'][i % 2] + '">' + esc(f[1]) + '</div>').join('') + '</div>',
+    anim: (p, S, D, M) => [A.bar('#' + p + 'b1', usual / gain, S + 0.2), A.bar('#' + p + 'b2', 1, S + 0.45), mult >= 3 ? A.stamp('#' + p + 'x', S + 1.0) : '',
+      ...facts.map((_, i) => A.stamp('#' + p + 'f' + i, (M[i + 1] ?? S + 2) + 0.05))].join('\n') });
+  // 3. WHAT + FEATURE TOUR: zoom into the real README at each feature, highlight + sticker
+  const desc = G.what || cleanDesc(r, info);
+  const feats = (G.features?.length ? G.features : (info.feats || []).map((f, i) => ({ en: f.t, ko: info.featsKo?.[i] || f.t }))).slice(0, 3);
+  if (page) {
+    const k = VW / (page.w || 1280), top0 = Math.max(0, (page.top || 0) * k - 10);
+    const fsay = feats.map((f, i) => G.features?.length ? f.en : ['First, ' + lcFirst(f.en) + '.', 'Then, ' + lcFirst(f.en) + '.', 'And ' + lcFirst(f.en) + '.'][i]);
+    const boxes = feats.map((_, i) => page.boxes?.[i] || null);
+    const focus = (b, i) => { if (!b) return { x: 0, y: -(top0 + (i + 1) * VH * 0.8), s: 1.15 }; const bx = b.x * k, by = b.y * k, bw = Math.max(80, b.w * k), bh = Math.max(40, b.h * k);
+      const s = Math.max(1.15, Math.min(1.9, (VW * 0.86) / bw, (VH * 0.6) / bh)); return { x: Math.min(0, Math.max(VW - VW * s, VW / 2 - (bx + bw / 2) * s)), y: Math.min(0, VH / 2 - (by + bh / 2) * s), s }; };
     sc.push({ mood: 'happy', bot: 'corner',
-      say: uses.length ? [`Reach for it when you want to ${uses.map(u => u.en).join(', or ')}.`] : [`What you get: ${feats.map(f => f.t.replace(/[.]$/, '')).join('; ')}.`],
-      html: p => `${brand('when to use it')}<div class="h">${uses.length ? '이럴 때 쓰세요' : '이런 걸 해줘요'}</div><div class="uses">${items.map((it, i) => `<div class="use" id="${p}u${i}"><div class="n">${i + 1}</div><div class="t">${esc(cut(it.ko, 40))}</div></div>`).join('')}</div>`,
-      anim: (p, S, D, M) => [`tl.from('#${p} .h',{opacity:0,y:40,duration:.4},${f2(S + 0.05)});`, `tl.from('#${p} .use',{opacity:0,x:140,duration:.5,stagger:${f2(Math.min(0.9, (D - 1) / Math.max(1, items.length)))},ease:'power3.out'},${f2(S + 0.4)});`].join('\n') });
+      say: [desc ? 'In one line: ' + desc + '.' : 'Here\'s what it is.', ...fsay],
+      ko0: [desc ? null : '어떤 건지 볼게요.', ...feats.map((f, i) => G.features?.length ? null : ['첫째, ', '둘째, ', '셋째, '][i] + f.ko + '.')],
+      html: p => brand('what it does') + '<div class="frame" id="' + p + 'f" style="width:' + VW + 'px;height:' + FH + 'px">' + winBar('github.com/' + n) + '<div class="vp"><div class="pw" id="' + p + 'w" style="width:' + VW + 'px">' +
+        '<img src="' + esc(page.src) + '" style="width:' + VW + 'px;display:block">' +
+        boxes.map((b, i) => b ? '<div class="hl" id="' + p + 'h' + i + '" style="left:' + Math.round(b.x * k - 8) + 'px;top:' + Math.round(b.y * k - 6) + 'px;width:' + Math.round(b.w * k + 16) + 'px;height:' + Math.round(Math.min(b.h, 300) * k + 12) + 'px"></div>' : '').join('') + '</div></div></div>' +
+        feats.map((f, i) => '<div class="stk tag' + (f.ko.length > 12 ? ' long' : '') + '" id="' + p + 's' + i + '" style="transform:rotate(' + [-5, 4, -3][i] + 'deg);background:' + ['#ffc83d', '#3fb950', '#f78166'][i] + '">' + (i + 1) + '. ' + esc(cut(f.ko, 22)) + '</div>').join(''),
+      anim: (p, S, D, M) => ["tl.set('#" + p + "w',{x:0,y:" + (-top0).toFixed(0) + ",scale:1,transformOrigin:'0 0'}," + f2(S) + ');',
+        "tl.from('#" + p + "f',{opacity:0,y:120,duration:.5,ease:'power3.out'}," + f2(S + 0.05) + ');',
+        "tl.to('#" + p + "w',{y:" + (-top0 - VH * 0.25).toFixed(0) + ",duration:" + f2(Math.max(0.8, (M[1] ?? S + 2) - S - 0.6)) + ",ease:'sine.inOut'}," + f2(S + 0.5) + ');',
+        ...feats.map((_, i) => { const at = M[i + 1] ?? S + 2 + i * 2, fo = focus(boxes[i], i), nx = M[i + 2] ?? S + D;
+          return "tl.to('#" + p + "w',{x:" + fo.x.toFixed(0) + ',y:' + fo.y.toFixed(0) + ',scale:' + fo.s.toFixed(2) + ",duration:.55,ease:'power3.inOut'}," + f2(at - 0.25) + ');' +
+            (boxes[i] ? "tl.fromTo('#" + p + "h" + i + "',{opacity:0,scale:1.3},{opacity:1,scale:1,duration:.3,ease:'back.out(2)'}," + f2(at + 0.25) + ");tl.to('#" + p + "h" + i + "',{opacity:0,duration:.2}," + f2(nx - 0.3) + ');' : '') +
+            A.sticker('#' + p + 's' + i, at + 0.2, Math.max(0.8, nx - at - 0.5), [-5, 4, -3][i]); })].join('\n') });
+  } else {
+    const media = info.media;
+    sc.push({ mood: 'happy', bot: 'corner', say: [desc ? 'In one line: ' + desc + '.' : 'Here\'s what it looks like.'],
+      html: (p, F2, t) => brand('what it is') + '<div class="frame" id="' + p + 'f">' + winBar('github.com/' + n) + '<div class="vp">' + (media ? mediaTag(media, p + 'im', t && { S: t.S + 0.3, D: t.D - 0.3 }, 'class="shot"') : '') + '</div></div>',
+      anim: (p, S, D) => ["tl.from('#" + p + "f',{opacity:0,y:140,duration:.6,ease:'power3.out'}," + f2(S + 0.05) + ');', media?.kind === 'image' ? "tl.fromTo('#" + p + "im',{scale:1.02},{scale:1.18,duration:" + f2(D - 0.4) + ",ease:'none'}," + f2(S + 0.3) + ');' : ''].join('\n') });
   }
-  // 6. try it: install + usage code
+  // 4. DEMO (README GIF/MP4/image) when available and different from the hero page
+  if (info.demo && page) {
+    sc.push({ mood: 'wow', bot: 'corner', say: [G.demo || 'And here it is in action.'], ko0: [G.demo ? null : '실제로 돌아가는 화면이에요.'],
+      html: (p, F2, t) => brand('demo') + '<div class="frame" id="' + p + 'f" style="width:' + VW + 'px;height:' + (info.demo.kind === 'video' ? FH : Math.round(FH * 0.72)) + 'px">' + winBar(n.split('/')[1] + ' demo') + '<div class="vp">' + mediaTag(info.demo, p + 'im', t && { S: t.S + 0.15, D: t.D - 0.15 }, 'class="shot"') + '</div></div><div class="stk tag" id="' + p + 's" style="transform:rotate(-6deg);background:#f78166">실제 화면</div>',
+      anim: (p, S, D) => ["tl.from('#" + p + "f',{opacity:0,scale:.85,duration:.45,ease:'back.out(1.5)'}," + f2(S + 0.05) + ');', info.demo.kind === 'image' ? "tl.fromTo('#" + p + "im',{scale:1},{scale:1.2,x:-30,duration:" + f2(D) + ",ease:'none'}," + f2(S) + ');' : '', A.sticker('#' + p + 's', S + 0.4, 0, -6)].join('\n') });
+  }
+  // 5. WHEN to use it
+  const items = G.when ? [{ en: G.when.en, ko: G.when.ko }] : uses.map(u => ({ en: u.en, ko: u.ko }));
+  if (items.length) {
+    sc.push({ mood: 'happy', bot: 'corner', say: [G.when ? G.when.en : 'Reach for it when you want to ' + uses.map(u => u.en).join(', or ') + '.'],
+      ko0: [G.when ? G.when.ko : '이럴 때 써보세요. ' + uses.map(u => u.ko).join(', 또는 ') + '.'],
+      html: p => brand('when to use it') + '<div class="h">이럴 때 쓰세요</div><div class="uses">' + items.map((it, i) => '<div class="use" id="' + p + 'u' + i + '"><div class="n">' + (i + 1) + '</div><div class="t">' + esc(cut(it.ko, 40)) + '</div></div>').join('') + '</div>',
+      anim: (p, S, D) => ["tl.from('#" + p + " .h',{opacity:0,y:40,duration:.35}," + f2(S + 0.05) + ');', "tl.from('#" + p + " .use',{opacity:0,x:140,duration:.45,stagger:.5,ease:'power3.out'}," + f2(S + 0.3) + ');'].join('\n') });
+  }
+  // 6. TRY IT: typed install + usage snippet, label sticker
   if (info.install || info.usage) {
     const code = info.usage ? info.usage.code.split('\n').slice(0, 9).join('\n') : '';
     sc.push({ mood: 'happy', bot: 'corner',
-      say: [info.install ? `Getting started takes one command.` : `Using it looks like this.`, ...(info.install && info.usage ? ['And using it looks like this.'] : [])],
-      html: p => `${brand('try it')}${info.install ? `<div class="code" id="${p}t">${winBar('terminal')}<pre class="term"><span style="color:#8b949e">$ </span><span id="${p}c">${typed(info.install)}</span></pre></div>` : ''}
-        ${info.usage ? `<div class="code" id="${p}u">${winBar(info.usage.lang)}<pre id="${p}uc">${typed(code)}</pre></div>` : ''}`,
-      anim: (p, S, D, M) => [info.install ? `tl.from('#${p}t',{opacity:0,y:60,duration:.45},${f2(S + 0.05)});` + A.type(`#${p}c`, info.install, S + 0.35, Math.min(2, Math.max(0.8, info.install.length / 25))) : '',
-        info.usage ? `tl.from('#${p}u',{opacity:0,y:60,duration:.45},${f2((M[1] ?? S + 0.2) - 0.1)});` + A.type(`#${p}uc`, code, (M[1] ?? S + 0.2) + 0.3, Math.min(3.2, Math.max(1.2, code.length / 70))) : ''].join('\n') });
+      say: [info.install ? 'Getting started takes one command.' : 'Using it looks like this.', ...(info.install && info.usage ? ['And using it looks like this.'] : [])],
+      ko0: [info.install ? '설치는 명령어 한 줄이면 끝.' : '쓰는 법은 이 정도예요.', ...(info.install && info.usage ? ['쓰는 법은 이 정도예요.'] : [])],
+      html: p => brand('try it') + (info.install ? '<div class="code" id="' + p + 't">' + winBar('terminal') + '<pre class="term"><span style="color:#8b949e">$ </span><span id="' + p + 'c">' + typed(info.install) + '</span><span class="cur" id="' + p + 'k">▋</span></pre></div><div class="stk tag" id="' + p + 's" style="transform:rotate(-4deg)">설치 1줄</div>' : '') +
+        (info.usage ? '<div class="code" id="' + p + 'u">' + winBar(info.usage.lang) + '<pre id="' + p + 'uc">' + typed(code) + '</pre></div>' : ''),
+      anim: (p, S, D, M) => [info.install ? "tl.from('#" + p + "t',{opacity:0,y:60,duration:.4}," + f2(S + 0.05) + ');' + A.type('#' + p + 'c', info.install, S + 0.3, Math.min(2, Math.max(0.8, info.install.length / 25))) + A.sticker('#' + p + 's', S + 0.6, 0, -4) + "tl.to('#" + p + "k',{opacity:0,duration:.01,repeat:" + Math.max(1, Math.floor(D / 0.5)) + ",yoyo:true,repeatDelay:.45}," + f2(S) + ');' : '',
+        info.usage ? "tl.from('#" + p + "u',{opacity:0,y:60,duration:.4}," + f2((M[1] ?? S + 0.2) - 0.1) + ');' + A.type('#' + p + 'uc', code, (M[1] ?? S + 0.2) + 0.25, Math.min(3, Math.max(1.2, code.length / 70))) : ''].join('\n') });
   }
-  // 7. reality check
+  // 7. REALITY CHECK: big numbers
   const D = r.deep || {}, iss = (D.oi || 0) + (D.ci || 0), issP = iss ? Math.round((D.ci / iss) * 100) : null;
   sc.push({ mood: MOOD[v] || 'think', bot: 'corner',
-    say: [`So, do people actually use it?`, realityLine(r)],
-    html: p => `${brand('reality check')}<div class="h">진짜 쓰일까?</div><div class="stats">
-      <div class="stat"><div class="v" id="${p}s1">${num(D.c90)}</div><div class="k">커밋 (3개월)</div></div>
-      <div class="stat"><div class="v" id="${p}s2">${num(D.ppl)}</div><div class="k">참여자</div></div>
-      ${r.dl ? `<div class="stat"><div class="v" id="${p}s3">${num(r.dl.m)}</div><div class="k">월 다운로드</div></div>` : issP != null ? `<div class="stat"><div class="v" id="${p}s3">${num(issP, '', '%')}</div><div class="k">이슈 해결률</div></div>` : ''}</div>
-      <div class="verdict" id="${p}v" style="color:${col};border-color:${col}">${esc(VKO[v] || '')}</div>`,
-    anim: (p, S, D2, M) => [`tl.from('#${p} .h',{opacity:0,y:40,duration:.4},${f2(S + 0.05)});`, A.up(`#${p} .stat`, (M[1] ?? S + 1) - 0.2, 0.15),
-      A.count(`#${p}s1`, D.c90, (M[1] ?? S + 1), 1.2), A.count(`#${p}s2`, D.ppl, (M[1] ?? S + 1) + 0.1, 1.2), r.dl ? A.count(`#${p}s3`, r.dl.m, (M[1] ?? S + 1) + 0.2, 1.2) : issP != null ? A.count(`#${p}s3`, issP, (M[1] ?? S + 1) + 0.2, 1.2) : '',
-      A.stamp(`#${p}v`, S + D2 - 1.6)].join('\n') });
-  sc.push(outroScene(site, F, `Full details and more repos are on Star Board, link below. See you tomorrow!`));
+    say: ['So, do people actually use it?', realityLine(r)], ko0: ['그래서, 진짜 쓰일까요?', null],
+    html: p => brand('reality check') + '<div class="h">진짜 쓰일까?</div><div class="stats">' +
+      '<div class="stat"><div class="v" id="' + p + 's1">' + num(D.c90) + '</div><div class="k">커밋 (3개월)</div></div>' +
+      '<div class="stat"><div class="v" id="' + p + 's2">' + num(D.ppl) + '</div><div class="k">참여자</div></div>' +
+      (r.dl ? '<div class="stat"><div class="v" id="' + p + 's3">' + num(r.dl.m) + '</div><div class="k">월 다운로드</div></div>' : issP != null ? '<div class="stat"><div class="v" id="' + p + 's3">' + num(issP, '', '%') + '</div><div class="k">이슈 해결률</div></div>' : '') + '</div>' +
+      '<div class="verdict" id="' + p + 'v" style="color:' + col + ';border-color:' + col + '">' + esc(VKO[v] || '') + '</div>',
+    anim: (p, S, D2, M) => ["tl.from('#" + p + " .h',{opacity:0,y:40,duration:.35}," + f2(S + 0.05) + ');', A.up('#' + p + ' .stat', (M[1] ?? S + 1) - 0.2, 0.12),
+      A.count('#' + p + 's1', D.c90, (M[1] ?? S + 1), 1.0), A.count('#' + p + 's2', D.ppl, (M[1] ?? S + 1) + 0.1, 1.0), r.dl ? A.count('#' + p + 's3', r.dl.m, (M[1] ?? S + 1) + 0.2, 1.0) : issP != null ? A.count('#' + p + 's3', issP, (M[1] ?? S + 1) + 0.2, 1.0) : '',
+      A.stamp('#' + p + 'v', S + D2 - 1.4)].join('\n') });
+  sc.push({ ...outroScene(site, F, 'More repos like this on Star Board. Link below!'), ko0: ['이런 저장소, Star Board에 더 있어요. 링크는 아래!'] });
   return sc;
 }
 function outroScene(site, F, line) {
@@ -366,22 +413,24 @@ function buildSpecs(data, types, site, infos = {}) {
 // ---------------- composition ----------------
 function compose(spec, timing, opts = {}) {
   const { F } = spec, total = timing.total, gsapSrc = opts.gsapSrc || 'assets/gsap.min.js';
-  const parts = [], anims = [], audios = [], caps = [];
+  const parts = [], anims = [], audios = [], caps = [], IMG = opts.starbyImg;
   spec.scenes.forEach((s, i) => {
     const t = timing.scenes[i], p = `s${i}`;
-    parts.push(`<div id="${p}" class="clip scene" data-start="${f2(t.S)}" data-duration="${f2(t.D)}" data-track-index="1">${s.html(p, F, t)}</div>`);
-    anims.push(A.enter(p, t.S), s.anim(p, t.S, t.D, t.M, F), i < spec.scenes.length - 1 ? A.exit(p, t.S, t.D) : '');
+    parts.push(`<div id="${p}" class="clip scene${s.first ? ' hook' : ''}" data-start="${f2(t.S)}" data-duration="${f2(t.D)}" data-track-index="1">${s.html(p, F, t)}</div>`);
+    anims.push(s.first ? '' : A.enter(p, t.S), s.anim(p, t.S, t.D, t.M, F), i < spec.scenes.length - 1 ? A.exit(p, t.S, t.D) : '');
     // Starby: position, mood
     const center = F.vert ? { x: 350, y: -30, s: 1.5 } : { x: 30, y: -40, s: 1.4 };
     const pos = s.bot === 'center' ? center : s.bot === 'hide' ? { x: -500, y: 0, s: 1 } : { x: 0, y: 0, s: 1 };
     anims.push(`tl.to('#bot',{x:${pos.x},y:${pos.y},scale:${pos.s},duration:.6,ease:'back.out(1.4)'},${f2(t.S)});`);
     const mood = { happy: [-4, 0, 0, 1], wow: [-9, 0, 0, 1.15], think: [-2, -10, 6, 1], skeptic: [-8, -14, 10, 0.95] }[s.mood || 'happy'];
-    anims.push(`tl.to('#sbbrowL',{y:${mood[0]},rotate:${mood[1]},duration:.3},${f2(t.S + 0.1)});tl.to('#sbbrowR',{y:${s.mood === 'skeptic' ? 2 : mood[0]},rotate:${mood[2]},duration:.3},${f2(t.S + 0.1)});tl.to('#sbeyes',{scale:${mood[3]},duration:.3},${f2(t.S + 0.1)});`);
-    anims.push(`tl.fromTo('#sbbody',{rotate:0},{rotate:${i % 2 ? 8 : -8},duration:.25,yoyo:true,repeat:1,ease:'sine.inOut'},${f2(t.S)});`);
+    if (IMG) anims.push(`tl.to('#sbbody',{scale:${s.mood === 'wow' ? 1.07 : 1},rotation:${{ think: -5, skeptic: 6 }[s.mood] || 0},transformOrigin:'50% 95%',duration:.35,ease:'back.out(1.6)'},${f2(t.S + 0.1)});`);
+    else anims.push(`tl.to('#sbbrowL',{y:${mood[0]},rotation:${mood[1]},svgOrigin:'81 79',duration:.3},${f2(t.S + 0.1)});tl.to('#sbbrowR',{y:${s.mood === 'skeptic' ? 2 : mood[0]},rotation:${mood[2]},svgOrigin:'119 79',duration:.3},${f2(t.S + 0.1)});tl.to('#sbeyes',{scale:${mood[3]},svgOrigin:'100 100',duration:.3},${f2(t.S + 0.1)});`);
+    if (IMG) anims.push(`tl.fromTo('#botinner',{y:0},{y:-30,duration:.17,yoyo:true,repeat:1,ease:'power2.out'},${f2(t.S)});`);
+    else anims.push(`tl.fromTo('#sbbody',{rotation:0,svgOrigin:'100 110'},{rotation:${i % 2 ? 8 : -8},svgOrigin:'100 110',duration:.25,yoyo:true,repeat:1,ease:'sine.inOut'},${f2(t.S)});`);
     t.sents.forEach((x, j) => {
       audios.push(`<audio data-start="${f2(x.start)}" data-duration="${f2(x.dur)}" data-track-index="${6 + (j % 2)}" data-volume="1" src="${esc(x.audio)}"></audio>`);
       const flaps = Math.max(1, Math.floor(x.dur / 0.2));
-      anims.push(`tl.to('#sbmouth',{attr:{ry:11},duration:.1,yoyo:true,repeat:${flaps * 2 - 1},ease:'sine.inOut'},${f2(x.start)});`);
+      anims.push(IMG ? `tl.to('#sbtalk',{scaleY:1.035,scaleX:.985,duration:.1,yoyo:true,repeat:${flaps * 2 - 1},ease:'sine.inOut'},${f2(x.start)});` : `tl.to('#sbmouth',{attr:{ry:11},duration:.1,yoyo:true,repeat:${flaps * 2 - 1},ease:'sine.inOut'},${f2(x.start)});`);
       const cap = noUrl(x.ko || x.text), max = F.vert ? 36 : 56;
       const pieces = []; let buf = '';
       for (const seg of cap.split(/(?<=[.!?。,，])\s+/)) { if ((buf + ' ' + seg).trim().length > max && buf) { pieces.push(buf.trim()); buf = seg; } else buf = (buf + ' ' + seg).trim(); }
@@ -397,8 +446,8 @@ function compose(spec, timing, opts = {}) {
     });
   });
   // blink every ~3.2s, idle bob
-  for (let b = 1.6; b < total - 0.3; b += 3.2 + ((b * 7) % 1)) anims.push(`tl.to('#sbeyes',{scaleY:.1,duration:.06,yoyo:true,repeat:1},${f2(b)});`);
-  anims.push(`tl.to('#botinner',{y:-14,duration:1.1,yoyo:true,repeat:${Math.max(1, Math.floor(total / 1.1))},ease:'sine.inOut'},0);`);
+  for (let b = 1.6; b < total - 0.3; b += 3.2 + ((b * 7) % 1)) anims.push(IMG ? `tl.to('#sbbody .lid',{scaleY:1,duration:.07,yoyo:true,repeat:1},${f2(b)});` : `tl.to('#sbeyes',{scaleY:.1,svgOrigin:'100 100',duration:.06,yoyo:true,repeat:1},${f2(b)});`);
+  anims.push(`tl.to(${IMG ? "'#sbtalk'" : "'#botinner'"},{y:-14,duration:1.1,yoyo:true,repeat:${Math.max(1, Math.floor(total / 1.1))},ease:'sine.inOut'},0);`);
   const bgCols = ['#1f6feb', '#a371f7', '#f78166', '#ffc83d'];
   const blobs = bgCols.map((c, i) => `<div class="blob" id="b${i}" style="background:radial-gradient(circle,${c} 0%,${c}55 35%,transparent 70%);width:${F.W * 0.6}px;height:${F.W * 0.6}px;left:${[10, 55, 20, 60][i]}%;top:${[5, 15, 60, 55][i]}%"></div>`).join('');
   const bgAnim = bgCols.map((_, i) => `tl.to('#b${i}',{x:${[260, -220, 180, -260][i]},y:${[180, 240, -200, -160][i]},scale:${[1.25, 0.85, 1.2, 0.9][i]},duration:${f2(total / 2)},ease:'sine.inOut',yoyo:true,repeat:1},0);`).join('\n');
@@ -406,7 +455,7 @@ function compose(spec, timing, opts = {}) {
 <div id="root" data-composition-id="root" data-start="0" data-width="${F.W}" data-height="${F.H}">
   <div id="bgwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="0" style="position:absolute;inset:0"><div class="bg">${blobs}</div><div class="grid"></div></div>
   ${parts.join('\n  ')}
-  <div id="botwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="4" style="position:absolute;inset:0;pointer-events:none"><div id="bot"><div id="botinner" style="width:100%;height:100%">${STARBY}</div></div></div>
+  <div id="botwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="4" style="position:absolute;inset:0;pointer-events:none"><div id="bot"><div id="botinner" style="width:100%;height:100%">${IMG ? starbyImgHtml(IMG) : STARBY}</div></div></div>
   ${caps.join('\n  ')}
   <div id="progwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="10" style="position:absolute;inset:0;pointer-events:none"><div class="prog" id="prog"></div></div>
   ${audios.join('\n  ')}
@@ -432,8 +481,52 @@ function estimateTiming(spec) {
   return { total: cur, scenes };
 }
 const fixKo = s => String(s).replace(/별(을|를)/g, '스타를').replace(/별(이|가)/g, '스타가').replace(/별(은|는)/g, '스타는').replace(/별(의|에)/g, '스타$1').replace(/별/g, '스타').replace(/커밋과\s/g, '커밋, ');
+// runs inside the GitHub page: README top + box of the smallest element containing each feature title
+function featGeo(titles) {
+  const art = document.querySelector('article.markdown-body'), sy = window.scrollY;
+  const top = art ? art.getBoundingClientRect().top + sy : 0;
+  const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9가-힣]+/g, ' ').trim();
+  const els = art ? [...art.querySelectorAll('li,p,h1,h2,h3,h4,td,dt')] : [];
+  const boxes = titles.map(t => { const k = norm(t).slice(0, 40); if (k.length < 4) return null;
+    let best = null; for (const e of els) { const tx = norm(e.textContent); if (!tx.includes(k) || e.closest('nav,[role=navigation]')) continue; const sc = (tx.startsWith(k) ? 0 : 1e5) + (tx.length <= k.length + 8 ? 5e4 : 0) + tx.length; if (!best || sc < best.l) best = { e, l: sc }; }
+    if (!best) return null; const b = best.e.getBoundingClientRect(); return { x: b.left, y: b.top + sy, w: b.width, h: Math.min(b.height, 420) }; });
+  return { top, boxes, H: document.documentElement.scrollHeight };
+}
+// optional: Gemini writes the hook/one-liner/features/when + natural Korean (GEMINI_API_KEY). Falls back to templates.
+async function gemini(prompt) {
+  const key = ENV.GEMINI_API_KEY; if (!key) return null;
+  const model = ENV.GEMINI_MODEL || 'gemini-flash-latest';
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', signal: AbortSignal.timeout(45000),
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.5 } }) });
+    if (!r.ok) { console.log(`  gemini http ${r.status}`); return null; }
+    const j = await r.json(); return JSON.parse(j.candidates?.[0]?.content?.parts?.map(x => x.text).join('') || 'null');
+  } catch (e) { console.log(`  gemini failed: ${String(e.message).slice(0, 120)}`); return null; }
+}
+async function scriptFor(r, info, gain) {
+  if (!ENV.GEMINI_API_KEY) return null;
+  const o = await gemini(`You write narration for a 40-second YouTube Short about a GitHub repo, voiced by a friendly host. English narration, Korean on-screen text.
+Facts (use ONLY these, never invent features, numbers or claims):
+repo: ${r.n}
+description: ${r.d || ''}
+topics: ${(r.t || []).join(', ')}
+README intro: ${info.para || ''}
+README features: ${(info.feats || []).map(f => '- ' + f.t + (f.d ? ': ' + f.d : '')).join('\n')}
+stars gained in the last day: ${gain}
+Return JSON: {"hook": "first line, max 14 words, lead with the problem it solves or the concrete outcome, no greeting, no repo name", "what": "what it is in plain words, max 16 words, no marketing", "features": [{"en": "one short spoken sentence about one README feature, max 11 words", "ko": "2-4 word Korean sticker label", "match": "exact feature title copied from README features"}] (2-3 items, only from README features), "when": {"en": "Use it when ..., max 14 words", "ko": "Korean, max 22 chars, ends with ~할 때"}}`);
+  if (!o || typeof o !== 'object') return null;
+  const ok = (s, n) => typeof s === 'string' && s.trim() && s.length <= n;
+  return { hook: ok(o.hook, 110) ? o.hook.trim() : null, what: ok(o.what, 130) ? o.what.trim().replace(/[.]$/, '') : null,
+    features: Array.isArray(o.features) ? o.features.filter(f => ok(f?.en, 90) && ok(f?.ko, 24)).slice(0, 3) : [],
+    when: o.when && ok(o.when.en, 110) && ok(o.when.ko, 30) ? o.when : null };
+}
 async function translateKo(texts) {
   if (!texts.length) return [];
+  if (ENV.GEMINI_API_KEY) {
+    const o = await gemini(`Translate these English narration lines of a developer YouTube Short into natural, casual Korean subtitles (해요체). Short and spoken, not literal. Keep repo names, numbers and code as-is. "stars" = "스타". Return a JSON array of strings with exactly ${texts.length} items.\n` + JSON.stringify(texts));
+    if (Array.isArray(o) && o.length === texts.length && o.every(s => typeof s === 'string')) return o.map(fixKo);
+  }
   try {
     const r = await tfetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=' + encodeURIComponent(texts.map(t => t.replace(/\n/g, ' ')).join('\n')));
     const j = await r.json(); const parts = j[0].map(x => x[0]).join('').split('\n').map(s => s.trim());
@@ -459,13 +552,17 @@ async function main() {
   const R = data.repos;
   let browser = null;
   try { const { chromium } = await import('playwright'); browser = await chromium.launch(); } catch (e) { console.log('playwright unavailable: ' + e.message); }
-  const shoot = async (url, file, w = 1280, h = 2200) => {
-    if (!browser) return false;
+  // screenshot of the repo page + where the README and each feature sit on it (for zoom-ins)
+  const shoot = async (url, file, titles = [], w = 1280) => {
+    if (!browser) return null;
     const pg = await browser.newPage({ viewport: { width: w, height: 900 }, deviceScaleFactor: 1 });
     try { await pg.goto(url, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {}); await pg.waitForTimeout(1200);
       await pg.evaluate(() => document.querySelectorAll('[class*=cookie],[id*=cookie],.js-header-wrapper ~ .flash').forEach(e => e.remove()));
-      await pg.screenshot({ path: file, clip: { x: 0, y: 0, width: w, height: h }, fullPage: true }); return true;
-    } catch { return false; } finally { await pg.close(); }
+      const geo = await pg.evaluate(featGeo, titles).catch(() => ({ top: 0, boxes: [], H: 2200 }));
+      const h = Math.round(Math.min(geo.H, 6000, Math.max(2200, geo.top + 1800, ...geo.boxes.filter(Boolean).map(b => b.y + b.h + 600))));
+      await pg.screenshot({ path: file, clip: { x: 0, y: 0, width: w, height: h }, fullPage: true });
+      return { w, h, top: geo.top, boxes: geo.boxes };
+    } catch { return null; } finally { await pg.close(); }
   };
 
   // README + media for spotlight candidates
@@ -477,7 +574,9 @@ async function main() {
         const raw = await (await tfetch(`https://raw.githubusercontent.com/${n}/HEAD/README.md`)).text();
         const info = extractReadme(raw, n);
         const ko = await translateKo(info.feats.map(f => f.t));
-        infos[n] = { ...info, featsKo: ko };
+        const script = await scriptFor(R[n], info, (data.trending['daily:all'].find(x => x.n === n) || {}).g || 0);
+        infos[n] = { ...info, featsKo: ko, script };
+        if (script) console.log(`  gemini script ok: ${n}`);
         console.log(`README ${n}: feats ${info.feats.length}, install ${info.install ? 'yes' : 'no'}, usage ${info.usage ? 'yes' : 'no'}, media ${info.mediaUrls.length}`);
       } catch (e) { console.log(`README failed ${n}: ${e.message}`); infos[n] = {}; }
     }
@@ -496,7 +595,9 @@ async function main() {
     if (spec0.repo) {
       const info = infos[spec0.repo] = { ...(infos[spec0.repo] || {}), avatar: avs[spec0.repo] };
       // page screenshot of the repo on GitHub (shows README as people see it)
-      if (await shoot(`https://github.com/${spec0.repo}`, path.join(assets, 'page.png'))) info.media = { kind: 'page', src: 'assets/page.png' };
+      const titles = (info.script?.features?.length ? info.script.features.map(f => f.match || f.en) : (info.feats || []).map(f => f.t));
+      const geo = await shoot(`https://github.com/${spec0.repo}`, path.join(assets, 'page.png'), titles);
+      if (geo) { info.media = { kind: 'page', src: 'assets/page.png', ...geo }; console.log(`  page: ${geo.h}px, readme@${Math.round(geo.top)}, features found ${geo.boxes.filter(Boolean).length}/${titles.length}`); }
       // README demo: GIF/MP4 -> video clip, image -> zoom
       const cands = (await (async () => { try { const raw = await (await tfetch(`https://raw.githubusercontent.com/${spec0.repo}/HEAD/README.md`)).text(); return extractReadme(raw, spec0.repo).mediaUrls; } catch { return []; } })());
       let demo = null;
@@ -521,8 +622,8 @@ async function main() {
 
     console.log(`prep: ${spec.id} assets ready, translating + tts`);
     // Korean subtitles
-    const allSay = spec.scenes.flatMap(s => s.say), allKo = await translateKo(allSay);
-    let q = 0; for (const s of spec.scenes) s.ko = s.say.map(() => allKo[q++]);
+    const need = spec.scenes.flatMap(s => s.say.filter((_, j) => !s.ko0?.[j])), tr = await translateKo(need);
+    let q = 0; for (const s of spec.scenes) s.ko = s.say.map((_, j) => s.ko0?.[j] || tr[q++]);
     // narration
     let cur = 0; const tsc = [];
     for (const [i, s] of spec.scenes.entries()) {
@@ -540,7 +641,9 @@ async function main() {
       const D = t - S + TAIL; tsc.push({ S, D, M, sents }); cur = S + D;
     }
     const timing = { total: cur, scenes: tsc };
-    await fs.writeFile(path.join(dir, 'index.html'), compose(spec, timing));
+    let starbyImg = null;
+    try { await fs.copyFile(path.join(path.dirname(path.resolve(process.argv[1])), 'starby.png'), path.join(assets, 'starby.png')); starbyImg = 'assets/starby.png'; } catch {}
+    await fs.writeFile(path.join(dir, 'index.html'), compose(spec, timing, { starbyImg }));
     const outFile = path.join(OUT, `${spec.id}.mp4`);
     console.log(`render: ${spec.id} (${timing.total.toFixed(1)}s, ${spec.scenes.length} scenes)`);
     const t0 = Date.now();

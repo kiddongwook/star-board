@@ -1,7 +1,10 @@
 name: Make Videos
 
-# 매일 수집이 끝나면 쇼츠(세로)를 만들고, 월요일(KST)에는 주간 리포트(가로)도 만든다.
-# 결과 영상은 그날의 board-YYYY-MM-DD 릴리스에 첨부된다 (업로드는 직접).
+# 매일 수집이 끝나면 HyperFrames로 영상을 만든다.
+#   daily     : 오늘 급상승 Top 5 쇼츠
+#   spotlight : 오늘 급상승 저장소 3개 각각의 특징 소개 쇼츠 (README 기반)
+#   weekly    : 월요일(KST)에만 주간 리포트 (가로)
+# 결과는 그날의 board-YYYY-MM-DD 릴리스에 첨부된다 (유튜브 업로드는 직접).
 on:
   workflow_run:
     workflows: ["Collect & Deploy Star Board"]
@@ -9,8 +12,8 @@ on:
   workflow_dispatch:
     inputs:
       type:
-        description: "shorts | weekly | both"
-        default: "both"
+        description: "daily,spotlight,weekly 중 쉼표로 (all = 전부)"
+        default: "daily,spotlight"
 
 permissions:
   contents: write
@@ -23,7 +26,7 @@ jobs:
   video:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,37 +34,52 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install ffmpeg, Korean fonts, TTS, Playwright
+      - name: Install ffmpeg, Korean fonts, TTS, HyperFrames
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y ffmpeg fonts-noto-cjk
+          sudo apt-get install -y ffmpeg fonts-noto-cjk fonts-noto-cjk-extra
           pip install edge-tts
-          npm install --no-save playwright@1
-          npx playwright install --with-deps chromium
+          npm install --no-save hyperframes gsap playwright@1
+          npx hyperframes doctor || true
 
       - name: Decide video types
         id: t
         run: |
           T="${{ github.event.inputs.type }}"
           if [ -z "$T" ]; then
-            T=shorts
-            if [ "$(TZ=Asia/Seoul date +%u)" = "1" ]; then T=both; fi
+            T="daily,spotlight"
+            if [ "$(TZ=Asia/Seoul date +%u)" = "1" ]; then T="daily,spotlight,weekly"; fi
           fi
           echo "type=$T" >> "$GITHUB_OUTPUT"
 
-      - name: Make videos
-        run: node video/make-video.mjs --type ${{ steps.t.outputs.type }} --out out
+      - name: Make videos (HyperFrames)
+        id: hf
+        continue-on-error: true
+        env:
+          HYPERFRAMES_NO_UPDATE_CHECK: "1"
+          HYPERFRAMES_SKIP_SKILLS: "1"
+        run: node video/hf-video.mjs --type "${{ steps.t.outputs.type }}" --out out
+
+      - name: Fallback (static slideshow) if HyperFrames failed
+        if: steps.hf.outcome == 'failure'
+        run: |
+          npx playwright install --with-deps chromium
+          node video/make-video.mjs --type shorts --out out
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: videos
-          path: out/
+          path: |
+            out/*.mp4
+            out/*.txt
+            out/projects/**/index.html
           retention-days: 14
 
       - name: Attach to today's release

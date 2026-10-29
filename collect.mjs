@@ -588,6 +588,7 @@ function apiRepo(r, gen) {
     verdict: { key: sc.v, label: sc.vt }, activity: sc.act, isNew: !!sc.isNew,
     starConsistency: sc.cons ? { score: sc.cons.score, lowSignals: sc.cons.low, growthPercentile: sc.cons.growthPct, comparedWith: sc.cons.peers, note: 'indirect signal: engagement ratios vs. similar-size repos, not an account-level check' } : null,
     reasons: (r.why || []).map(([s, t]) => ({ sign: s === '+' ? 'positive' : s === '-' ? 'negative' : 'info', text: t })),
+    reasonsEn: (r.wc || []).map(([s, c, p]) => ({ sign: s === '+' ? 'positive' : s === '-' ? 'negative' : 'info', text: WHY_EN[c] ? WHY_EN[c](p || {}) : c })),
     deep: D ? { commits90d: D.c90, commits365d: D.c365, contributorsApprox: D.ppl, openIssues: D.oi, closedIssues: D.ci, mergedPRs: D.mp, watchers: D.w,
       releases: D.rel, latestRelease: D.lr, latestTag: D.tag, stableRelease: !!D.stable,
       stargazerSample: D.sgN ? { sampled: D.sgN, suspicious: D.sgSusp, lowActivity: D.sgLow, max24h: D.sgBurst } : null } : null,

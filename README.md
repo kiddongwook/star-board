@@ -46,6 +46,41 @@ Everything is published as plain files, regenerated daily:
 | `api/repo/{owner}__{repo}.json` | Full evidence for one repository |
 | `api/trending.json`, `api/top.json`, `api/rookies.json`, `api/category/*.json` | Lists per tab |
 
+## Use it from your AI agent
+
+### MCP server
+
+No install, no API key. Add this to Claude Desktop, Cursor, VS Code or any MCP client:
+
+```json
+{
+  "mcpServers": {
+    "github-star-board": { "command": "npx", "args": ["-y", "github:kiddongwook/star-board"] }
+  }
+}
+```
+
+Claude Code: `claude mcp add github-star-board -- npx -y github:kiddongwook/star-board`
+
+| Tool | What it does |
+|-|-|
+| `get_repo` | Verdict, scores and evidence for one repository |
+| `search_repos` | Filter by language, license kind, verdict, minimum utility or stars |
+| `trending` | GitHub Trending by period and language, with verdicts |
+| `category` | Categories, or the repositories in one (mcp, llm, rag, coding-agent, ...) |
+| `compare` | 2-6 repositories side by side |
+| `summary` | Today's digest |
+
+### Agent skill
+
+For Claude Code, Codex, Cursor and other agents that support skills:
+
+```bash
+npx skills add kiddongwook/star-board
+```
+
+The skill (`skills/github-star-board/SKILL.md`) tells your agent to check the board's files before searching GitHub.
+
 ## Badge for your README
 
 If your project is on the board, show its verdict:

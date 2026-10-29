@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// GitHub Star Board - HyperFrames video generator v4
+// GitHub Star Board - HyperFrames video generator v4 (English narration + English on-screen text; VIDEO_SUBS=ko for Korean captions)
 //   node video/hf-video.mjs --type daily,spotlight,weekly --out out
 // English narration (edge-tts) + Korean subtitles, a recurring host character (Starby),
 // and "show, don't tell" scenes: why it's trending, what it is, when to use it, real screens/code, real-usage numbers.
@@ -26,6 +26,9 @@ const ownerName = n => n.split('/')[0];
 const DAY = 864e5;
 const VCOL = { good: '#3fb950', mature: '#a371f7', gem: '#a371f7', hype: '#e3b341', bad: '#f85149', doc: '#39c5cf', dead: '#8b949e', archived: '#8b949e', early: '#8b949e', quick: '#8b949e', na: '#8b949e' };
 const VKO = { good: '실사용 확인', mature: '오래 쓰이는 중', gem: '숨은 실력파', hype: '스타만 많음', early: '아직 초기', bad: '참여 대비 스타 과다', doc: '학습 자료', dead: '업데이트 멈춤', archived: '보관됨', quick: '분석 대기', na: '데이터 부족' };
+const VEN = { good: 'ACTUALLY USED', mature: 'MATURE & USED', gem: 'HIDDEN GEM', hype: 'MOSTLY HYPE', early: 'TOO EARLY', bad: 'STARS > ENGAGEMENT', doc: 'LEARNING RESOURCE', dead: 'NOT MAINTAINED', archived: 'ARCHIVED', quick: 'PENDING', na: 'NO DATA' };
+const SUBS = ENV.VIDEO_SUBS || 'en'; // 'en' = English captions (default); 'ko' = Korean captions via translation
+const cap1 = s => String(s).charAt(0).toUpperCase() + String(s).slice(1);
 const MOOD = { good: 'happy', gem: 'wow', mature: 'happy', hype: 'skeptic', bad: 'skeptic', dead: 'skeptic', doc: 'think', early: 'think' };
 const BIG_ORG = /^(google|google-research|google-deepmind|microsoft|openai|anthropics|meta-llama|facebook|facebookresearch|jetbrains|cloudflare|vercel|deepseek-ai|alibaba|qwenlm|bytedance|apple|aws|awslabs|nvidia|huggingface|mozilla|github|stripe|shopify|netflix|uber|airbnb|apache|hashicorp|docker|kubernetes|tencent|baidu|xai-org|mistralai|ollama|langchain-ai|heygen-com|supabase|astral-sh|oven-sh|denoland|nodejs|rust-lang|golang)$/i;
 const TOPIC_USE = [
@@ -57,15 +60,15 @@ function realityLine(r) {
 }
 function whyFacts(r, gain, info) {
   const now = Date.now(), age = r.c ? (now - Date.parse(r.c)) / DAY : null, out = [];
-  if (age != null && age < 60) out.push([`It's brand new: only ${Math.max(1, Math.round(age))} days old.`, `${Math.round(age)}일 된 신규`, `나온 지 겨우 ${Math.max(1, Math.round(age))}일 된 새 프로젝트예요.`]);
-  else if (age != null && age < 180) out.push([`It's only ${Math.round(age / 30)} months old.`, `${Math.round(age / 30)}개월 차`, `나온 지 ${Math.round(age / 30)}개월밖에 안 됐어요.`]);
-  if (BIG_ORG.test(ownerName(r.n))) out.push([`It comes from ${ownerName(r.n)}.`, `${ownerName(r.n)} 제작`, `${ownerName(r.n)}에서 만들었어요.`]);
+  if (age != null && age < 60) out.push([`It's brand new: only ${Math.max(1, Math.round(age))} days old.`, `${Math.max(1, Math.round(age))} days old`, `나온 지 겨우 ${Math.max(1, Math.round(age))}일 된 새 프로젝트예요.`]);
+  else if (age != null && age < 180) out.push([`It's only ${Math.round(age / 30)} months old.`, `${Math.round(age / 30)} months old`, `나온 지 ${Math.round(age / 30)}개월밖에 안 됐어요.`]);
+  if (BIG_ORG.test(ownerName(r.n))) out.push([`It comes from ${ownerName(r.n)}.`, `by ${ownerName(r.n)}`, `${ownerName(r.n)}에서 만들었어요.`]);
   const D = r.deep; const rd = D?.lr ? (now - Date.parse(D.lr)) / DAY : null;
-  if (rd != null && rd <= 10) out.push([`A new release, ${D.tag || 'a new version'}, just shipped.`, `새 버전 ${D.tag || ''}`, `새 버전${D.tag ? ' ' + D.tag : ''}도 막 나왔고요.`]);
+  if (rd != null && rd <= 10) out.push([`A new release, ${D.tag || 'a new version'}, just shipped.`, `new ${D.tag || 'release'}`, `새 버전${D.tag ? ' ' + D.tag : ''}도 막 나왔고요.`]);
   const tp = (r.t || []).join(' ');
   const hot = [[/claude-code|coding-agent|ai-coding/, 'AI coding agents', 'AI 코딩 에이전트'], [/ai-agents?|agent/, 'AI agents', 'AI 에이전트'], [/mcp/, 'MCP tools', 'MCP'], [/\bllm/, 'large language models', 'LLM'], [/\brag\b/, 'RAG', 'RAG']].find(([re]) => re.test(tp));
-  if (hot) out.push([`And it rides the ${hot[1]} wave.`, `${hot[2]} 흐름`, `요즘 뜨는 ${hot[2]} 흐름도 탔어요.`]);
-  if (r.dl?.m >= 1e5) out.push([`It already gets ${say(r.dl.m)} downloads a month.`, `월 ${short(r.dl.m)} 다운로드`, `벌써 한 달 다운로드가 ${short(r.dl.m)}예요.`]);
+  if (hot) out.push([`And it rides the ${hot[1]} wave.`, `${hot[1]} wave`, `요즘 뜨는 ${hot[2]} 흐름도 탔어요.`]);
+  if (r.dl?.m >= 1e5) out.push([`It already gets ${say(r.dl.m)} downloads a month.`, `${short(r.dl.m)} downloads/mo`, `벌써 한 달 다운로드가 ${short(r.dl.m)}예요.`]);
   return out.slice(0, 2);
 }
 // description match first (what the repo says it is), topics only if the description says nothing; word-start boundaries ("ui" must not match "build")
@@ -264,7 +267,7 @@ function spotlightScenes(r, info, gain, site, F) {
     html: (p, F2, t) => '<div class="hero" id="' + p + 'hb">' + (prod ? mediaTag(prod, p + 'hbm', t, 'class="cov"' + (prod === page ? ' style="object-position:50% ' + Math.round(((page.top || 0) / (page.h || 4000)) * 100) + '%"' : '')) : '') + '</div><div class="heroshade"></div>' + brand("today's pick") +
       (prod ? '<div class="frame" id="' + p + 'pf" style="width:' + VW + 'px;height:' + pfH + 'px">' + winBar(prod === page ? 'github.com/' + n : n.split('/')[1]) + '<div class="vp">' +
         (prod === page ? '<img src="' + esc(page.src) + '" style="width:100%;display:block;transform:translateY(-' + Math.round((page.top || 0) * (VW / (page.w || 1280))) + 'px)">' : mediaTag(prod, p + 'pm', t, 'class="shot"')) + '</div></div>' : (avatar ? '<img class="avatar" src="' + esc(avatar) + '">' : '')) +
-      '<div class="stk big" id="' + p + 'g" style="transform:rotate(-4deg)">+' + esc(short(gain)) + ' ⭐ <small>하루 만에</small></div>' +
+      '<div class="stk big" id="' + p + 'g" style="transform:rotate(-4deg)">+' + esc(short(gain)) + ' ⭐ <small>in 24h</small></div>' +
       '<div class="repo" id="' + p + 'n" style="margin-top:26px">' + esc(n.split('/')[1]) + '</div><div class="owner">by ' + esc(ownerName(n)) + '</div>',
     anim: (p, S, D) => [prod ? "tl.fromTo('#" + p + "pf',{scale:1},{scale:1.06,duration:" + f2(D) + ",ease:'none'}," + f2(S) + ');' : '',
       "tl.fromTo('#" + p + "g',{scale:1},{scale:1.12,duration:.18,yoyo:true,repeat:3,ease:'sine.inOut'}," + f2(S + 0.15) + ');'].join('\n') });
@@ -273,14 +276,15 @@ function spotlightScenes(r, info, gain, site, F) {
   sc.push({ mood: 'think', bot: 'corner',
     say: [mult >= 3 ? 'That\'s ' + mult + ' times its usual daily pace.' : 'That\'s a big day for it.', ...facts.map(f => f[0])],
     ko0: [mult >= 3 ? '평소 하루 평균의 ' + mult + '배예요.' : '오늘 제대로 터졌어요.', ...facts.map(f => f[2] || null)],
-    html: p => brand('why it’s trending') + '<div class="bars"><div class="bar"><div class="k">평소 하루</div><div class="t"><i id="' + p + 'b1" style="background:#8b949e"></i></div><div class="v">' + esc(short(usual)) + '</div></div>' +
-      '<div class="bar"><div class="k">오늘</div><div class="t"><i id="' + p + 'b2" style="background:#3fb950"></i></div><div class="v" style="color:#3fb950">' + esc(short(gain)) + '</div></div></div>' +
+    html: p => brand('why it’s trending') + '<div class="bars"><div class="bar"><div class="k">Usual day</div><div class="t"><i id="' + p + 'b1" style="background:#8b949e"></i></div><div class="v">' + esc(short(usual)) + '</div></div>' +
+      '<div class="bar"><div class="k">Today</div><div class="t"><i id="' + p + 'b2" style="background:#3fb950"></i></div><div class="v" style="color:#3fb950">' + esc(short(gain)) + '</div></div></div>' +
       (mult >= 3 ? '<div class="mult" id="' + p + 'x">×' + mult + '</div>' : '') + '<div class="pills">' + facts.map((f, i) => '<div class="stk" id="' + p + 'f' + i + '" style="transform:rotate(' + (i % 2 ? 4 : -5) + 'deg);background:' + ['#58a6ff', '#f78166'][i % 2] + '">' + esc(f[1]) + '</div>').join('') + '</div>',
     anim: (p, S, D, M) => [A.bar('#' + p + 'b1', usual / gain, S + 0.2), A.bar('#' + p + 'b2', 1, S + 0.45), mult >= 3 ? A.stamp('#' + p + 'x', S + 1.0) : '',
       ...facts.map((_, i) => A.stamp('#' + p + 'f' + i, (M[i + 1] ?? S + 2) + 0.05))].join('\n') });
   // 3. WHAT + FEATURE TOUR: zoom into the real README at each feature, highlight + sticker
   const desc = G.what || cleanDesc(r, info);
   const feats = (G.features?.length ? G.features : (info.feats || []).map((f, i) => ({ en: f.t, ko: info.featsKo?.[i] || f.t }))).slice(0, 3);
+  const stkTxt = f => cut(f.sticker || (f.match && f.match.length <= 26 ? f.match : '') || f.en, 26);
   if (page) {
     const k = VW / (page.w || 1280), top0 = Math.max(0, (page.top || 0) * k - 10);
     const fsay = feats.map((f, i) => G.features?.length ? f.en : ['First, ' + lcFirst(f.en) + '.', 'Then, ' + lcFirst(f.en) + '.', 'And ' + lcFirst(f.en) + '.'][i]);
@@ -293,7 +297,7 @@ function spotlightScenes(r, info, gain, site, F) {
       html: p => brand('what it does') + '<div class="frame" id="' + p + 'f" style="width:' + VW + 'px;height:' + FH + 'px">' + winBar('github.com/' + n) + '<div class="vp"><div class="pw" id="' + p + 'w" style="width:' + VW + 'px">' +
         '<img src="' + esc(page.src) + '" style="width:' + VW + 'px;display:block">' +
         boxes.map((b, i) => b ? '<div class="hl" id="' + p + 'h' + i + '" style="left:' + Math.round(b.x * k - 8) + 'px;top:' + Math.round(b.y * k - 6) + 'px;width:' + Math.round(b.w * k + 16) + 'px;height:' + Math.round(Math.min(b.h, 300) * k + 12) + 'px"></div>' : '').join('') + '</div></div></div>' +
-        feats.map((f, i) => '<div class="stk tag' + (f.ko.length > 12 ? ' long' : '') + '" id="' + p + 's' + i + '" style="transform:rotate(' + [-5, 4, -3][i] + 'deg);background:' + ['#ffc83d', '#3fb950', '#f78166'][i] + '">' + (i + 1) + '. ' + esc(cut(f.ko, 22)) + '</div>').join(''),
+        feats.map((f, i) => '<div class="stk tag' + (stkTxt(f).length > 18 ? ' long' : '') + '" id="' + p + 's' + i + '" style="transform:rotate(' + [-5, 4, -3][i] + 'deg);background:' + ['#ffc83d', '#3fb950', '#f78166'][i] + '">' + (i + 1) + '. ' + esc(stkTxt(f)) + '</div>').join(''),
       anim: (p, S, D, M) => ["tl.set('#" + p + "w',{x:0,y:" + (-top0).toFixed(0) + ",scale:1,transformOrigin:'0 0'}," + f2(S) + ');',
         "tl.from('#" + p + "f',{opacity:0,y:120,duration:.5,ease:'power3.out'}," + f2(S + 0.05) + ');',
         "tl.to('#" + p + "w',{y:" + (-top0 - VH * 0.25).toFixed(0) + ",duration:" + f2(Math.max(0.8, (M[1] ?? S + 2) - S - 0.6)) + ",ease:'sine.inOut'}," + f2(S + 0.5) + ');',
@@ -310,15 +314,15 @@ function spotlightScenes(r, info, gain, site, F) {
   // 4. DEMO (README GIF/MP4/image) when available and different from the hero page
   if (info.demo && page) {
     sc.push({ mood: 'wow', bot: 'corner', say: [G.demo || 'And here it is in action.'], ko0: [G.demo ? null : '실제로 돌아가는 화면이에요.'],
-      html: (p, F2, t) => brand('demo') + '<div class="frame" id="' + p + 'f" style="width:' + VW + 'px;height:' + (info.demo.kind === 'video' ? FH : Math.round(FH * 0.72)) + 'px">' + winBar(n.split('/')[1] + ' demo') + '<div class="vp">' + mediaTag(info.demo, p + 'im', t && { S: t.S + 0.15, D: t.D - 0.15 }, 'class="shot"') + '</div></div><div class="stk tag" id="' + p + 's" style="transform:rotate(-6deg);background:#f78166">실제 화면</div>',
+      html: (p, F2, t) => brand('demo') + '<div class="frame" id="' + p + 'f" style="width:' + VW + 'px;height:' + (info.demo.kind === 'video' ? FH : Math.round(FH * 0.72)) + 'px">' + winBar(n.split('/')[1] + ' demo') + '<div class="vp">' + mediaTag(info.demo, p + 'im', t && { S: t.S + 0.15, D: t.D - 0.15 }, 'class="shot"') + '</div></div><div class="stk tag" id="' + p + 's" style="transform:rotate(-6deg);background:#f78166">LIVE DEMO</div>',
       anim: (p, S, D) => ["tl.from('#" + p + "f',{opacity:0,scale:.85,duration:.45,ease:'back.out(1.5)'}," + f2(S + 0.05) + ');', info.demo.kind === 'image' ? "tl.fromTo('#" + p + "im',{scale:1},{scale:1.2,x:-30,duration:" + f2(D) + ",ease:'none'}," + f2(S) + ');' : '', A.sticker('#' + p + 's', S + 0.4, 0, -6)].join('\n') });
   }
   // 5. WHEN to use it
-  const items = G.when ? [{ en: G.when.en, ko: G.when.ko }] : uses.map(u => ({ en: u.en, ko: u.ko }));
+  const items = G.when ? [{ en: G.when.en.replace(/^use it when\s*/i, ''), ko: G.when.ko }] : uses.map(u => ({ en: u.en, ko: u.ko }));
   if (items.length) {
     sc.push({ mood: 'happy', bot: 'corner', say: [G.when ? G.when.en : 'Reach for it when you want to ' + uses.map(u => u.en).join(', or ') + '.'],
       ko0: [G.when ? G.when.ko : '이럴 때 써보세요. ' + uses.map(u => u.ko).join(', 또는 ') + '.'],
-      html: p => brand('when to use it') + '<div class="h">이럴 때 쓰세요</div><div class="uses">' + items.map((it, i) => '<div class="use" id="' + p + 'u' + i + '"><div class="n">' + (i + 1) + '</div><div class="t">' + esc(cut(it.ko, 40)) + '</div></div>').join('') + '</div>',
+      html: p => brand('when to use it') + '<div class="h">Use it when…</div><div class="uses">' + items.map((it, i) => '<div class="use" id="' + p + 'u' + i + '"><div class="n">' + (i + 1) + '</div><div class="t">' + esc(cut(cap1(it.en), 46)) + '</div></div>').join('') + '</div>',
       anim: (p, S, D) => ["tl.from('#" + p + " .h',{opacity:0,y:40,duration:.35}," + f2(S + 0.05) + ');', "tl.from('#" + p + " .use',{opacity:0,x:140,duration:.45,stagger:.5,ease:'power3.out'}," + f2(S + 0.3) + ');'].join('\n') });
   }
   // 6. TRY IT: typed install + usage snippet, label sticker
@@ -327,7 +331,7 @@ function spotlightScenes(r, info, gain, site, F) {
     sc.push({ mood: 'happy', bot: 'corner',
       say: [info.install ? 'Getting started takes one command.' : 'Using it looks like this.', ...(info.install && info.usage ? ['And using it looks like this.'] : [])],
       ko0: [info.install ? '설치는 명령어 한 줄이면 끝.' : '쓰는 법은 이 정도예요.', ...(info.install && info.usage ? ['쓰는 법은 이 정도예요.'] : [])],
-      html: p => brand('try it') + (info.install ? '<div class="code" id="' + p + 't">' + winBar('terminal') + '<pre class="term"><span style="color:#8b949e">$ </span><span id="' + p + 'c">' + typed(info.install) + '</span><span class="cur" id="' + p + 'k">▋</span></pre></div><div class="stk tag" id="' + p + 's" style="transform:rotate(-4deg)">설치 1줄</div>' : '') +
+      html: p => brand('try it') + (info.install ? '<div class="code" id="' + p + 't">' + winBar('terminal') + '<pre class="term"><span style="color:#8b949e">$ </span><span id="' + p + 'c">' + typed(info.install) + '</span><span class="cur" id="' + p + 'k">▋</span></pre></div><div class="stk tag" id="' + p + 's" style="transform:rotate(-4deg)">1-line install</div>' : '') +
         (info.usage ? '<div class="code" id="' + p + 'u">' + winBar(info.usage.lang) + '<pre id="' + p + 'uc">' + typed(code) + '</pre></div>' : ''),
       anim: (p, S, D, M) => [info.install ? "tl.from('#" + p + "t',{opacity:0,y:60,duration:.4}," + f2(S + 0.05) + ');' + A.type('#' + p + 'c', info.install, S + 0.3, Math.min(2, Math.max(0.8, info.install.length / 25))) + A.sticker('#' + p + 's', S + 0.6, 0, -4) + "tl.to('#" + p + "k',{opacity:0,duration:.01,repeat:" + Math.max(1, Math.floor(D / 0.5)) + ",yoyo:true,repeatDelay:.45}," + f2(S) + ');' : '',
         info.usage ? "tl.from('#" + p + "u',{opacity:0,y:60,duration:.4}," + f2((M[1] ?? S + 0.2) - 0.1) + ');' + A.type('#' + p + 'uc', code, (M[1] ?? S + 0.2) + 0.25, Math.min(3, Math.max(1.2, code.length / 70))) : ''].join('\n') });
@@ -336,11 +340,11 @@ function spotlightScenes(r, info, gain, site, F) {
   const D = r.deep || {}, iss = (D.oi || 0) + (D.ci || 0), issP = iss ? Math.round((D.ci / iss) * 100) : null;
   sc.push({ mood: MOOD[v] || 'think', bot: 'corner',
     say: ['So, do people actually use it?', realityLine(r)], ko0: ['그래서, 진짜 쓰일까요?', null],
-    html: p => brand('reality check') + '<div class="h">진짜 쓰일까?</div><div class="stats">' +
-      '<div class="stat"><div class="v" id="' + p + 's1">' + num(D.c90) + '</div><div class="k">커밋 (3개월)</div></div>' +
-      '<div class="stat"><div class="v" id="' + p + 's2">' + num(D.ppl) + '</div><div class="k">참여자</div></div>' +
-      (r.dl ? '<div class="stat"><div class="v" id="' + p + 's3">' + num(r.dl.m) + '</div><div class="k">월 다운로드</div></div>' : issP != null ? '<div class="stat"><div class="v" id="' + p + 's3">' + num(issP, '', '%') + '</div><div class="k">이슈 해결률</div></div>' : '') + '</div>' +
-      '<div class="verdict" id="' + p + 'v" style="color:' + col + ';border-color:' + col + '">' + esc(VKO[v] || '') + '</div>',
+    html: p => brand('reality check') + '<div class="h">Actually used?</div><div class="stats">' +
+      '<div class="stat"><div class="v" id="' + p + 's1">' + num(D.c90) + '</div><div class="k">commits (90d)</div></div>' +
+      '<div class="stat"><div class="v" id="' + p + 's2">' + num(D.ppl) + '</div><div class="k">contributors</div></div>' +
+      (r.dl ? '<div class="stat"><div class="v" id="' + p + 's3">' + num(r.dl.m) + '</div><div class="k">downloads/mo</div></div>' : issP != null ? '<div class="stat"><div class="v" id="' + p + 's3">' + num(issP, '', '%') + '</div><div class="k">issues closed</div></div>' : '') + '</div>' +
+      '<div class="verdict" id="' + p + 'v" style="color:' + col + ';border-color:' + col + '">' + esc(VEN[v] || '') + '</div>',
     anim: (p, S, D2, M) => ["tl.from('#" + p + " .h',{opacity:0,y:40,duration:.35}," + f2(S + 0.05) + ');', A.up('#' + p + ' .stat', (M[1] ?? S + 1) - 0.2, 0.12),
       A.count('#' + p + 's1', D.c90, (M[1] ?? S + 1), 1.0), A.count('#' + p + 's2', D.ppl, (M[1] ?? S + 1) + 0.1, 1.0), r.dl ? A.count('#' + p + 's3', r.dl.m, (M[1] ?? S + 1) + 0.2, 1.0) : issP != null ? A.count('#' + p + 's3', issP, (M[1] ?? S + 1) + 0.2, 1.0) : '',
       A.stamp('#' + p + 'v', S + D2 - 1.4)].join('\n') });
@@ -367,9 +371,9 @@ function rankScene(r, rank, gain, avatar, F, period) {
     say: [`Number ${rank}: ${repoName(r.n)}, up ${say(gain)} stars ${period === 'weekly' ? 'this week' : 'today'}.`, `${desc ? clause(desc, 64) + '. ' : ''}${ev ? ev.charAt(0).toUpperCase() + ev.slice(1) + '.' : vs[v] || ''}`],
     html: p => `${brand(period === 'weekly' ? 'this week' : 'today')}<div style="display:flex;align-items:center;gap:30px;justify-content:center"><div class="rank" id="${p}r">${rank}</div>${avatar ? `<img class="avatar" id="${p}a" src="${esc(avatar)}">` : ''}</div>
       <div class="repo" id="${p}n">${esc(r.n.split('/')[1])}</div><div class="owner">by ${esc(ownerName(r.n))}</div>
-      <div class="stats"><div class="stat"><div class="v" style="color:#3fb950" id="${p}g">${num(gain, '+')}</div><div class="k">${period === 'weekly' ? '이번 주 스타' : '오늘 스타'}</div></div>
-      <div class="stat"><div class="v" id="${p}c">${num(D.c90)}</div><div class="k">커밋 (3개월)</div></div><div class="stat"><div class="v" id="${p}p">${num(D.ppl)}</div><div class="k">참여자</div></div></div>
-      <div class="verdict" id="${p}v" style="color:${col};border-color:${col}">${esc(VKO[v] || '')}</div>`,
+      <div class="stats"><div class="stat"><div class="v" style="color:#3fb950" id="${p}g">${num(gain, '+')}</div><div class="k">${period === 'weekly' ? 'stars this week' : 'stars today'}</div></div>
+      <div class="stat"><div class="v" id="${p}c">${num(D.c90)}</div><div class="k">commits (90d)</div></div><div class="stat"><div class="v" id="${p}p">${num(D.ppl)}</div><div class="k">contributors</div></div></div>
+      <div class="verdict" id="${p}v" style="color:${col};border-color:${col}">${esc(VEN[v] || '')}</div>`,
     anim: (p, S, D2, M) => [`tl.from('#${p}r',{rotateX:-90,opacity:0,duration:.55,ease:'back.out(1.6)'},${f2(S + 0.05)});`, avatar ? A.pop(`#${p}a`, S + 0.2) : '', `tl.from('#${p}n',{opacity:0,y:50,duration:.45},${f2(S + 0.25)});`,
       A.up(`#${p} .stat`, S + 0.5, 0.12), A.count(`#${p}g`, gain, S + 0.55, 1.1), A.count(`#${p}c`, D.c90, S + 0.65, 1.1), A.count(`#${p}p`, D.ppl, S + 0.75, 1.1), A.stamp(`#${p}v`, (M[1] ?? S + 2) + 0.3)].join('\n') };
 }
@@ -383,14 +387,14 @@ function buildSpecs(data, types, site, infos = {}) {
   const specs = [];
   if (types.includes('daily')) {
     const top = pick('daily:all', 5);
-    specs.push({ id: `daily-${day}`, F: P, title: `Today's fastest-rising GitHub repos (${mdEn}) · 오늘 GitHub 급상승 Top 5 #shorts`, list: top, scenes: [
-      introScene(P, [`Hi, I'm Starby.`, `Here are today's five fastest-rising GitHub repos, and whether people actually use them.`], `Today's|Top ${top.length}`, `${mdKo} · GitHub 급상승`),
+    specs.push({ id: `daily-${day}`, F: P, title: `Today's fastest-rising GitHub repos (${mdEn}) #shorts`, list: top, scenes: [
+      introScene(P, [`Hi, I'm Starby.`, `Here are today's five fastest-rising GitHub repos, and whether people actually use them.`], `Today's|Top ${top.length}`, `${mdEn} · fastest-rising on GitHub`),
       ...top.map(({ r, g }, i) => rankScene(r, i + 1, g, av(r.n), P, 'daily')),
       outroScene(site, P, `Full ranking and details are on Star Board, link below. See you tomorrow!`)] });
   }
   if (types.includes('spotlight')) {
     for (const { r, g } of pick('daily:all', 12).filter(x => !['doc', 'archived', 'dead'].includes(x.r.sc.v)).slice(0, 3)) {
-      specs.push({ id: `spotlight-${r.n.replace('/', '__')}-${day}`, F: P, repo: r.n, title: `${r.n.split('/')[1]}: why it's trending and when to use it · 오늘 스타 ${short(g)} #shorts`, list: [{ r, g }], scenes: spotlightScenes(r, infos[r.n] || {}, g, site, P) });
+      specs.push({ id: `spotlight-${r.n.replace('/', '__')}-${day}`, F: P, repo: r.n, title: `${r.n.split('/')[1]}: +${short(g)} stars in a day. Why, and when to use it #shorts`, list: [{ r, g }], scenes: spotlightScenes(r, infos[r.n] || {}, g, site, P) });
     }
   }
   if (types.includes('weekly')) {
@@ -400,12 +404,12 @@ function buildSpecs(data, types, site, infos = {}) {
     const listScene = (koTitle, color, rows, en, mood) => ({ mood, bot: 'corner', say: en,
       html: p => `${brand('this week')}<div class="h" style="color:${color}">${esc(koTitle)}</div><div class="list">${rows.map(x => `<div class="row"><img src="${esc(av(x.n))}"><div><div class="n">${esc(x.n)}</div><div class="m">${esc(x.m)}</div></div></div>`).join('')}</div>`,
       anim: (p, S) => [`tl.from('#${p} .h',{opacity:0,y:40,duration:.4},${f2(S + 0.05)});`, `tl.from('#${p} .row',{opacity:0,x:-80,duration:.45,stagger:.3,ease:'power3.out'},${f2(S + 0.4)});`].join('\n') });
-    const scenes = [introScene(L, [`Hi, I'm Starby.`, `This is your weekly GitHub star report: the ten fastest-rising repos, the hype, and the hidden gems.`], `Weekly|Star Report`, `${mdKo} 기준 주간 리포트`),
+    const scenes = [introScene(L, [`Hi, I'm Starby.`, `This is your weekly GitHub star report: the ten fastest-rising repos, the hype, and the hidden gems.`], `Weekly|Star Report`, `Week of ${mdEn}`),
       ...top.map(({ r, g }, i) => rankScene(r, i + 1, g, av(r.n), L, 'weekly'))];
-    if (hype.length) scenes.push(listScene('스타만 많은 곳', '#e3b341', hype.map(r => ({ n: r.n, m: `+${short(r.sc.g7)}/주 · 커밋(3개월) ${short(r.deep?.c90 || 0)}` })), [`Lots of stars, not much behind them yet: ${hype.map(r => repoName(r.n)).join(', ')}.`], 'skeptic'));
-    if (gems.length) scenes.push(listScene('숨은 실력파', '#a371f7', gems.map(r => ({ n: r.n, m: `★${short(r.s)} · 커밋(3개월) ${short(r.deep?.c90 || 0)} · 참여자 ${short(r.deep?.ppl || 0)}` })), [`And the underrated ones, with real work behind fewer stars: ${gems.map(r => repoName(r.n)).join(', ')}.`], 'wow'));
+    if (hype.length) scenes.push(listScene('Mostly hype', '#e3b341', hype.map(r => ({ n: r.n, m: `+${short(r.sc.g7)}/week · ${short(r.deep?.c90 || 0)} commits (90d)` })), [`Lots of stars, not much behind them yet: ${hype.map(r => repoName(r.n)).join(', ')}.`], 'skeptic'));
+    if (gems.length) scenes.push(listScene('Hidden gems', '#a371f7', gems.map(r => ({ n: r.n, m: `★${short(r.s)} · ${short(r.deep?.c90 || 0)} commits (90d) · ${short(r.deep?.ppl || 0)} contributors` })), [`And the underrated ones, with real work behind fewer stars: ${gems.map(r => repoName(r.n)).join(', ')}.`], 'wow'));
     scenes.push(outroScene(site, L, `Full ranking and details are on Star Board, link below. See you next week!`));
-    specs.push({ id: `weekly-${day}`, F: L, title: `Weekly GitHub Star Report (${mdEn}) · 주간 GitHub 스타 리포트`, list: top, scenes });
+    specs.push({ id: `weekly-${day}`, F: L, title: `Weekly GitHub Star Report (${mdEn})`, list: top, scenes });
   }
   return specs;
 }
@@ -431,7 +435,7 @@ function compose(spec, timing, opts = {}) {
       audios.push(`<audio data-start="${f2(x.start)}" data-duration="${f2(x.dur)}" data-track-index="${6 + (j % 2)}" data-volume="1" src="${esc(x.audio)}"></audio>`);
       const flaps = Math.max(1, Math.floor(x.dur / 0.2));
       anims.push(IMG ? `tl.to('#sbtalk',{scaleY:1.035,scaleX:.985,duration:.1,yoyo:true,repeat:${flaps * 2 - 1},ease:'sine.inOut'},${f2(x.start)});` : `tl.to('#sbmouth',{attr:{ry:11},duration:.1,yoyo:true,repeat:${flaps * 2 - 1},ease:'sine.inOut'},${f2(x.start)});`);
-      const cap = noUrl(x.ko || x.text), max = F.vert ? 36 : 56;
+      const cap = noUrl(SUBS === 'ko' ? (x.ko || x.text) : x.text), max = F.vert ? (SUBS === 'ko' ? 36 : 44) : 64;
       const pieces = []; let buf = '';
       for (const seg of cap.split(/(?<=[.!?。,，])\s+/)) { if ((buf + ' ' + seg).trim().length > max && buf) { pieces.push(buf.trim()); buf = seg; } else buf = (buf + ' ' + seg).trim(); }
       if (buf) pieces.push(buf.trim());
@@ -514,12 +518,12 @@ topics: ${(r.t || []).join(', ')}
 README intro: ${info.para || ''}
 README features: ${(info.feats || []).map(f => '- ' + f.t + (f.d ? ': ' + f.d : '')).join('\n')}
 stars gained in the last day: ${gain}
-Return JSON: {"hook": "first line, max 14 words, lead with the problem it solves or the concrete outcome, no greeting, no repo name", "what": "what it is in plain words, max 16 words, no marketing", "features": [{"en": "one short spoken sentence about one README feature, max 11 words", "ko": "2-4 word Korean sticker label", "match": "exact feature title copied from README features"}] (2-3 items, only from README features), "when": {"en": "Use it when ..., max 14 words", "ko": "Korean, max 22 chars, ends with ~할 때"}}`);
+Return JSON: {"hook": "first line, max 14 words, lead with the problem it solves or the concrete outcome, no greeting, no repo name", "what": "what it is in plain words, max 16 words, no marketing", "features": [{"en": "one short spoken sentence about one README feature, max 11 words", "sticker": "1-3 word English sticker label", "ko": "2-4 word Korean label", "match": "exact feature title copied from README features"}] (2-3 items, only from README features), "when": {"en": "Use it when ..., max 14 words", "ko": "Korean, max 22 chars, ends with ~할 때"}}`);
   if (!o || typeof o !== 'object') return null;
   const ok = (s, n) => typeof s === 'string' && s.trim() && s.length <= n;
   return { hook: ok(o.hook, 110) ? o.hook.trim() : null, what: ok(o.what, 130) ? o.what.trim().replace(/[.]$/, '') : null,
-    features: Array.isArray(o.features) ? o.features.filter(f => ok(f?.en, 90) && ok(f?.ko, 24)).slice(0, 3) : [],
-    when: o.when && ok(o.when.en, 110) && ok(o.when.ko, 30) ? o.when : null };
+    features: Array.isArray(o.features) ? o.features.filter(f => ok(f?.en, 90)).map(f => ({ ...f, ko: f.ko || f.en, sticker: ok(f.sticker, 28) ? f.sticker : null })).slice(0, 3) : [],
+    when: o.when && ok(o.when.en, 110) ? { en: o.when.en, ko: o.when.ko || o.when.en } : null };
 }
 async function translateKo(texts) {
   if (!texts.length) return [];
@@ -573,7 +577,7 @@ async function main() {
       try {
         const raw = await (await tfetch(`https://raw.githubusercontent.com/${n}/HEAD/README.md`)).text();
         const info = extractReadme(raw, n);
-        const ko = await translateKo(info.feats.map(f => f.t));
+        const ko = SUBS === 'ko' ? await translateKo(info.feats.map(f => f.t)) : info.feats.map(f => f.t);
         const script = await scriptFor(R[n], info, (data.trending['daily:all'].find(x => x.n === n) || {}).g || 0);
         infos[n] = { ...info, featsKo: ko, script };
         if (script) console.log(`  gemini script ok: ${n}`);
@@ -622,7 +626,7 @@ async function main() {
 
     console.log(`prep: ${spec.id} assets ready, translating + tts`);
     // Korean subtitles
-    const need = spec.scenes.flatMap(s => s.say.filter((_, j) => !s.ko0?.[j])), tr = await translateKo(need);
+    const need = SUBS === 'ko' ? spec.scenes.flatMap(s => s.say.filter((_, j) => !s.ko0?.[j])) : [], tr = await translateKo(need);
     let q = 0; for (const s of spec.scenes) s.ko = s.say.map((_, j) => s.ko0?.[j] || tr[q++]);
     // narration
     let cur = 0; const tsc = [];
@@ -657,7 +661,7 @@ async function main() {
     console.log(`  rendered in ${Math.round((Date.now() - t0) / 1000)}s`);
     await fs.writeFile(path.join(OUT, `${spec.id}-script.txt`), spec.scenes.map((s, i) => `[${i + 1}] ${s.say.join(' ')}\n    ${s.ko.join(' ')}`).join('\n\n'));
     const links = spec.list.map(({ r, g }, i) => `${spec.list.length > 1 ? `${i + 1}. ` : ''}${r.n} (+${short(g)}) ${site}r/${r.n}/`).join('\n');
-    await fs.writeFile(path.join(OUT, `${spec.id}-youtube.txt`), `${spec.title}\n\n${spec.repo ? `Why ${spec.repo} is trending, what it does, when to use it, and whether people actually use it. / 왜 뜨는지, 언제 쓰면 좋은지, 실제로 쓰이는지까지.` : 'GitHub repos gaining stars fastest, checked against real usage. / 스타가 빠르게 늘어난 저장소를 실제 사용 지표로 확인했습니다.'}\n\n${links}\n\nGitHub Star Board: ${site}\n\n#GitHub #opensource #developer #AI${spec.F.vert ? ' #shorts' : ''}\n`);
+    await fs.writeFile(path.join(OUT, `${spec.id}-youtube.txt`), `${spec.title}\n\n${spec.repo ? `Why ${spec.repo} is trending, what it does, when to use it, and whether people actually use it.` : 'GitHub repos gaining stars fastest, checked against real usage.'}\n\n${links}\n\nGitHub Star Board: ${site}\n\n#GitHub #opensource #developer #AI${spec.F.vert ? ' #shorts' : ''}\n`);
     console.log(`done: ${outFile}`);
   }
   if (browser) await browser.close();

@@ -756,7 +756,7 @@ button{background:#238636;color:#fff;border:0;border-radius:6px;padding:7px 14px
 <div class="muted">Repository verdict · data as of ${day} (updated daily)</div>
 <h1><a href="https://github.com/${hesc(r.n)}">${hesc(r.n)}</a></h1>
 <p>${hesc(r.d || '')}</p>
-<div class="v v-${sc.v}">${hesc(ven)} · ${hesc(vko)}</div>${boardRepo ? `<p class="muted">Wrong verdict? <a href="https://github.com/${boardRepo}/issues/new?template=verdict.yml&title=${encodeURIComponent('Verdict: ' + r.n)}&repo=${encodeURIComponent(r.n)}&current=${encodeURIComponent(ven)}">Report it</a> · 판정이 틀렸다면 알려주세요</p>` : ''}
+<div class="v v-${sc.v}">${hesc(ven)} · ${hesc(vko)}</div>${boardRepo ? `<p class="muted">Wrong verdict? <a href="https://github.com/${boardRepo}/issues/new?template=verdict.yml&title=${encodeURIComponent('Verdict: ' + r.n)}&repository=${encodeURIComponent(r.n)}&current=${encodeURIComponent(ven)}">Report it</a> · 판정이 틀렸다면 알려주세요</p>` : ''}
 <div class="sc"><div>Utility<b>${sc.util ?? '-'}</b></div><div>Popularity<b>${sc.pop ?? '-'}</b></div><div>best-of quality<b>${sc.bo ?? '-'}</b></div><div>Stars<b>${nf(r.s)}</b></div><div>7-day gain<b>${sc.g7 != null ? '+' + nf(sc.g7) : '-'}</b></div></div>
 <h2>Evidence</h2><ul>${li(en)}</ul>
 <h2>근거 (한국어)</h2><ul>${li(r.why || [])}</ul>

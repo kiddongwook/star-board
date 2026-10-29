@@ -141,24 +141,97 @@ function extractReadme(md, n) {
 }
 
 // ---------------- Starby (host character) ----------------
-const STARBY = `<svg viewBox="0 0 200 200" width="100%" height="100%" style="overflow:visible">
-<defs><radialGradient id="sbg" cx="40%" cy="32%" r="75%"><stop offset="0" stop-color="#fff2a8"/><stop offset=".55" stop-color="#ffc83d"/><stop offset="1" stop-color="#f29d12"/></radialGradient></defs>
-<ellipse cx="100" cy="192" rx="54" ry="8" fill="#000" opacity=".25" id="sbshadow"/>
-<g id="sbbody">
-<path d="M100,17 L125.9,69.4 L183.7,77.8 L141.8,118.6 L151.7,176.2 L100,149 L48.3,176.2 L58.2,118.6 L16.3,77.8 L74.1,69.4 Z" fill="url(#sbg)" stroke="#e08a0b" stroke-width="12" stroke-linejoin="round"/>
-<path d="M100,17 L125.9,69.4 L183.7,77.8 L141.8,118.6 L151.7,176.2 L100,149 L48.3,176.2 L58.2,118.6 L16.3,77.8 L74.1,69.4 Z" fill="url(#sbg)" stroke="#ffd85c" stroke-width="3" stroke-linejoin="round"/>
-<ellipse cx="70" cy="120" rx="9" ry="5.5" fill="#ff7b54" opacity=".55"/><ellipse cx="130" cy="120" rx="9" ry="5.5" fill="#ff7b54" opacity=".55"/>
-<g id="sbeyes"><ellipse cx="82" cy="100" rx="9.5" ry="12.5" fill="#1b1f24"/><ellipse cx="118" cy="100" rx="9.5" ry="12.5" fill="#1b1f24"/>
-<g id="sbpupil"><circle cx="85" cy="95" r="3.6" fill="#fff"/><circle cx="121" cy="95" r="3.6" fill="#fff"/></g></g>
-<path id="sbbrowL" d="M71,81 Q81,75 91,80" stroke="#7a4a05" stroke-width="4" fill="none" stroke-linecap="round"/>
-<path id="sbbrowR" d="M109,80 Q119,75 129,81" stroke="#7a4a05" stroke-width="4" fill="none" stroke-linecap="round"/>
-<ellipse id="sbmouth" cx="100" cy="124" rx="10" ry="4" fill="#7a2e12"/>
-</g></svg>`;
+// ---------------- Starby (host character, drawn in code; rig parts are animated by GSAP) ----------------
+// rig ids: #sbrig (whole body, origin feet 120 255) #sbarmL (origin 76 134) #sbarmR (origin 166 136) .sbpup (eye look) .sblid (blink)
+// #sbbrowL/#sbbrowR, #sbmo (mouth opening, attr ry 1..17) + #sbtg (tongue, attr cy)
+const starPts = (cx, cy, R, r) => Array.from({ length: 10 }, (_, k) => { const a = (-90 + k * 36) * Math.PI / 180, rr = k % 2 ? r : R; return (cx + rr * Math.cos(a)).toFixed(1) + ',' + (cy + rr * Math.sin(a)).toFixed(1); }).join(' ');
+const SKIN = '#f3b230';
+function starbySvg() {
+  const P = starPts(120, 122, 90, 50);
+  const eye = (x, k) => '<g><ellipse cx="' + x + '" cy="108" rx="17.5" ry="20.5" fill="#fff" stroke="#b9770f" stroke-width="1.3"/>' +
+    '<g clip-path="url(#sbce' + k + ')"><g class="sbpup"><circle cx="' + x + '" cy="110" r="13.5" fill="url(#sbir)"/><circle cx="' + x + '" cy="110" r="6.8" fill="#0b0712"/><circle cx="' + (x - 4.8) + '" cy="103" r="4.8" fill="#fff"/><circle cx="' + (x + 4.8) + '" cy="116.5" r="2.1" fill="#fff" opacity=".85"/></g>' +
+    '<g class="sblid"><rect x="' + (x - 19) + '" y="86" width="38" height="44" fill="#ffcb45"/><path d="M' + (x - 15) + ',127 Q' + x + ',132 ' + (x + 15) + ',127" stroke="#7a4a08" stroke-width="3" fill="none" stroke-linecap="round"/></g></g></g>';
+  const shoe = (x0) => '<g><path d="M' + x0 + ',248 Q' + x0 + ',228 ' + (x0 + 18) + ',229 Q' + (x0 + 32) + ',230 ' + (x0 + 34) + ',246 Z" fill="#2f6fe0"/><rect x="' + (x0 - 2) + '" y="245" width="38" height="9" rx="4.5" fill="#f2f4f8"/><path d="M' + (x0 + 11) + ',234 l9,0 M' + (x0 + 10) + ',239 l10,0" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></g>';
+  return '<svg viewBox="0 0 240 280" width="100%" height="100%" style="overflow:visible"><defs>' +
+    '<radialGradient id="sbg" gradientUnits="userSpaceOnUse" cx="96" cy="84" r="132"><stop offset="0" stop-color="#fff0a0"/><stop offset=".45" stop-color="#ffc93c"/><stop offset="1" stop-color="#e8941a"/></radialGradient>' +
+    '<radialGradient id="sbir" cx="45%" cy="38%" r="62%"><stop offset="0" stop-color="#6d5c8c"/><stop offset=".6" stop-color="#2c2140"/><stop offset="1" stop-color="#140e20"/></radialGradient>' +
+    '<filter id="sbbl" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="7"/></filter>' +
+    '<clipPath id="sbce0"><ellipse cx="98" cy="108" rx="17.5" ry="20.5"/></clipPath><clipPath id="sbce1"><ellipse cx="142" cy="108" rx="17.5" ry="20.5"/></clipPath>' +
+    '<clipPath id="sbcm"><rect x="96" y="141" width="48" height="36"/></clipPath></defs>' +
+    '<ellipse id="sbshadow" cx="120" cy="262" rx="62" ry="9" fill="#000" opacity=".3"/>' +
+    '<g id="sbrig"><g id="sblegs"><path d="M104,168 L101,236" stroke="#f0ac2a" stroke-width="15" stroke-linecap="round"/><path d="M137,168 L141,236" stroke="#f0ac2a" stroke-width="15" stroke-linecap="round"/>' + shoe(84) + shoe(124) + '</g>' +
+    '<g id="sbbody"><polygon points="' + P + '" fill="#c9790f" stroke="#c9790f" stroke-width="30" stroke-linejoin="round" transform="translate(0,5)"/>' +
+    '<polygon points="' + P + '" fill="url(#sbg)" stroke="url(#sbg)" stroke-width="30" stroke-linejoin="round"/>' +
+    '<ellipse cx="90" cy="66" rx="26" ry="15" fill="#fff" opacity=".5" filter="url(#sbbl)" transform="rotate(-25 90 66)"/>' +
+    '<g id="sbarmL"><path d="M76,134 Q56,130 42,120" stroke="' + SKIN + '" stroke-width="13" stroke-linecap="round" fill="none"/>' +
+    '<g id="sbhandL"><circle cx="37" cy="117" r="12" fill="#f4f5fa" stroke="#c9cbd6" stroke-width="1.5"/><ellipse cx="30" cy="106" rx="4.5" ry="7" fill="#f4f5fa" stroke="#c9cbd6" stroke-width="1.5" transform="rotate(-20 30 106)"/></g></g>' +
+    '<g id="sbface"><ellipse cx="74" cy="134" rx="10" ry="5.5" fill="#ff6f86" opacity=".55"/><ellipse cx="166" cy="134" rx="10" ry="5.5" fill="#ff6f86" opacity=".55"/>' +
+    '<g id="sbeyes">' + eye(98, 0) + eye(142, 1) + '</g>' +
+    '<path id="sbbrowL" d="M83,81 Q97,74 111,79" stroke="#5a3608" stroke-width="3.8" fill="none" stroke-linecap="round"/><path id="sbbrowR" d="M129,79 Q143,74 157,81" stroke="#5a3608" stroke-width="3.8" fill="none" stroke-linecap="round"/>' +
+    '<g id="sbmouth"><g clip-path="url(#sbcm)"><ellipse id="sbmo" cx="120" cy="141" rx="17" ry="7" fill="#6e1622"/><ellipse id="sbtg" cx="120" cy="147" rx="9.5" ry="5.5" fill="#ff7d8e"/></g>' +
+    '<path d="M101,140.5 Q120,146 139,140.5" stroke="#5a2410" stroke-width="3" fill="none" stroke-linecap="round"/></g>' +
+    '<g id="sbbow"><path d="M120,162 L101,153 Q97,162 101,171 Z" fill="#e2473b"/><path d="M120,162 L139,153 Q143,162 139,171 Z" fill="#e2473b"/><rect x="115" y="157" width="10" height="10" rx="3" fill="#c8352b"/></g></g>' +
+    '<g id="sbhead"><path d="M118,40 Q160,44 178,96" stroke="#1f2a4d" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M120,38 Q158,42 175,90" stroke="#4a5c94" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".8"/>' +
+    '<rect x="168" y="94" width="20" height="30" rx="10" fill="#2b3a6a"/><rect x="172" y="99" width="9" height="20" rx="4.5" fill="#56689f"/>' +
+    '<path d="M174,122 Q172,146 152,150" stroke="#1f2a4d" stroke-width="4.5" fill="none" stroke-linecap="round"/><rect x="143" y="145" width="12" height="9" rx="4.5" fill="#1f2a4d"/></g>' +
+    '<g id="sbarmR"><path d="M166,136 Q180,150 176,166" stroke="' + SKIN + '" stroke-width="13" stroke-linecap="round" fill="none"/>' +
+    '<g transform="rotate(12 182 168)"><rect x="160" y="140" width="44" height="58" rx="5" fill="#6d7a93"/><rect x="164" y="146" width="36" height="48" rx="3" fill="#9aa6bd"/><rect x="174" y="136" width="16" height="9" rx="3" fill="#4a556b"/><path d="M169,158 h22 M169,166 h18 M169,174 h22" stroke="#e8ecf4" stroke-width="2.4" stroke-linecap="round"/></g>' +
+    '<circle cx="174" cy="170" r="12" fill="#f4f5fa" stroke="#c9cbd6" stroke-width="1.5"/></g></g></g></svg>';
+}
 
-// 3D Starby artwork (video/starby.png, cut out from the Flow render). Eye centers/radii are in image pixels, used for blink lids.
-const STARBY_IMG = { w: 487, h: 505, eyes: [[205, 192], [305, 193]], rx: 30, ry: 33 };
-const starbyImgHtml = src => { const { w, h, eyes, rx, ry } = STARBY_IMG; const pc = (v, t) => (v / t * 100).toFixed(2) + '%';
-  return `<div id="sbbody" class="sbimg"><div id="sbtalk"><img src="${esc(src)}">${eyes.map(([x, y], i) => `<div class="lid" id="lid${i}" style="left:${pc(x - rx, w)};top:${pc(y - ry, h)};width:${pc(rx * 2, w)};height:${pc(ry * 2, h)}"></div>`).join('')}</div></div>`; };
+// Acting (lemo-opuscar DIRECTOR §9): anticipation -> action -> follow-through, poses blended with easing, eyes look at what matters.
+const POSE = { happy: { by: -2, bl: 0, br: 0, lid: 0, px: 4, py: -5, arm: 22, rot: 2 }, wow: { by: -7, bl: 0, br: 0, lid: 0, px: 0, py: -2, arm: 30, rot: 0 },
+  think: { by: -3, bl: -8, br: 6, lid: 0.15, px: 5, py: -6, arm: 8, rot: -4 }, skeptic: { by: -2, bl: -12, br: 8, lid: 0.32, px: 5, py: 0, arm: 0, rot: 5 } };
+function starbyAct(mood, S) {
+  const P = POSE[mood] || POSE.happy, a = [], T = (sel, v, at) => a.push("tl.to('" + sel + "'," + v + ',' + f2(at) + ');');
+  T('#sbrig', "{scaleY:.94,scaleX:1.04,svgOrigin:'120 255',duration:.12,ease:'power2.in'}", S);
+  if (mood === 'wow') {
+    T('#sbrig', "{y:-46,scaleY:1.07,scaleX:.95,svgOrigin:'120 255',duration:.22,ease:'power2.out'}", S + 0.12);
+    T('#sbrig', "{y:0,scaleY:1,scaleX:1,svgOrigin:'120 255',duration:.2,ease:'power2.in'}", S + 0.34);
+    T('#sbrig', "{scaleY:.93,scaleX:1.05,svgOrigin:'120 255',duration:.08,ease:'power1.out'}", S + 0.54);
+    T('#sbrig', "{scaleY:1,scaleX:1,rotation:" + P.rot + ",svgOrigin:'120 255',duration:.5,ease:'elastic.out(1,.5)'}", S + 0.62);
+    SFXQ.push([S + 0.54, 'thud', 0.3]);
+  } else T('#sbrig', "{scaleY:1,scaleX:1,rotation:" + P.rot + ",svgOrigin:'120 255',duration:.5,ease:'back.out(2)'}", S + 0.12);
+  T('#sbarmL', "{rotation:" + (P.arm - 14) + ",svgOrigin:'76 134',duration:.14,ease:'power2.in'}", S + 0.02);
+  T('#sbarmL', "{rotation:" + P.arm + ",svgOrigin:'76 134',duration:.45,ease:'back.out(2.2)'}", S + 0.16);
+  T('#sbbrowL', "{y:" + P.by + ",rotation:" + P.bl + ",svgOrigin:'97 80',duration:.3,ease:'power2.out'}", S + 0.1);
+  T('#sbbrowR', "{y:" + (mood === 'skeptic' ? 2 : P.by) + ",rotation:" + P.br + ",svgOrigin:'143 80',duration:.3,ease:'power2.out'}", S + 0.1);
+  T('.sblid', "{scaleY:" + P.lid + ",duration:.25}", S + 0.1);
+  T('.sbpup', "{x:0,y:0,duration:.15,ease:'power2.out'}", S + 0.05);
+  T('.sbpup', "{x:" + P.px + ",y:" + P.py + ",duration:.22,ease:'power2.out'}", S + 0.75);
+  return a.join('\n');
+}
+// mouth from the narration loudness (12 fps, like 2D animation on twos); text-based fallback when no envelope
+function mouthEnv(x) {
+  if (x.env?.length) return x.env;
+  const n = Math.max(2, Math.round(x.dur * 12)), syl = Math.max(1, (String(x.text).match(/[aeiouy]+/gi) || []).length), per = n / syl;
+  return Array.from({ length: n }, (_, k) => (k >= n - 1 ? 0 : 0.2 + 0.65 * Math.sin(Math.PI * ((k % per) / per))));
+}
+function lipSync(x) {
+  const a = []; let prev = -1;
+  mouthEnv(x).forEach((o, k) => { o = Math.round(Math.max(0, Math.min(1, o)) * 8) / 8; if (Math.abs(o - prev) < 0.1) return; prev = o; const ry = 2 + 15 * o, at = f2(x.start + k / 12);
+    a.push("tl.to('#sbmo',{attr:{ry:" + ry.toFixed(1) + "},duration:.07,ease:'sine.out'}," + at + ");tl.to('#sbtg',{attr:{cy:" + (144.5 + 0.6 * ry).toFixed(1) + "},duration:.07}," + at + ');'); });
+  const end = f2(x.start + x.dur);
+  a.push("tl.to('#sbmo',{attr:{ry:5},duration:.12}," + end + ");tl.to('#sbtg',{attr:{cy:147.5},duration:.12}," + end + ');');
+  a.push("tl.to('#sbface',{y:2.5,duration:.12,yoyo:true,repeat:1,ease:'sine.inOut'}," + f2(x.start) + ');');
+  return a.join('');
+}
+// procedural foley (lemo-opuscar TECHNIQUE §6 idea): every visible action gets a sound
+let SFXQ = [];
+const SFX_VOL = { pop: 0.4, whoosh: 0.28, stamp: 0.5, thud: 0.35, keys: 0.32, ding: 0.3 };
+function synthSfx(kind) {
+  const sr = 44100; let seed = 9187; const noise = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x3fffffff - 1; };
+  const mk = (sec, fn) => { const n = Math.round(sr * sec), s = new Float32Array(n); for (let i = 0; i < n; i++) s[i] = fn(i / sr, i); return s; };
+  let ph = 0, lp = 0, lp2 = 0;
+  if (kind === 'pop') return mk(0.13, t => { ph += 2 * Math.PI * (480 + 1300 * Math.min(1, t / 0.05)) / sr; return Math.sin(ph) * Math.exp(-t * 34) * 0.8; });
+  if (kind === 'whoosh') return mk(0.4, t => { const e = Math.sin(Math.PI * t / 0.4) ** 2, al = 0.03 + 0.3 * (t / 0.4); lp += al * (noise() - lp); lp2 += 0.4 * (lp - lp2); return (lp - 0.6 * lp2) * e * 1.6; });
+  if (kind === 'stamp') return mk(0.32, t => { ph += 2 * Math.PI * (120 - 60 * Math.min(1, t / 0.15)) / sr; lp += 0.35 * (noise() - lp); return Math.sin(ph) * Math.exp(-t * 13) * 0.9 + lp * Math.exp(-t * 55) * 0.9; });
+  if (kind === 'thud') return mk(0.22, t => { ph += 2 * Math.PI * (95 - 40 * Math.min(1, t / 0.12)) / sr; return Math.sin(ph) * Math.exp(-t * 20) * 0.8; });
+  if (kind === 'ding') return mk(0.9, t => (Math.sin(2 * Math.PI * 1568 * t) + 0.5 * Math.sin(2 * Math.PI * 2352 * t) + 0.25 * Math.sin(2 * Math.PI * 3136 * t)) * Math.exp(-t * 5) * 0.3);
+  if (kind === 'keys') { const s = new Float32Array(sr * 3); let t0 = 0.02, k = 0; while (t0 < 2.95) { const st = Math.round(t0 * sr); for (let i = 0; i < sr * 0.03 && st + i < s.length; i++) { const t = i / sr; s[st + i] += noise() * Math.exp(-t * 260) * 0.55 + Math.sin(2 * Math.PI * (2600 + (k % 3) * 300) * t) * Math.exp(-t * 140) * 0.25; } t0 += 0.07 + ((k * 0.618) % 1) * 0.06; k++; } return s; }
+  return new Float32Array(1);
+}
+function wavBuf(s, sr = 44100) { const n = s.length, b = Buffer.alloc(44 + n * 2); b.write('RIFF', 0); b.writeUInt32LE(36 + n * 2, 4); b.write('WAVE', 8); b.write('fmt ', 12); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(sr, 24); b.writeUInt32LE(sr * 2, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(n * 2, 40); for (let i = 0; i < n; i++) b.writeInt16LE(Math.round(Math.max(-1, Math.min(1, s[i])) * 32767), 44 + i * 2); return b; }
 
 // ---------------- styles ----------------
 const css = F => `
@@ -217,8 +290,7 @@ body,html{background:#0b0f17}
 .heroshade{position:absolute;left:0;top:0;width:${F.W}px;height:${F.H}px;z-index:1;background:linear-gradient(180deg,#0b0f17cc 0%,#0b0f1744 40%,#0b0f17aa 70%,#0b0f17f2 88%)}
 .pw{position:relative;transform-origin:0 0}.hl{position:absolute;border:5px solid #ffc83d;border-radius:12px;box-shadow:0 0 0 4000px #0009,0 0 30px #ffc83d88;opacity:0}
 .cur{color:#3fb950}
-.sbimg{position:relative;height:100%;aspect-ratio:${STARBY_IMG.w}/${STARBY_IMG.h};margin:0 auto;filter:drop-shadow(0 18px 24px #0009)}#sbtalk{position:absolute;inset:0;transform-origin:50% 100%}#sbtalk img{width:100%;height:100%;display:block}
-.lid{position:absolute;border-radius:50%;background:radial-gradient(ellipse at 50% 35%,#fbd463,#f1aa35);transform:scaleY(0);transform-origin:50% 0}
+
 .row img{width:64px;height:64px;border-radius:16px}.row .n{font-size:36px;font-weight:800}.row .m{font-size:26px;color:#8b949e}
 `;
 
@@ -234,12 +306,12 @@ const A = {
   enter: (p, S) => `tl.from('#${p}',{opacity:0,y:60,duration:.5,ease:'power3.out'},${f2(S)});`,
   exit: (p, S, D) => `tl.to('#${p}',{opacity:0,y:-40,duration:.3,ease:'power2.in'},${f2(S + D - 0.32)});`,
   count: (sel, to, at, dur = 1.3) => { const [div, , snap] = unitOf(Math.round(to || 0)); const v = +(Math.round(to || 0) / div).toFixed(snap < 1 ? 1 : 0); return `tl.fromTo('${sel} .num',{innerText:0},{innerText:${v},snap:{innerText:${snap}},duration:${dur},ease:'power2.out'},${f2(at)});`; },
-  pop: (sel, at) => `tl.from('${sel}',{opacity:0,scale:.5,duration:.5,ease:'back.out(2)'},${f2(at)});`,
+  pop: (sel, at) => (SFXQ.push([at, 'pop']), `tl.from('${sel}',{opacity:0,scale:.5,duration:.5,ease:'back.out(2)'},${f2(at)});`),
   up: (sel, at, st = 0.15) => `tl.from('${sel}',{opacity:0,y:50,duration:.45,stagger:${st},ease:'power3.out'},${f2(at)});`,
-  type: (sel, text, at, dur) => `tl.from('${sel} .ch',{opacity:0,duration:.01,stagger:${(dur / Math.max(1, [...String(text)].length)).toFixed(4)},ease:'none'},${f2(at)});`,
+  type: (sel, text, at, dur) => (SFXQ.push([at, 'keys', 0, dur]), `tl.from('${sel} .ch',{opacity:0,duration:.01,stagger:${(dur / Math.max(1, [...String(text)].length)).toFixed(4)},ease:'none'},${f2(at)});`),
   words: (sel, at) => `tl.from('${sel} .w',{opacity:0,y:80,rotate:5,duration:.55,stagger:.08,ease:'back.out(1.8)'},${f2(at)});`,
-  stamp: (sel, at) => `tl.from('${sel}',{scale:2.4,opacity:0,rotate:-16,duration:.45,ease:'back.out(2.2)'},${f2(at)});`,
-  sticker: (sel, at, hold = 1.8, rot = -4) => `tl.fromTo('${sel}',{opacity:0,scale:.3,rotation:${rot - 14}},{opacity:1,scale:1,rotation:${rot},duration:.32,ease:'back.out(2.4)'},${f2(at)});` + (hold ? `tl.to('${sel}',{opacity:0,scale:.85,duration:.18},${f2(at + hold)});` : ''),
+  stamp: (sel, at) => (SFXQ.push([at + 0.3, 'stamp']), `tl.from('${sel}',{scale:2.4,opacity:0,rotate:-16,duration:.45,ease:'back.out(2.2)'},${f2(at)});`),
+  sticker: (sel, at, hold = 1.8, rot = -4) => (SFXQ.push([at, 'pop']), `tl.fromTo('${sel}',{opacity:0,scale:.3,rotation:${rot - 14}},{opacity:1,scale:1,rotation:${rot},duration:.32,ease:'back.out(2.4)'},${f2(at)});` + (hold ? `tl.to('${sel}',{opacity:0,scale:.85,duration:.18},${f2(at + hold)});` : '')),
   bar: (sel, frac, at) => `tl.fromTo('${sel}',{scaleX:0},{scaleX:${Math.max(0.015, Math.min(1, frac)).toFixed(3)},duration:1,ease:'power3.out'},${f2(at)});`,
 };
 const brand = (extra = '') => `<div class="brand">★ <b>GitHub Star Board</b>${extra ? ' · ' + esc(extra) : ''}</div>`;
@@ -417,24 +489,21 @@ function buildSpecs(data, types, site, infos = {}) {
 // ---------------- composition ----------------
 function compose(spec, timing, opts = {}) {
   const { F } = spec, total = timing.total, gsapSrc = opts.gsapSrc || 'assets/gsap.min.js';
-  const parts = [], anims = [], audios = [], caps = [], IMG = opts.starbyImg;
+  const parts = [], anims = [], audios = [], caps = []; SFXQ = [];
+  anims.push("tl.set('.sblid',{scaleY:0,transformOrigin:'50% 0%'},0);tl.set('#sbmo',{attr:{ry:5}},0);tl.set('#sbtg',{attr:{cy:147.5}},0);");
   spec.scenes.forEach((s, i) => {
     const t = timing.scenes[i], p = `s${i}`;
     parts.push(`<div id="${p}" class="clip scene${s.first ? ' hook' : ''}" data-start="${f2(t.S)}" data-duration="${f2(t.D)}" data-track-index="1">${s.html(p, F, t)}</div>`);
+    if (i > 0) SFXQ.push([t.S - 0.08, 'whoosh']);
     anims.push(s.first ? '' : A.enter(p, t.S), s.anim(p, t.S, t.D, t.M, F), i < spec.scenes.length - 1 ? A.exit(p, t.S, t.D) : '');
     // Starby: position, mood
     const center = F.vert ? { x: 350, y: -30, s: 1.5 } : { x: 30, y: -40, s: 1.4 };
     const pos = s.bot === 'center' ? center : s.bot === 'hide' ? { x: -500, y: 0, s: 1 } : { x: 0, y: 0, s: 1 };
-    anims.push(`tl.to('#bot',{x:${pos.x},y:${pos.y},scale:${pos.s},duration:.6,ease:'back.out(1.4)'},${f2(t.S)});`);
-    const mood = { happy: [-4, 0, 0, 1], wow: [-9, 0, 0, 1.15], think: [-2, -10, 6, 1], skeptic: [-8, -14, 10, 0.95] }[s.mood || 'happy'];
-    if (IMG) anims.push(`tl.to('#sbbody',{scale:${s.mood === 'wow' ? 1.07 : 1},rotation:${{ think: -5, skeptic: 6 }[s.mood] || 0},transformOrigin:'50% 95%',duration:.35,ease:'back.out(1.6)'},${f2(t.S + 0.1)});`);
-    else anims.push(`tl.to('#sbbrowL',{y:${mood[0]},rotation:${mood[1]},svgOrigin:'81 79',duration:.3},${f2(t.S + 0.1)});tl.to('#sbbrowR',{y:${s.mood === 'skeptic' ? 2 : mood[0]},rotation:${mood[2]},svgOrigin:'119 79',duration:.3},${f2(t.S + 0.1)});tl.to('#sbeyes',{scale:${mood[3]},svgOrigin:'100 100',duration:.3},${f2(t.S + 0.1)});`);
-    if (IMG) anims.push(`tl.fromTo('#botinner',{y:0},{y:-30,duration:.17,yoyo:true,repeat:1,ease:'power2.out'},${f2(t.S)});`);
-    else anims.push(`tl.fromTo('#sbbody',{rotation:0,svgOrigin:'100 110'},{rotation:${i % 2 ? 8 : -8},svgOrigin:'100 110',duration:.25,yoyo:true,repeat:1,ease:'sine.inOut'},${f2(t.S)});`);
+    anims.push(`tl.to('#bot',{x:${pos.x},y:${pos.y},scale:${pos.s},duration:.7,ease:'power3.inOut'},${f2(Math.max(0, t.S - 0.1))});`);
+    anims.push(starbyAct(s.mood || 'happy', t.S));
     t.sents.forEach((x, j) => {
       audios.push(`<audio data-start="${f2(x.start)}" data-duration="${f2(x.dur)}" data-track-index="${6 + (j % 2)}" data-volume="1" src="${esc(x.audio)}"></audio>`);
-      const flaps = Math.max(1, Math.floor(x.dur / 0.2));
-      anims.push(IMG ? `tl.to('#sbtalk',{scaleY:1.035,scaleX:.985,duration:.1,yoyo:true,repeat:${flaps * 2 - 1},ease:'sine.inOut'},${f2(x.start)});` : `tl.to('#sbmouth',{attr:{ry:11},duration:.1,yoyo:true,repeat:${flaps * 2 - 1},ease:'sine.inOut'},${f2(x.start)});`);
+      anims.push(lipSync(x));
       const cap = noUrl(SUBS === 'ko' ? (x.ko || x.text) : x.text), max = F.vert ? (SUBS === 'ko' ? 36 : 44) : 64;
       const pieces = []; let buf = '';
       for (const seg of cap.split(/(?<=[.!?。,，])\s+/)) { if ((buf + ' ' + seg).trim().length > max && buf) { pieces.push(buf.trim()); buf = seg; } else buf = (buf + ' ' + seg).trim(); }
@@ -449,9 +518,11 @@ function compose(spec, timing, opts = {}) {
       });
     });
   });
-  // blink every ~3.2s, idle bob
-  for (let b = 1.6; b < total - 0.3; b += 3.2 + ((b * 7) % 1)) anims.push(IMG ? `tl.to('#sbbody .lid',{scaleY:1,duration:.07,yoyo:true,repeat:1},${f2(b)});` : `tl.to('#sbeyes',{scaleY:.1,svgOrigin:'100 100',duration:.06,yoyo:true,repeat:1},${f2(b)});`);
-  anims.push(`tl.to(${IMG ? "'#sbtalk'" : "'#botinner'"},{y:-14,duration:1.1,yoyo:true,repeat:${Math.max(1, Math.floor(total / 1.1))},ease:'sine.inOut'},0);`);
+  // irregular blinks (sometimes a double blink) + slow breathing; no fast bobbing
+  for (let b = 1.4, k = 0; b < total - 0.3; k++) { anims.push("tl.to('.sblid',{scaleY:1,duration:.07,yoyo:true,repeat:" + (k % 5 === 3 ? 3 : 1) + "}," + f2(b) + ');'); b += 2.3 + ((k * 0.618) % 1) * 2.6; }
+  anims.push("tl.to('#sbbody',{scaleY:1.014,scaleX:.996,svgOrigin:'120 250',duration:1.7,yoyo:true,repeat:" + Math.max(1, Math.floor(total / 1.7)) + ",ease:'sine.inOut'},0);");
+  const sfx = SFXQ.filter(([at]) => at >= 0 && at < total - 0.2).sort((a, b) => a[0] - b[0]).map(([at, kind, vol, dur], k) =>
+    '<audio data-start="' + f2(at) + '" data-duration="' + f2(Math.min(kind === 'keys' ? Math.min(2.9, dur || 1) : kind === 'ding' ? 0.9 : 0.4, total - at)) + '" data-track-index="' + (12 + (k % 6)) + '" data-volume="' + (vol || SFX_VOL[kind] || 0.3) + '" src="assets/sfx-' + kind + '.wav"></audio>');
   const bgCols = ['#1f6feb', '#a371f7', '#f78166', '#ffc83d'];
   const blobs = bgCols.map((c, i) => `<div class="blob" id="b${i}" style="background:radial-gradient(circle,${c} 0%,${c}55 35%,transparent 70%);width:${F.W * 0.6}px;height:${F.W * 0.6}px;left:${[10, 55, 20, 60][i]}%;top:${[5, 15, 60, 55][i]}%"></div>`).join('');
   const bgAnim = bgCols.map((_, i) => `tl.to('#b${i}',{x:${[260, -220, 180, -260][i]},y:${[180, 240, -200, -160][i]},scale:${[1.25, 0.85, 1.2, 0.9][i]},duration:${f2(total / 2)},ease:'sine.inOut',yoyo:true,repeat:1},0);`).join('\n');
@@ -459,10 +530,11 @@ function compose(spec, timing, opts = {}) {
 <div id="root" data-composition-id="root" data-start="0" data-width="${F.W}" data-height="${F.H}">
   <div id="bgwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="0" style="position:absolute;inset:0"><div class="bg">${blobs}</div><div class="grid"></div></div>
   ${parts.join('\n  ')}
-  <div id="botwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="4" style="position:absolute;inset:0;pointer-events:none"><div id="bot"><div id="botinner" style="width:100%;height:100%">${IMG ? starbyImgHtml(IMG) : STARBY}</div></div></div>
+  <div id="botwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="4" style="position:absolute;inset:0;pointer-events:none"><div id="bot"><div id="botinner" style="width:100%;height:100%">${starbySvg()}</div></div></div>
   ${caps.join('\n  ')}
   <div id="progwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="10" style="position:absolute;inset:0;pointer-events:none"><div class="prog" id="prog"></div></div>
   ${audios.join('\n  ')}
+  ${sfx.join('\n  ')}
   <script src="${gsapSrc}"></script>
   <script>
     const tl = gsap.timeline({ paused: true });
@@ -640,14 +712,19 @@ async function main() {
           } catch (e) { console.log(`  tts retry ${a + 1} (${spec.id} ${i}.${j}): ${String(e.message).split('\n')[0].slice(0, 160)}`); await new Promise(r => setTimeout(r, 2500)); }
         }
         if (!dur) { dur = Math.max(1.5, txt.split(/\s+/).length / 2.6); await run('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono', '-t', String(dur), path.join(dir, f)]); }
-        M.push(t); sents.push({ start: t, dur, audio: f, text: txt, ko: s.ko[j] }); t += dur + GAP;
+        let env = null;
+        try { const { stdout } = await run('ffmpeg', ['-v', 'error', '-i', path.join(dir, f), '-ac', '1', '-ar', '8000', '-f', 's16le', '-'], { encoding: 'buffer', maxBuffer: 64e6 });
+          const win = Math.round(8000 / 12), n = Math.floor(stdout.length / 2), raw = [];
+          for (let i = 0; i + win <= n; i += win) { let q2 = 0; for (let k = 0; k < win; k++) { const v = stdout.readInt16LE((i + k) * 2) / 32768; q2 += v * v; } raw.push(Math.sqrt(q2 / win)); }
+          const mx = Math.max(1e-4, ...raw); env = raw.map(v => Math.max(0, Math.min(1, (v / mx - 0.08) / 0.62)));
+        } catch (e) { console.log('  envelope failed: ' + String(e.message).slice(0, 80)); }
+        M.push(t); sents.push({ start: t, dur, audio: f, text: txt, ko: s.ko[j], env }); t += dur + GAP;
       }
       const D = t - S + TAIL; tsc.push({ S, D, M, sents }); cur = S + D;
     }
     const timing = { total: cur, scenes: tsc };
-    let starbyImg = null;
-    try { await fs.copyFile(path.join(path.dirname(path.resolve(process.argv[1])), 'starby.png'), path.join(assets, 'starby.png')); starbyImg = 'assets/starby.png'; } catch {}
-    await fs.writeFile(path.join(dir, 'index.html'), compose(spec, timing, { starbyImg }));
+    for (const kind of ['pop', 'whoosh', 'stamp', 'thud', 'keys', 'ding']) await fs.writeFile(path.join(assets, 'sfx-' + kind + '.wav'), wavBuf(synthSfx(kind)));
+    await fs.writeFile(path.join(dir, 'index.html'), compose(spec, timing));
     const outFile = path.join(OUT, `${spec.id}.mp4`);
     console.log(`render: ${spec.id} (${timing.total.toFixed(1)}s, ${spec.scenes.length} scenes)`);
     const t0 = Date.now();

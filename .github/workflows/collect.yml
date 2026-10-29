@@ -49,8 +49,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="board-$(date -u +%F)"
-          gh release delete "$TAG" -y --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" --title "Star Board $(date -u +%F)" --notes-file data/changes.md --latest=false || echo "release skipped"
+          # 같은 날 재실행 시 릴리스를 지우지 않고 노트만 갱신 (첫부된 영상 보존)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file data/changes.md || echo "release edit skipped"
+          else
+            gh release create "$TAG" --title "Star Board $(date -u +%F)" --notes-file data/changes.md --latest=false || echo "release skipped"
+          fi
 
       - uses: actions/configure-pages@v5
 

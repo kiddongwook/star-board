@@ -374,9 +374,13 @@ function scoreRepo(r, tg) {
   const act = pushedDays == null ? null : pushedDays > 365 ? 'dead' : pushedDays > 180 ? 'inactive' : 'active';
   const isNew = ageDays != null && ageDays < 180;
   // 문서/학습형: 코드를 가져다 쓰는 게 아니라 읽는 저장소 (awesome 리스트, 튜토리얼, 면접 대비, 강의, 책, 로드맵)
-  const LEARN = /^(awesome.*|tutorials?|education|educational|learning|learn-to-code|interview|interview-questions|interview-preparation|coding-interviews|course|courses|book|books|ebook|roadmap|cheatsheet|guide|resources|study|lecture-notes|exercises|algorithms-and-data-structures|system-design)$/;
+  const LEARN = /^(awesome.*|tutorials?|education|educational|learning|learn-to-code|interview|interview-questions|interview-preparation|coding-interviews|course|courses|book|books|ebook|roadmap|cheatsheet|guide|resources|study|lecture-notes|exercises|algorithms-and-data-structures|system-design|leetcode|leetcode-solutions|for-beginners|beginners|lessons|curriculum|tutorial-code|study-notes|papers|reading-list)$/;
   const isDoc = !r.l || r.l === 'Markdown' || (r.t || []).some(x => LEARN.test(x)) || /^awesome[-_]/i.test(r.n.split('/')[1])
-    || /\b(tutorials?|interview (questions|preparation|handbook)|learn(ing)? (to|how)|course|curriculum|roadmap|cheat ?sheet|primer)\b/i.test(r.d || '');
+    || /\b(tutorials?|interview (questions|preparation|handbook)|learn(ing)? (to|how)|course|curriculum|roadmap|cheat ?sheet|primer|best practices|style guide|guides?,|guides? (to|for)|for beginners|(how to|build(ing)?|implement(ing)?|create|creating|write|writing) [\w .-]{0,30}from scratch|handbook|lessons|teach (yourself|themselves|themself)|in the form of animation)\b/i.test(r.d || '')
+    || /(教程|面试|入门|从新手到大师|指南|笔记|题解|刷题|手册|学习路线|技术原理|实战经验|分享)/.test(r.d || '')
+    || /(^|[-_])(tutorials?|handbook|interview|leetcode|best-?practices|for-beginners|100-days|[a-z]+-?101|course|lessons|selfteaching|from-scratch|-guide)([-_]|$)/i.test(r.n.split('/')[1]);
+  const alive = !!D && ((D.c90 ?? 0) >= 10 || (lrDays != null && lrDays <= 90));
+  const established = (forkRatio != null && forkRatio >= 0.05) || (D?.ppl ?? 0) >= 30 || (adoption != null && adoption >= 40);
   let v;
   if (r.a) v = ['archived', '아카이브됨'];
   else if (trust != null && trust < 50) v = ['bad', '스타 조작 의심'];
@@ -384,8 +388,11 @@ function scoreRepo(r, tg) {
   else if (act === 'dead') v = ['dead', '사실상 중단'];
   else if (!D) v = ['quick', '심층 분석 대기'];
   else if (util == null) v = ['na', '데이터 부족'];
+  // '검증된 인기'는 지금도 움직이는 증거(90일 커밋, 최근 릴리스, 실사용량) 중 하나가 있어야 함
+  else if (pop >= 55 && util >= 55 && (alive || (adoption != null && adoption >= 60))) v = ['good', '검증된 인기'];
+  // 2년 넘게 쓰인 인기 저장소가 조용한 건 '완성된 도구'일 가능성이 커서 하이프로 보지 않음 (포크·참여자·사용처 중 하나는 있어야)
+  else if (pop >= 55 && ((adoption != null && adoption >= 80) || (ageDays != null && ageDays >= 730 && established))) v = ['mature', '성숙/유지보수'];
   else if (pop >= 55 && util >= 55) v = ['good', '검증된 인기'];
-  else if (pop >= 55 && adoption != null && adoption >= 80) v = ['mature', '성숙/유지보수'];
   else if (pop >= 55) v = ['hype', '하이프 주의'];
   else if (util >= 55) v = ['gem', '숨은 보석'];
   else v = ['early', '초기/정체'];
@@ -477,7 +484,12 @@ function starConsistency(repos) {
     }
     // 이슈/PR/참여자만 낮은 경우는 '기여를 받지 않는 공개 코드'가 흔해서, watchers나 포크 중 하나는 반드시 낮아야 판정에 반영
     const audience = low.some(s => s.k === 'watchers' || s.k === 'forks');
-    if (low.length >= 3 && audience && highGrowth && ['good', 'hype', 'gem', 'mature', 'early'].includes(r.sc.v)) {
+    const lrd = D.lr ? (now - Date.parse(D.lr)) / DAY : null;
+    const building = (D.c90 ?? 0) >= 300 && (D.ppl ?? 0) >= 15 && lrd != null && lrd <= 30; // 활발히 개발·배포 중이면 판정은 유지하고 근거만 경고로 표시
+    if (low.length >= 3 && audience && highGrowth && building) {
+      r.why.unshift(['-', `스타 증가 속도는 같은 규모 상위 ${100 - Math.round(sp * 100)}%인데 참여 지표 ${low.length}개가 하위 10% (개발은 활발해 판정에는 미반영)`]);
+      r.wc.unshift(['-', 'consflag', { g: 100 - Math.round(sp * 100), n: low.length }]);
+    } else if (low.length >= 3 && audience && highGrowth && ['good', 'hype', 'gem', 'mature', 'early'].includes(r.sc.v)) {
       r.sc.v = 'bad'; r.sc.vt = VERDICTS_BAD; flagged++;
       r.why.unshift(['-', `스타 증가 속도는 같은 규모 상위 ${100 - Math.round(sp * 100)}%인데 참여 지표 ${low.length}개가 하위 10%`]);
       r.wc.unshift(['-', 'consflag', { g: 100 - Math.round(sp * 100), n: low.length }]);
@@ -744,7 +756,7 @@ button{background:#238636;color:#fff;border:0;border-radius:6px;padding:7px 14px
 <div class="muted">Repository verdict · data as of ${day} (updated daily)</div>
 <h1><a href="https://github.com/${hesc(r.n)}">${hesc(r.n)}</a></h1>
 <p>${hesc(r.d || '')}</p>
-<div class="v v-${sc.v}">${hesc(ven)} · ${hesc(vko)}</div>
+<div class="v v-${sc.v}">${hesc(ven)} · ${hesc(vko)}</div>${boardRepo ? `<p class="muted">Wrong verdict? <a href="https://github.com/${boardRepo}/issues/new?template=verdict.yml&title=${encodeURIComponent('Verdict: ' + r.n)}&repo=${encodeURIComponent(r.n)}&current=${encodeURIComponent(ven)}">Report it</a> · 판정이 틀렸다면 알려주세요</p>` : ''}
 <div class="sc"><div>Utility<b>${sc.util ?? '-'}</b></div><div>Popularity<b>${sc.pop ?? '-'}</b></div><div>best-of quality<b>${sc.bo ?? '-'}</b></div><div>Stars<b>${nf(r.s)}</b></div><div>7-day gain<b>${sc.g7 != null ? '+' + nf(sc.g7) : '-'}</b></div></div>
 <h2>Evidence</h2><ul>${li(en)}</ul>
 <h2>근거 (한국어)</h2><ul>${li(r.why || [])}</ul>
@@ -757,7 +769,7 @@ ${row('Topics', hesc((r.t || []).join(', ') || '-'))}${row('Trust (fake-star che
 <h2>Copy for AI</h2><p class="muted">Paste this into ChatGPT, Claude or Gemini to discuss this repository with sourced, dated facts.</p>
 <textarea id="ai" readonly>${hesc(aiSnapshot(r, out, siteUrl))}</textarea><button onclick="navigator.clipboard.writeText(document.getElementById('ai').value);this.textContent='Copied'">Copy</button>
 <h2>Badge</h2><p><img src="${hesc(badgeUrl)}" alt="Star Board badge"></p><textarea readonly style="min-height:60px">${hesc(badgeMd)}</textarea>
-<p class="muted">Machine-readable: <a href="${root}api/repo/${repoFile(r.n)}">api/repo/${hesc(repoFile(r.n))}</a> · <a href="${root}llms.txt">llms.txt</a> · Scores are heuristics from public GitHub data. Methodology: <a href="${root}?lang=en">dashboard guide</a>.</p>
+<p class="muted">Machine-readable: <a href="${root}api/repo/${repoFile(r.n)}">api/repo/${hesc(repoFile(r.n))}</a> · <a href="${root}llms.txt">llms.txt</a> · Scores are heuristics from public GitHub data. Methodology: <a href="${root}?lang=en">how verdicts work (Guide tab)</a>.</p>
 </main></body></html>`;
 }
 

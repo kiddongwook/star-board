@@ -23,8 +23,9 @@ GitHub 스타 순위표 + 실효성 검증 대시보드. 매일 자동으로 수
 4. **Actions** 탭 > `Collect & Deploy Star Board` > **Run workflow**로 첫 수집을 실행합니다 (약 5~10분).
 5. 완료되면 `https://<내아이디>.github.io/star-board/`에서 대시보드를 볼 수 있습니다.
 
-이후 매일 06:00(KST)에 자동 수집됩니다. 토큰은 Actions 기본 `GITHUB_TOKEN`을 쓰므로 따로 만들 필요가 없습니다.
-심층 분석 개수를 늘리고 싶으면 개인 토큰을 `STAR_BOARD_TOKEN` 시크릿으로 등록하고 `enrich.max`를 올리세요.
+이후 매일 06:00(KST)에 자동 수집됩니다. 커밋/참여자/이슈/다운로드 분석은 Actions 기본 `GITHUB_TOKEN`으로 동작합니다.
+
+**가짜 스타 검사(신뢰도)**는 기본 토큰으로는 스타 누른 계정 목록을 읽을 수 없어 꺼져 있습니다. 켜려면 개인 토큰(Fine-grained, Public repositories 읽기 전용)을 만들어 저장소 **Settings > Secrets and variables > Actions**에 `STAR_BOARD_TOKEN` 이름으로 등록하세요.
 
 ## 로컬 실행
 
@@ -42,7 +43,7 @@ GITHUB_TOKEN=github_pat_xxx node collect.mjs   # Node 20+
 - `categories`: 분야 추가/삭제 (GitHub topic 기준)
 - `trending.languages`: 수집할 Trending 언어
 - `top.languages`: 언어별 순위 대상
-- `enrich.max`: 심층 분석 저장소 수 (기본 600, GITHUB_TOKEN 시간당 한도 내)
+- `enrich.max`: 심층 분석 저장소 수 (기본 2500, 1,500개 기준 GraphQL 약 250포인트 사용)
 
 ## 참고
 

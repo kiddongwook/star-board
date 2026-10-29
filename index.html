@@ -94,7 +94,7 @@ code{background:var(--panel2);padding:1px 6px;border-radius:4px}
 </header>
 <main id="main"></main>
 
-<script src="data/data.js"></script>
+<script>document.write('<script src="data/data.js?t=' + Math.floor(Date.now() / 300000) + '"><\/script>');</script>
 <script>
 const D = window.STAR_BOARD;
 const $ = s => document.querySelector(s);

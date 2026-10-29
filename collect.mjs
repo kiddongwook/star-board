@@ -26,9 +26,9 @@ const DEFAULT_CONFIG = {
     { id: 'embedded', name: '임베디드 / IoT', topics: ['embedded', 'iot', 'firmware'] },
   ],
   // 심층 분석 (GraphQL, 토큰 필요): 커밋/참여자/이슈/릴리스/스타 계정 표본
-  enrich: { max: 600, batch: 12, stargazerSample: 30 },
+  enrich: { max: 2500, batch: 12, stargazerSample: 30 },
   // npm / PyPI / crates.io 다운로드 조회 대상 수
-  downloads: { max: 400 },
+  downloads: { max: 2500 },
   historyKeepDays: 400,
 };
 

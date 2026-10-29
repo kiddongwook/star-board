@@ -371,11 +371,14 @@ function scoreRepo(r, tg) {
   // 활동 상태 (best-of 기본값): 6개월 무활동 = 비활성, 12개월 = 사실상 중단
   const act = pushedDays == null ? null : pushedDays > 365 ? 'dead' : pushedDays > 180 ? 'inactive' : 'active';
   const isNew = ageDays != null && ageDays < 180;
-  const isDoc = !r.l || r.l === 'Markdown' || (r.t || []).some(x => /^awesome/.test(x)) || /^awesome[-_]/i.test(r.n.split('/')[1]);
+  // 문서/학습형: 코드를 가져다 쓰는 게 아니라 읽는 저장소 (awesome 리스트, 튜토리얼, 면접 대비, 강의, 책, 로드맵)
+  const LEARN = /^(awesome.*|tutorials?|education|educational|learning|learn-to-code|interview|interview-questions|interview-preparation|coding-interviews|course|courses|book|books|ebook|roadmap|cheatsheet|guide|resources|study|lecture-notes|exercises|algorithms-and-data-structures|system-design)$/;
+  const isDoc = !r.l || r.l === 'Markdown' || (r.t || []).some(x => LEARN.test(x)) || /^awesome[-_]/i.test(r.n.split('/')[1])
+    || /\b(tutorials?|interview (questions|preparation|handbook)|learn(ing)? (to|how)|course|curriculum|roadmap|cheat ?sheet|primer)\b/i.test(r.d || '');
   let v;
   if (r.a) v = ['archived', '아카이브됨'];
   else if (trust != null && trust < 50) v = ['bad', '스타 조작 의심'];
-  else if (isDoc) v = ['doc', '문서/큐레이션형'];
+  else if (isDoc) v = ['doc', '학습/문서형'];
   else if (act === 'dead') v = ['dead', '사실상 중단'];
   else if (!D) v = ['quick', '심층 분석 대기'];
   else if (util == null) v = ['na', '데이터 부족'];

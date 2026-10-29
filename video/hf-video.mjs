@@ -442,7 +442,7 @@ async function translateKo(texts) {
 async function main() {
   const fs = await import('node:fs/promises');
   const path = await import('node:path');
-  const { execFile } = await import('node:child_process');
+  const { execFile, spawn } = await import('node:child_process');
   const run = (await import('node:util')).promisify(execFile);
   const arg = k => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : null; };
   const types = (arg('type') || 'daily,spotlight').split(',').flatMap(t => (t === 'all' ? ['daily', 'spotlight', 'weekly'] : [t.trim()]));
@@ -540,7 +540,15 @@ async function main() {
     await fs.writeFile(path.join(dir, 'index.html'), compose(spec, timing));
     const outFile = path.join(OUT, `${spec.id}.mp4`);
     console.log(`render: ${spec.id} (${timing.total.toFixed(1)}s, ${spec.scenes.length} scenes)`);
-    await run('npx', ['hyperframes', 'render', dir, '--output', outFile, '--quality', 'standard', '--fps', ENV.HF_FPS || '24', '--quiet'], { maxBuffer: 1 << 26, timeout: 30 * 60000 });
+    const t0 = Date.now();
+    await new Promise((res, rej) => {
+      const ch = spawn('npx', ['hyperframes', 'render', dir, '--output', outFile, '--quality', 'standard', '--fps', ENV.HF_FPS || '24'], { stdio: ['ignore', 'pipe', 'pipe'] });
+      let last = 0; const onData = d => { const s = String(d); const m = s.match(/(\d{1,3})%/g); if (m && Date.now() - last > 30000) { last = Date.now(); console.log(`  ${spec.id}: ${m.at(-1)} (${Math.round((Date.now() - t0) / 1000)}s)`); } if (/error/i.test(s)) console.log('  ' + s.trim().slice(0, 300)); };
+      ch.stdout.on('data', onData); ch.stderr.on('data', onData);
+      const killer = setTimeout(() => { ch.kill('SIGKILL'); rej(new Error('render timeout')); }, 30 * 60000);
+      ch.on('close', code => { clearTimeout(killer); code === 0 ? res() : rej(new Error('render exit ' + code)); });
+    });
+    console.log(`  rendered in ${Math.round((Date.now() - t0) / 1000)}s`);
     await fs.writeFile(path.join(OUT, `${spec.id}-script.txt`), spec.scenes.map((s, i) => `[${i + 1}] ${s.say.join(' ')}\n    ${s.ko.join(' ')}`).join('\n\n'));
     const links = spec.list.map(({ r, g }, i) => `${spec.list.length > 1 ? `${i + 1}. ` : ''}${r.n} (+${short(g)}) ${site}r/${r.n}/`).join('\n');
     await fs.writeFile(path.join(OUT, `${spec.id}-youtube.txt`), `${spec.title}\n\n${spec.repo ? `Why ${spec.repo} is trending, what it does, when to use it, and whether people actually use it. / 왜 뜨는지, 언제 쓰면 좋은지, 실제로 쓰이는지까지.` : 'GitHub repos gaining stars fastest, checked against real usage. / 스타가 빠르게 늘어난 저장소를 실제 사용 지표로 확인했습니다.'}\n\n${links}\n\nGitHub Star Board: ${site}\n\n#GitHub #opensource #developer #AI${spec.F.vert ? ' #shorts' : ''}\n`);

@@ -1,13 +1,13 @@
 # Star Board 2026-10-29
 
-저장소 1454개 · 심층 분석 1454개 · 첫 수집 (다음 실행부터 변화 비교) · [대시보드](https://kiddongwook.github.io/star-board/)
+저장소 1482개 · 심층 분석 1482개 · 첫 수집 (다음 실행부터 변화 비교) · [대시보드](https://kiddongwook.github.io/star-board/)
 
 ## 오늘의 Trending
 
 - +1.1k [JetBrains/thinkrail](https://github.com/JetBrains/thinkrail) ★5.5k · 검증된 인기 · 실효 68 · Vibe code with pi in a lightweight, real IDE that customises itself around the w
 - +2.1k [elayadesign/ai-design-skills](https://github.com/elayadesign/ai-design-skills) ★11.5k · 학습/문서형 · 실효 30
-- +1.1k [obra/superpowers](https://github.com/obra/superpowers) ★307.7k · 검증된 인기 · 실효 71 · An agentic skills framework & software development methodology that works.
-- +2.4k [HKUDS/DeepTutor](https://github.com/HKUDS/DeepTutor) ★48.7k · 검증된 인기 · 실효 87 · DeepTutor: Lifelong Personalized Tutoring. https://deeptutor.info/.
+- +1.1k [obra/superpowers](https://github.com/obra/superpowers) ★307.8k · 검증된 인기 · 실효 71 · An agentic skills framework & software development methodology that works.
+- +2.4k [HKUDS/DeepTutor](https://github.com/HKUDS/DeepTutor) ★48.8k · 검증된 인기 · 실효 87 · DeepTutor: Lifelong Personalized Tutoring. https://deeptutor.info/.
 - +117 [macro-inc/macro](https://github.com/macro-inc/macro) ★5.6k · 검증된 인기 · 실효 79 · Macro is a unified workspace for teams: email, chat, docs, tasks, agents, calls,
 - +2.1k [Nutlope/hallmark](https://github.com/Nutlope/hallmark) ★41.2k · 하이프 주의 · 실효 50 · Anti-AI-slop design skill for Claude Code, Cursor, and Codex.
 - +1.5k [pbakaus/impeccable](https://github.com/pbakaus/impeccable) ★93.7k · 검증된 인기 · 실효 79 · The design vocabulary for your coding agent. Steer with polish and bolder, revie

@@ -153,7 +153,8 @@ const GQL_FIELDS = `nameWithOwner description homepageUrl stargazerCount forkCou
  mergedPRs:pullRequests(states:MERGED){totalCount} mentionableUsers{totalCount}
  releases(first:10,orderBy:{field:CREATED_AT,direction:DESC}){totalCount nodes{publishedAt tagName isPrerelease isDraft}}
  defaultBranchRef{target{...on Commit{h90:history(since:$s90){totalCount} h365:history(since:$s365){totalCount}}}}`;
-// 스타 누른 계정 목록은 Actions 기본 GITHUB_TOKEN으로는 접근 불가(FORBIDDEN) -> 개인 토큰(STAR_BOARD_TOKEN)이 있을 때만 사용
+// 스타 누른 계정 목록: 2026년 7월부터 GitHub 정책상 해당 저장소 관리자/협업자만 조회 가능 (타인 저장소는 FORBIDDEN).
+// 첫 요청에서 거부되면 자동으로 빼고 진행. 정책이 다시 풀리면 그대로 다시 동작.
 const GQL_SG = ` stargazers(last:$sg,orderBy:{field:STARRED_AT,direction:ASC}){edges{starredAt node{login createdAt bio company location websiteUrl followers{totalCount} following{totalCount} repositories{totalCount}}}}`;
 
 async function gql(ctx, query, variables) {
@@ -229,7 +230,8 @@ async function enrich(ctx, names) {
       const j = await gql(ctx, q, withSG ? { s90, s365, sg: ctx.config.enrich.stargazerSample } : { s90, s365 });
       if (withSG && (j.errors || []).some(er => (er.path || []).includes('stargazers') && /FORBIDDEN|not accessible/i.test(`${er.type} ${er.message}`))) {
         ctx.noSG = true;
-        ctx.log('  스타 계정 목록 접근 불가 (기본 GITHUB_TOKEN). 가짜 스타 검사 없이 진행합니다. 개인 토큰을 STAR_BOARD_TOKEN 시크릿으로 등록하면 활성화됩니다.');
+        const sgErr = (j.errors || []).find(er => (er.path || []).includes('stargazers'));
+        ctx.log(`  스타 계정 목록 조회 불가 (${sgErr?.type || ''} ${sgErr?.message || ''}). GitHub 2026-07 정책상 타인 저장소의 stargazers는 관리자/협업자만 조회 가능하여 가짜 스타 검사를 건너뜁니다.`);
         continue; // 같은 묶음을 stargazers 없이 다시 요청
       }
       chunk.forEach((n, k) => { const d = j.data?.[`r${k}`]; if (d) { applyGql(ctx, n, d); done++; } });
@@ -539,7 +541,7 @@ function buildSummary(out, siteUrl) {
   const why = r => (r.why || []).filter(w => w[0] !== '·').slice(0, 2).map(w => w[1]).join('; ');
   const line = (r, extra = '') => `${r.n} ★${fmt(r.s)}${extra} · ${r.sc.vt} · 실효 ${r.sc.util ?? '-'} · 품질 ${r.sc.bo ?? '-'}${r.sc.lk && r.sc.lk !== 'perm' ? ` · 라이선스:${r.lic || '없음'}` : ''}${why(r) ? ` · ${why(r)}` : ''}`;
   const L = [`# GitHub Star Board 요약 (${out.generatedAt})`, '',
-    `출처: ${siteUrl || 'GitHub Star Board'} · 저장소 ${Object.keys(R).length}개 · 심층 분석 ${out.deepCount}개 · 가짜 스타 검사 ${out.starCheck ? '켜짐' : '꺼짐(trust 값 없음)'}`,
+    `출처: ${siteUrl || 'GitHub Star Board'} · 저장소 ${Object.keys(R).length}개 · 심층 분석 ${out.deepCount}개 · 가짜 스타 검사 ${out.starCheck ? '켜짐' : '불가(GitHub 2026-07 정책으로 스타 계정 목록 비공개, trust 값 없음)'}`,
     '형식: 저장소 ★스타 (+증가) · 판정 · 실효성(0~100) · best-of 품질점수 · [비허용형 라이선스] · 핵심 근거. 상세는 api/repo/{owner}__{repo}.json', ''];
   const sec = (t, rows) => { if (rows.length) L.push(`## ${t}`, '', ...rows.map((x, i) => `${i + 1}. ${x}`), ''); };
   const tr = (k, n) => (out.trending[k] || []).slice(0, n).filter(x => R[x.n]).map(x => line(R[x.n], ` (+${fmt(x.g)})`));
@@ -579,7 +581,7 @@ GitHub 저장소의 인기, 실제 사용 여부, 품질, 라이선스 위험, �
 
 - popularity (0~100): 누적 스타(로그) 60% + 최근 7일 증가 40%
 - utility (0~100): 실제로 쓰이고 관리되는가. 90일 커밋, 실사용량(패키지 월 다운로드 또는 GitHub Used by), 참여자, 이슈 해결률, 릴리스 품질, 최근 push, PR, 포크비, watchers, 나이
-- trust (0~100): 최근 스타 계정 표본의 가짜 패턴. null이면 검사 안 함 (현재 ${out.starCheck ? '켜짐' : '꺼짐'})
+- trust (0~100): 최근 스타 계정 표본의 가짜 패턴. null이면 검사 못 함 (현재 ${out.starCheck ? '켜짐' : 'GitHub 2026-07 정책으로 타인 저장소의 스타 계정 목록을 볼 수 없어 모두 null'}). null을 '안전'으로 해석하지 말 것
 - bestOf: best-of-lists projectrank 방식 품질 점수 (높을수록 좋음, 보통 10~60)
 - growth7d: 최근 7일 스타 증가 (실측 또는 Trending 기반 추정)
 - verdict: ${Object.entries(VERDICTS).map(([k, v]) => `${k}=${v}`).join(', ')}

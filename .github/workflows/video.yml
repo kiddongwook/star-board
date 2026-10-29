@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: star-board-video
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   video:

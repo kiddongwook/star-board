@@ -174,7 +174,7 @@ function detail(r) {
     ${d ? m('머지된 PR', fmt(d.mp)) : ''}
     ${d ? m('최근 릴리스', d.lr ? `${esc(d.tag || '')} · ${ago(d.lr)}` : '없음') : ''}
     ${m('패키지 월 다운로드', r.dl ? `<a href="${esc(r.dl.u)}" target="_blank">${esc(r.dl.e)}</a> ${fmt(r.dl.m)}` : '-')}
-    ${d ? m('최근 스타 계정 표본', `${d.sgN}명 중 의심 ${d.sgSusp}명 · 24h 최대 ${d.sgBurst ?? '-'}명`) : ''}
+    ${d && d.sgN ? m('최근 스타 계정 표본', `${d.sgN}명 중 의심 ${d.sgSusp}명 · 24h 최대 ${d.sgBurst ?? '-'}명`) : ''}
   </div>
   ${r.why?.length ? `<ul class="why">${r.why.map(([s, t]) => `<li><span class="${s === '+' ? 'p' : s === '-' ? 'mi' : 'z'}">${s === '+' ? '▲' : s === '-' ? '▼' : '•'}</span> ${esc(t)}</li>`).join('')}</ul>` : ''}
   <div class="meta" style="margin:6px 0">${Object.entries(sc.comp || {}).map(([k, v]) => `${names[k]} <b style="color:${col(v)}">${v ?? '–'}</b>`).join(' · ')}</div>
@@ -196,6 +196,7 @@ const SORTS = [['stars', '스타순'], ['util', '실효성순'], ['pop', '인기
 function render() {
   const t = S.tab;
   let h = '';
+  if (D.mode === 'deep' && D.starCheck === false && ['trend', 'real'].includes(t)) h += `<div class="note">신뢰도(가짜 스타 검사)는 꺼져 있습니다. GitHub Actions 기본 토큰으로는 스타 누른 계정 목록을 볼 수 없어서, 개인 토큰을 저장소 시크릿 <code>STAR_BOARD_TOKEN</code>으로 등록해야 켜집니다.</div>`;
   if (D.mode !== 'deep' && t !== 'guide') h += `<div class="note warn">간이 모드 데이터입니다. 커밋, 참여자, 이슈 해결률, 가짜 스타 검사가 빠져 있어 판정이 "심층 분석 대기"로 표시됩니다. GitHub Actions로 배포하면 자동으로 심층 모드로 수집됩니다 (안내 탭).</div>`;
   if (t === 'trend') {
     const P = [['daily', '오늘'], ['weekly', '이번 주'], ['monthly', '이번 달']];

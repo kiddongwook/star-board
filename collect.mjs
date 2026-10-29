@@ -140,8 +140,9 @@ const GQL_FIELDS = `nameWithOwner description homepageUrl stargazerCount forkCou
  watchers{totalCount} openIssues:issues(states:OPEN){totalCount} closedIssues:issues(states:CLOSED){totalCount}
  mergedPRs:pullRequests(states:MERGED){totalCount} mentionableUsers{totalCount}
  releases(first:1,orderBy:{field:CREATED_AT,direction:DESC}){totalCount nodes{publishedAt tagName}}
- defaultBranchRef{target{...on Commit{h90:history(since:$s90){totalCount} h365:history(since:$s365){totalCount}}}}
- stargazers(last:$sg,orderBy:{field:STARRED_AT,direction:ASC}){edges{starredAt node{login createdAt bio company location websiteUrl followers{totalCount} following{totalCount} repositories{totalCount}}}}`;
+ defaultBranchRef{target{...on Commit{h90:history(since:$s90){totalCount} h365:history(since:$s365){totalCount}}}}`;
+// 스타 누른 계정 목록은 Actions 기본 GITHUB_TOKEN으로는 접근 불가(FORBIDDEN) -> 개인 토큰(STAR_BOARD_TOKEN)이 있을 때만 사용
+const GQL_SG = ` stargazers(last:$sg,orderBy:{field:STARRED_AT,direction:ASC}){edges{starredAt node{login createdAt bio company location websiteUrl followers{totalCount} following{totalCount} repositories{totalCount}}}}`;
 
 async function gql(ctx, query, variables) {
   for (let a = 0; a < 4; a++) {
@@ -206,10 +207,16 @@ async function enrich(ctx, names) {
   let batch = ctx.config.enrich.batch, i = 0, done = 0;
   while (i < names.length) {
     const chunk = names.slice(i, i + batch);
-    const body = chunk.map((n, j) => { const [o, r] = n.split('/'); return `r${j}:repository(owner:${JSON.stringify(o)},name:${JSON.stringify(r)}){${GQL_FIELDS}}`; }).join('\n');
-    const q = `query($s90:GitTimestamp!,$s365:GitTimestamp!,$sg:Int!){${body}\nrateLimit{remaining cost}}`;
+    const withSG = !ctx.noSG;
+    const body = chunk.map((n, j) => { const [o, r] = n.split('/'); return `r${j}:repository(owner:${JSON.stringify(o)},name:${JSON.stringify(r)}){${GQL_FIELDS}${withSG ? GQL_SG : ''}}`; }).join('\n');
+    const q = `query($s90:GitTimestamp!,$s365:GitTimestamp!${withSG ? ',$sg:Int!' : ''}){${body}\nrateLimit{remaining cost}}`;
     try {
-      const j = await gql(ctx, q, { s90, s365, sg: ctx.config.enrich.stargazerSample });
+      const j = await gql(ctx, q, withSG ? { s90, s365, sg: ctx.config.enrich.stargazerSample } : { s90, s365 });
+      if (withSG && (j.errors || []).some(er => (er.path || []).includes('stargazers') && /FORBIDDEN|not accessible/i.test(`${er.type} ${er.message}`))) {
+        ctx.noSG = true;
+        ctx.log('  스타 계정 목록 접근 불가 (기본 GITHUB_TOKEN). 가짜 스타 검사 없이 진행합니다. 개인 토큰을 STAR_BOARD_TOKEN 시크릿으로 등록하면 활성화됩니다.');
+        continue; // 같은 묶음을 stargazers 없이 다시 요청
+      }
       chunk.forEach((n, k) => { const d = j.data?.[`r${k}`]; if (d) { applyGql(ctx, n, d); done++; } });
       for (const er of j.errors || []) { const msg = `${(er.path || []).slice(1).join('.')}: ${er.type || ''} ${er.message}`.slice(0, 200); if (!ctx.gqlErr) ctx.gqlErr = new Set(); if (ctx.gqlErr.size < 8 && !ctx.gqlErr.has(msg)) { ctx.gqlErr.add(msg); ctx.log('  GraphQL 오류: ' + msg); } }
       i += chunk.length;
@@ -364,7 +371,7 @@ function finalize(ctx) {
   const rookies = {}; for (const d of cfg.rookies.days) rookies[d] = ctx.lists[`new:${d}`] || [];
   const snapDates = Object.keys(ctx.snapshots).sort();
   return {
-    generatedAt: new Date().toISOString(), mode: ctx.token ? 'deep' : 'quick',
+    generatedAt: new Date().toISOString(), mode: ctx.token ? 'deep' : 'quick', starCheck: !!ctx.token && !ctx.noSG,
     deepCount: Object.values(ctx.repos).filter(r => r.deep).length,
     history: { days: snapDates.length, first: snapDates[0] || null },
     trendingLanguages: cfg.trending.languages, topLanguages: cfg.top.languages, rookieDays: cfg.rookies.days,

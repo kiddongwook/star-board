@@ -308,6 +308,8 @@ function guide() {
   <ul><li>GitHub "Used by"는 공식 API가 없어 스타 상위 400개만 dependents 페이지를 파싱. 모노레포는 기본 선택 패키지 기준이라 0으로 나올 수 있어 0은 무시. 다운로드는 루트 package.json / pyproject.toml / Cargo.toml에서 이름을 찾은 경우만 조회. Docker Hub pulls는 이미지 이름 특정이 어려워 미포함.</li>
   <li>가짜 스타 판정은 휴리스틱입니다. 정상 프로젝트에도 저활동 계정이 섞이므로 단독 근거로 단정하지 마세요.</li>
   <li>Trending은 GitHub 페이지 구조가 바뀌면 수집이 깨질 수 있습니다 (collect.mjs의 parseTrending).</li></ul>
+  <h3>AI 조회용 파일</h3>
+  <p>AI 에이전트가 이 보드 데이터를 바로 읽을 수 있도록 매 실행마다 생성됩니다: <a href="llms.txt">llms.txt</a> (안내), <a href="api/summary.md">api/summary.md</a> (요약), <a href="api/index.json">api/index.json</a> (전체 인덱스), api/repo/{owner}__{repo}.json (저장소 상세), <a href="api/trending.json">trending</a> / <a href="api/top.json">top</a> / <a href="api/rookies.json">rookies</a> / <a href="api/category/index.json">category</a>.</p>
   <h3>자동 업데이트</h3>
   <p>README.md 참고: 이 폴더를 GitHub 저장소로 올리고 Pages를 켜면 매일 06:00(KST)에 Actions가 수집해서 사이트를 갱신합니다. 토큰은 Actions 기본 GITHUB_TOKEN을 쓰므로 따로 만들 필요가 없습니다.</p></div>`;
 }

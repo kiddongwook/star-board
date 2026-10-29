@@ -508,6 +508,112 @@ function enrichOrder(ctx) {
   return out;
 }
 
+// ---------------- AI용 조회 파일 (api/, llms.txt) ----------------
+const VERDICTS = { good: '검증된 인기', mature: '성숙/유지보수', gem: '숨은 보석', hype: '하이프 주의', early: '초기/정체', bad: '스타 조작 의심',
+  doc: '학습/문서형', dead: '사실상 중단', archived: '아카이브됨', quick: '심층 분석 대기', na: '데이터 부족' };
+const API_FIELDS = ['repo', 'stars', 'growth7d', 'popularity', 'utility', 'trust', 'bestOf', 'verdict', 'license', 'licenseKind', 'activity', 'language', 'isNew'];
+const apiRow = r => { const sc = r.sc || {}; return [r.n, r.s ?? null, sc.g7 ?? null, sc.pop ?? null, sc.util ?? null, sc.trust ?? null, sc.bo ?? null, sc.v ?? null, r.lic ?? null, sc.lk ?? null, sc.act ?? null, r.l ?? null, sc.isNew ? 1 : 0]; };
+const repoFile = n => n.replace('/', '__') + '.json';
+const brief = r => ({ repo: r.n, stars: r.s, growth7d: r.sc?.g7 ?? null, utility: r.sc?.util ?? null, bestOf: r.sc?.bo ?? null, verdict: r.sc?.v, licenseKind: r.sc?.lk, activity: r.sc?.act });
+
+function apiRepo(r, gen) {
+  const sc = r.sc || {}, D = r.deep;
+  return {
+    generatedAt: gen, repo: r.n, url: `https://github.com/${r.n}`, description: r.d || '', language: r.l, topics: r.t || [], homepage: r.hp || null,
+    stars: r.s, forks: r.f, createdAt: r.c || null, pushedAt: r.p || null, archived: !!r.a, license: r.lic || null, licenseKind: sc.lk,
+    starGrowth: { d1: r.g?.d1 ?? null, d7: r.g?.d7 ?? null, d30: r.g?.d30 ?? null, estimated7d: sc.g7 ?? null },
+    scores: { popularity: sc.pop, utility: sc.util, trust: sc.trust, bestOf: sc.bo, components: sc.comp, change: r.sd || null },
+    verdict: { key: sc.v, label: sc.vt }, activity: sc.act, isNew: !!sc.isNew,
+    reasons: (r.why || []).map(([s, t]) => ({ sign: s === '+' ? 'positive' : s === '-' ? 'negative' : 'info', text: t })),
+    deep: D ? { commits90d: D.c90, commits365d: D.c365, contributorsApprox: D.ppl, openIssues: D.oi, closedIssues: D.ci, mergedPRs: D.mp, watchers: D.w,
+      releases: D.rel, latestRelease: D.lr, latestTag: D.tag, stableRelease: !!D.stable,
+      stargazerSample: D.sgN ? { sampled: D.sgN, suspicious: D.sgSusp, lowActivity: D.sgLow, max24h: D.sgBurst } : null } : null,
+    downloads: r.dl ? { ecosystem: r.dl.e, package: r.dl.k, monthly: r.dl.m, url: r.dl.u } : null,
+    usedBy: r.ub && r.ub.r + r.ub.p > 0 ? { repositories: r.ub.r, packages: r.ub.p } : null,
+  };
+}
+
+function buildSummary(out, siteUrl) {
+  const R = out.repos;
+  const fmt = n => (n == null ? '-' : Math.abs(n) >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(Math.round(n)));
+  const why = r => (r.why || []).filter(w => w[0] !== '·').slice(0, 2).map(w => w[1]).join('; ');
+  const line = (r, extra = '') => `${r.n} ★${fmt(r.s)}${extra} · ${r.sc.vt} · 실효 ${r.sc.util ?? '-'} · 품질 ${r.sc.bo ?? '-'}${r.sc.lk && r.sc.lk !== 'perm' ? ` · 라이선스:${r.lic || '없음'}` : ''}${why(r) ? ` · ${why(r)}` : ''}`;
+  const L = [`# GitHub Star Board 요약 (${out.generatedAt})`, '',
+    `출처: ${siteUrl || 'GitHub Star Board'} · 저장소 ${Object.keys(R).length}개 · 심층 분석 ${out.deepCount}개 · 가짜 스타 검사 ${out.starCheck ? '켜짐' : '꺼짐(trust 값 없음)'}`,
+    '형식: 저장소 ★스타 (+증가) · 판정 · 실효성(0~100) · best-of 품질점수 · [비허용형 라이선스] · 핵심 근거. 상세는 api/repo/{owner}__{repo}.json', ''];
+  const sec = (t, rows) => { if (rows.length) L.push(`## ${t}`, '', ...rows.map((x, i) => `${i + 1}. ${x}`), ''); };
+  const tr = (k, n) => (out.trending[k] || []).slice(0, n).filter(x => R[x.n]).map(x => line(R[x.n], ` (+${fmt(x.g)})`));
+  sec('이번 주 Trending', tr('weekly:all', 30));
+  sec('오늘 Trending', tr('daily:all', 15));
+  sec('신규 루키 (7일 내 생성, 하루 평균 스타순)', (out.rookies[7] || []).map(n => R[n]).filter(Boolean)
+    .sort((a, b) => b.s / Math.max(1, (Date.now() - Date.parse(b.c)) / DAY) - a.s / Math.max(1, (Date.now() - Date.parse(a.c)) / DAY)).slice(0, 15).map(r => line(r)));
+  const all = Object.values(R);
+  sec('검증된 인기 Top 30 (실효성순)', all.filter(r => r.sc.v === 'good').sort((a, b) => b.sc.util - a.sc.util || b.s - a.s).slice(0, 30).map(r => line(r)));
+  sec('숨은 보석', all.filter(r => r.sc.v === 'gem').sort((a, b) => b.sc.util - a.sc.util).slice(0, 20).map(r => line(r)));
+  sec('하이프 주의 (스타순)', all.filter(r => r.sc.v === 'hype').sort((a, b) => b.s - a.s).slice(0, 20).map(r => line(r)));
+  sec('스타 조작 의심', all.filter(r => r.sc.v === 'bad').sort((a, b) => b.s - a.s).slice(0, 15).map(r => line(r)));
+  for (const c of out.categories) sec(`분야: ${c.name} (스타순 Top 8)`, c.repos.slice(0, 8).map(n => line(R[n])));
+  return L.join('\n');
+}
+
+function buildLlmsTxt(out, siteUrl) {
+  const base = siteUrl || './';
+  return `# GitHub Star Board
+
+> 매일 06:00 KST에 자동 수집되는 GitHub 스타 순위표 + 실효성 검증 데이터. 마지막 갱신: ${out.generatedAt} (UTC). 저장소 ${Object.keys(out.repos).length}개, 심층 분석 ${out.deepCount}개.
+
+GitHub 저장소의 인기, 실제 사용 여부, 품질, 라이선스 위험, 추천 질문은 아래 파일을 먼저 보고, 여기에 없는 저장소만 GitHub에서 직접 확인하세요.
+
+## 어떤 질문에 어떤 파일
+
+- [요약본](${base}api/summary.md): 탭별 상위 목록과 판정, 핵심 근거 (몇십 KB). "요즘 뜨는 거", "분야별 추천" 같은 넓은 질문은 이것부터.
+- [전체 인덱스](${base}api/index.json): 모든 저장소 한 줄씩 (fields + rows 표 형식). 특정 저장소가 보드에 있는지, 점수 비교, 조건 필터링.
+- [저장소 상세](${base}api/repo/OWNER__REPO.json): 예) api/repo/anomalyco__opencode.json. 판정 근거, 세부 점수, 커밋/참여자/이슈/릴리스, 다운로드, Used by, 점수 변화. 404면 보드에 없는 저장소.
+- [Trending](${base}api/trending.json): 기간(daily/weekly/monthly) x 언어별 GitHub Trending과 기간 내 증가 스타.
+- [스타 순위](${base}api/top.json): 누적 스타 전체 Top 200, 언어별 Top 50.
+- [신규 루키](${base}api/rookies.json): 최근 7일/30일 내 생성.
+- [분야 목록](${base}api/category/index.json), 분야별: api/category/{id}.json (${out.categories.map(c => c.id).join(', ')}).
+- [변경 사항](${base}data/changes.md): 직전 수집 대비 급상승, 신규 진입, 점수 상승/하락.
+
+## 필드 뜻
+
+- popularity (0~100): 누적 스타(로그) 60% + 최근 7일 증가 40%
+- utility (0~100): 실제로 쓰이고 관리되는가. 90일 커밋, 실사용량(패키지 월 다운로드 또는 GitHub Used by), 참여자, 이슈 해결률, 릴리스 품질, 최근 push, PR, 포크비, watchers, 나이
+- trust (0~100): 최근 스타 계정 표본의 가짜 패턴. null이면 검사 안 함 (현재 ${out.starCheck ? '켜짐' : '꺼짐'})
+- bestOf: best-of-lists projectrank 방식 품질 점수 (높을수록 좋음, 보통 10~60)
+- growth7d: 최근 7일 스타 증가 (실측 또는 Trending 기반 추정)
+- verdict: ${Object.entries(VERDICTS).map(([k, v]) => `${k}=${v}`).join(', ')}
+- licenseKind: perm=허용형(MIT/Apache/BSD), weak=약한 카피레프트(LGPL/MPL), copyleft=GPL/AGPL, other=비표준·확인 필요, none=라이선스 없음
+- activity: active, inactive(6개월 무활동), dead(12개월 무활동). isNew=1이면 생성 6개월 미만
+
+## 주의
+
+- 수집 범위는 Trending, 누적 스타 상위, 신규, 지정 분야 topic뿐입니다. 작은 틈새 프로젝트는 없을 수 있습니다.
+- 판정과 라이선스 분류는 휴리스틱/참고용입니다.
+- 대시보드: ${base}
+`;
+}
+
+async function writeApi(fs, path, root, out, siteUrl) {
+  const api = path.join(root, 'api');
+  await fs.rm(api, { recursive: true, force: true });
+  await fs.mkdir(path.join(api, 'repo'), { recursive: true });
+  await fs.mkdir(path.join(api, 'category'), { recursive: true });
+  const gen = out.generatedAt, R = out.repos, J = (f, o) => fs.writeFile(path.join(api, f), JSON.stringify(o));
+  const list = Object.values(R).sort((a, b) => (b.s || 0) - (a.s || 0));
+  await J('index.json', { generatedAt: gen, site: siteUrl, verdicts: VERDICTS, fields: API_FIELDS, rows: list.map(apiRow) });
+  for (const r of list) await fs.writeFile(path.join(api, 'repo', repoFile(r.n)), JSON.stringify(apiRepo(r, gen)));
+  const trending = {};
+  for (const [k, items] of Object.entries(out.trending)) { const [p, lang] = k.split(':'); (trending[p] ||= {})[lang] = items.filter(x => R[x.n]).map(x => ({ ...brief(R[x.n]), gained: x.g })); }
+  await J('trending.json', { generatedAt: gen, note: 'gained = 해당 기간(daily/weekly/monthly) 동안 늘어난 스타', periods: trending });
+  await J('top.json', { generatedAt: gen, lists: Object.fromEntries(Object.entries(out.top).map(([k, ns]) => [k, ns.filter(n => R[n]).map(n => brief(R[n]))])) });
+  await J('rookies.json', { generatedAt: gen, lists: Object.fromEntries(Object.entries(out.rookies).map(([d, ns]) => [d, ns.filter(n => R[n]).map(n => ({ ...brief(R[n]), createdAt: R[n].c, starsPerDay: Math.round(R[n].s / Math.max(1, (Date.now() - Date.parse(R[n].c)) / DAY)) }))])) });
+  await J('category/index.json', { generatedAt: gen, categories: out.categories.map(c => ({ id: c.id, name: c.name, topics: c.topics, count: c.repos.length, file: `api/category/${c.id}.json` })) });
+  for (const c of out.categories) await J(`category/${c.id}.json`, { generatedAt: gen, id: c.id, name: c.name, topics: c.topics, repos: c.repos.filter(n => R[n]).map(n => brief(R[n])) });
+  await fs.writeFile(path.join(api, 'summary.md'), buildSummary(out, siteUrl));
+  await fs.writeFile(path.join(root, 'llms.txt'), buildLlmsTxt(out, siteUrl));
+}
+
 async function writeOutputs(fs, path, dir, out, changes) {
   const day = out.generatedAt.slice(0, 10);
   await fs.mkdir(path.join(dir, 'history'), { recursive: true });
@@ -559,6 +665,7 @@ async function main() {
   const repoEnv = process.env.GITHUB_REPOSITORY;
   const siteUrl = repoEnv ? `https://${repoEnv.split('/')[0]}.github.io/${repoEnv.split('/')[1]}/` : null;
   await writeOutputs(fs, path, dir, out, buildChanges(ctx, out, siteUrl));
+  await writeApi(fs, path, process.cwd(), out, siteUrl);
   ctx.log(`완료: 저장소 ${Object.keys(out.repos).length}개, 심층 ${out.deepCount}개, 오류 ${ctx.errors.length}건`);
 }
 

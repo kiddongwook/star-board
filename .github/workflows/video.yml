@@ -66,6 +66,7 @@ jobs:
         env:
           HYPERFRAMES_NO_UPDATE_CHECK: "1"
           HYPERFRAMES_SKIP_SKILLS: "1"
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: node video/hf-video.mjs --type "${{ steps.t.outputs.type }}" --out out
 
       - name: Fallback (static slideshow) if HyperFrames failed

@@ -456,7 +456,7 @@ async function main() {
     await fs.writeFile(path.join(dir, 'index.html'), compose(spec, timing));
     const outFile = path.join(OUT, `${spec.id}.mp4`);
     console.log(`렌더: ${spec.id} (${timing.total.toFixed(1)}초, 장면 ${spec.scenes.length})`);
-    await run('npx', ['hyperframes', 'render', dir, '--output', outFile, '--quality', 'standard', '--fps', '30', '--quiet'], { maxBuffer: 1 << 26, timeout: 25 * 60000 });
+    await run('npx', ['hyperframes', 'render', dir, '--output', outFile, '--quality', 'standard', '--fps', process.env.HF_FPS || '24', '--quiet'], { maxBuffer: 1 << 26, timeout: 25 * 60000 });
     await fs.writeFile(path.join(OUT, `${spec.id}-script.txt`), spec.scenes.map((s, i) => `[${i + 1}] ${s.say.join(' ')}`).join('\n\n'));
     const links = spec.list.map(({ r, g }, i) => `${spec.list.length > 1 ? `${i + 1}. ` : ''}${r.n} (+${short(g)}, ${VKO[r.sc.v]}) ${site}r/${r.n}/`).join('\n');
     await fs.writeFile(path.join(OUT, `${spec.id}-youtube.txt`), `${spec.title}\n\n${spec.repo ? `${spec.repo} 저장소의 특징과 실제 사용 지표를 소개합니다.` : '스타가 가장 많이 늘어난 저장소를 커밋/참여자/이슈 해결률/다운로드로 실제 사용 여부까지 확인했습니다.'}\n\n${links}\n\n전체 순위와 근거: ${site}\nAI용 데이터: ${site}llms.txt\n\n#GitHub #오픈소스 #개발자 #깃허브 #AI${spec.F.vert ? ' #shorts' : ''}\n`);

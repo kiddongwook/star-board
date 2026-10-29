@@ -17,7 +17,7 @@ const short = n => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3)
 const say = n => { n = Math.round(n || 0); if (n >= 1e6) return `${(n / 1e6).toFixed(1).replace(/\.0$/, '')} million`; if (n >= 1e4) return `${Math.round(n / 1e3)} thousand`; return n.toLocaleString('en-US'); };
 const noUrl = s => String(s || '').replace(/https?:\/\/\S+/g, '').replace(/\s+([.,])/g, '$1').trim();
 const STOPW = /\s+(with|and|or|for|of|to|the|a|an|in|on|by|from|that|which|your|its)$/i;
-const clause = (s, n) => { s = noUrl(s).split(/\s[—–]\s|\s-\s|:\s/)[0]; if (s.length <= n) return s.replace(/[.。]$/, ''); let t = s.slice(0, n).replace(/\s+\S*$/, ''); while (STOPW.test(t)) t = t.replace(STOPW, ''); return t.replace(/[,;:\s]+$/, ''); };
+const clause = (s, n) => { s = noUrl(s).split(/(?<=[a-z0-9)][.!?])\s+/i)[0].split(/\s[—–]\s|\s-\s|:\s/)[0]; if (s.length <= n) return s.replace(/[.。]$/, ''); let t = s.slice(0, n).replace(/\s+\S*$/, ''); while (STOPW.test(t)) t = t.replace(STOPW, ''); return t.replace(/[,;:\s]+$/, ''); };
 const cut = (s, n) => { s = noUrl(s); if (s.length <= n) return s; const m = s.slice(0, n).match(/^(.*[.。!?,，、;])\s/); return m && m[1].length > n * 0.5 ? m[1].replace(/[,;]$/, '') : s.slice(0, n - 1).replace(/\s+\S*$/, '') + '…'; };
 const hash = s => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 const pickV = (arr, key) => arr[hash(key) % arr.length];

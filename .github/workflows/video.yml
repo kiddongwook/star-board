@@ -1,6 +1,7 @@
 name: Make Videos
 
 # 매일 수집이 끝나면 HyperFrames로 영상을 만든다.
+#   영어 내레이션 + 한국어 자막, 진행 캐릭터 Starby
 #   daily     : 오늘 급상승 Top 5 쇼츠
 #   spotlight : 오늘 급상승 저장소 3개 각각의 특징 소개 쇼츠 (README 기반)
 #   weekly    : 월요일(KST)에만 주간 리포트 (가로)
@@ -46,6 +47,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends ffmpeg fonts-noto-cjk
           pip install edge-tts
           npm install --no-save hyperframes gsap playwright@1
+          npx playwright install --with-deps chromium
           npx hyperframes doctor || true
 
       - name: Decide video types

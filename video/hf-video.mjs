@@ -16,6 +16,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const short = n => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'k' : String(Math.round(n || 0)));
 const say = n => { n = Math.round(n || 0); if (n >= 1e6) return `${(n / 1e6).toFixed(1).replace(/\.0$/, '')} million`; if (n >= 1e4) return `${Math.round(n / 1e3)} thousand`; return n.toLocaleString('en-US'); };
 const noUrl = s => String(s || '').replace(/https?:\/\/\S+/g, '').replace(/\s+([.,])/g, '$1').trim();
+const STOPW = /\s+(with|and|or|for|of|to|the|a|an|in|on|by|from|that|which|your|its)$/i;
+const clause = (s, n) => { s = noUrl(s).split(/\s[—–]\s|\s-\s|:\s/)[0]; if (s.length <= n) return s.replace(/[.。]$/, ''); let t = s.slice(0, n).replace(/\s+\S*$/, ''); while (STOPW.test(t)) t = t.replace(STOPW, ''); return t.replace(/[,;:\s]+$/, ''); };
 const cut = (s, n) => { s = noUrl(s); if (s.length <= n) return s; const m = s.slice(0, n).match(/^(.*[.。!?,，、;])\s/); return m && m[1].length > n * 0.5 ? m[1].replace(/[,;]$/, '') : s.slice(0, n - 1).replace(/\s+\S*$/, '') + '…'; };
 const hash = s => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 const pickV = (arr, key) => arr[hash(key) % arr.length];
@@ -76,7 +78,8 @@ function cleanDesc(r, info) {
   const nm = r.n.split('/')[1];
   d = d.replace(new RegExp('^' + nm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*[:\\-–—]\\s*', 'i'), '').replace(/^[^A-Za-z0-9]+/, '');
   if (!/[a-z]/i.test(d)) return '';
-  d = cut(d, 110).replace(/[.。]$/, '');
+  d = d.split(/\s[—–]\s|\s-\s/)[0];
+  d = clause(d, 110);
   return d;
 }
 
@@ -314,7 +317,7 @@ function rankScene(r, rank, gain, avatar, F, period) {
   const vs = { good: 'Actually used.', gem: 'Underrated.', mature: 'Mature and widely used.', hype: 'Lots of stars, not much activity.', bad: 'Stars outpace engagement.', dead: 'No updates in a year.', doc: 'A learning resource.', early: 'Still early.' };
   const ev = evd(r, v === 'hype' || v === 'early' ? '-' : '+', 1)[0];
   return { mood: MOOD[v] || 'think', bot: 'corner',
-    say: [`Number ${rank}: ${repoName(r.n)}, up ${say(gain)} stars ${period === 'weekly' ? 'this week' : 'today'}.`, `${desc ? cut(desc, 70).replace(/…$/, '') + '. ' : ''}${ev ? ev.charAt(0).toUpperCase() + ev.slice(1) + '.' : vs[v] || ''}`],
+    say: [`Number ${rank}: ${repoName(r.n)}, up ${say(gain)} stars ${period === 'weekly' ? 'this week' : 'today'}.`, `${desc ? clause(desc, 64) + '. ' : ''}${ev ? ev.charAt(0).toUpperCase() + ev.slice(1) + '.' : vs[v] || ''}`],
     html: p => `${brand(period === 'weekly' ? 'this week' : 'today')}<div style="display:flex;align-items:center;gap:30px;justify-content:center"><div class="rank" id="${p}r">${rank}</div>${avatar ? `<img class="avatar" id="${p}a" src="${esc(avatar)}">` : ''}</div>
       <div class="repo" id="${p}n">${esc(r.n.split('/')[1])}</div><div class="owner">by ${esc(ownerName(r.n))}</div>
       <div class="stats"><div class="stat"><div class="v" style="color:#3fb950" id="${p}g">${num(gain, '+')}</div><div class="k">${period === 'weekly' ? '이번 주 스타' : '오늘 스타'}</div></div>

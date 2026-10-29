@@ -622,6 +622,103 @@ async function writeApi(fs, path, root, out, siteUrl) {
   await fs.writeFile(path.join(root, 'llms.txt'), buildLlmsTxt(out, siteUrl));
 }
 
+// ---------------- 저장소별 고정 페이지 (검색엔진/AI 크롤러가 읽는 정적 HTML) + 배지 + sitemap ----------------
+const VERDICT_EN = { good: 'Proven popular', mature: 'Mature / maintenance', gem: 'Hidden gem', hype: 'Hype warning', early: 'Early / stalled', bad: 'Suspected fake stars',
+  doc: 'Learning / docs', dead: 'Abandoned', archived: 'Archived', quick: 'Awaiting deep analysis', na: 'Not enough data' };
+const LIC_EN = { perm: 'permissive', weak: 'weak copyleft', copyleft: 'copyleft', other: 'non-standard', none: 'no license' };
+const ACT_EN = { active: 'active', inactive: 'inactive (no push for 6+ months)', dead: 'abandoned (no push for 12+ months)' };
+const BADGE_COLOR = { good: 'brightgreen', mature: 'blueviolet', gem: 'blueviolet', hype: 'orange', bad: 'red', doc: 'informational', dead: 'lightgrey', archived: 'lightgrey', early: 'yellow', quick: 'lightgrey', na: 'lightgrey' };
+const nf = n => (n == null ? '-' : Number(n).toLocaleString('en-US'));
+const WHY_EN = {
+  g7: p => `~+${nf(p.n)} stars in the last 7 days`, c90hi: p => `${nf(p.n)} commits in 90 days`, c90lo: p => `Only ${p.n} commits in 90 days (stalled)`, pplhi: p => `${nf(p.n)} contributors`,
+  ppllo: p => `${nf(p.s)} stars but only ${p.n} contributors`, iss: p => `Issue resolution rate ${p.p}%`, ub: p => `Used by ${nf(p.r)} repositories and ${nf(p.p)} packages`,
+  dl: p => `${nf(p.n)} ${p.e} downloads per month`, rel: p => `Stable release ${p.tag} (${p.d} days ago)`, norel: () => 'No releases', forklo: p => `Fork/star ratio ${p.p}% (stars may be bookmarks)`,
+  dead: () => 'No push for over a year', inactive: () => 'No push for over 6 months', new: p => `New project, ${p.d} days old (short track record)`, susp: p => `${p.p}% of recent stargazers look fake`,
+  suspok: () => 'Recent stargazers look healthy', burst: p => `${p.b}/${p.n} recent stars landed within 24 hours`, licnone: () => 'No license (no usage rights by default)',
+  copyleft: p => `${p.lic} is copyleft (check source-disclosure duties when distributing)`, licother: p => `License ${p.lic} is non-standard or restrictive (read the text)`,
+};
+const pagePath = n => `r/${n}/`;
+const hesc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// AI에 붙여넣기용 요약 (영문, 출처/날짜 포함)
+function aiSnapshot(r, out, siteUrl) {
+  const sc = r.sc || {}, D = r.deep, day = out.generatedAt.slice(0, 10);
+  const iss = D ? D.oi + D.ci : 0;
+  const facts = [`Stars ${nf(r.s)}${sc.g7 != null ? ` (+${nf(sc.g7)} in 7 days)` : ''}`, `Forks ${nf(r.f)}`];
+  if (D) facts.push(`Commits ${nf(D.c90)} (90d) / ${nf(D.c365)} (1y)`, `Contributors ~${nf(D.ppl)}`, `Issues closed ${nf(D.ci)}/${nf(iss)}`, `Merged PRs ${nf(D.mp)}`,
+    D.lr ? `Latest release ${D.tag || ''} (${D.lr.slice(0, 10)}${D.stable ? ', stable' : ''})` : 'No releases');
+  if (r.dl) facts.push(`${r.dl.e} downloads ${nf(r.dl.m)}/month`);
+  if (r.ub && r.ub.r + r.ub.p > 0) facts.push(`Used by ${nf(r.ub.r)} repos / ${nf(r.ub.p)} packages`);
+  return [`# ${r.n}: GitHub Star Board snapshot (${day})`, `Source: ${siteUrl || ''}${pagePath(r.n)}`, '',
+    `Verdict: ${VERDICT_EN[sc.v] || sc.v} | Popularity ${sc.pop ?? '-'}/100 | Utility ${sc.util ?? '-'}/100 | best-of quality ${sc.bo ?? '-'} | Trust: ${sc.trust ?? 'not available (GitHub limits stargazer lists to repo admins since 2026-07)'}`,
+    facts.join(' | '), `License: ${r.lic || 'none'} (${LIC_EN[sc.lk] || '-'}) | Activity: ${ACT_EN[sc.act] || '-'} | Created ${r.c ? r.c.slice(0, 10) : '-'} | Last push ${r.p ? r.p.slice(0, 10) : '-'}`,
+    '', 'Evidence:', ...(r.wc || []).map(([s, c, p]) => `- ${s === '+' ? '(+)' : s === '-' ? '(-)' : '(i)'} ${WHY_EN[c] ? WHY_EN[c](p || {}) : c}`),
+    '', 'Scores are heuristics from public GitHub data; check the license text before commercial use.'].join('\n');
+}
+
+function repoPage(r, out, siteUrl, boardRepo) {
+  const sc = r.sc || {}, D = r.deep, day = out.generatedAt.slice(0, 10), url = `${siteUrl}${pagePath(r.n)}`, root = '../../../';
+  const ven = VERDICT_EN[sc.v] || sc.v, vko = VERDICTS[sc.v] || sc.vt;
+  const en = (r.wc || []).map(([s, c, p]) => [s, WHY_EN[c] ? WHY_EN[c](p || {}) : c]);
+  const metaDesc = `${r.n} (${nf(r.s)} stars): ${ven}. Utility ${sc.util ?? '-'}/100, popularity ${sc.pop ?? '-'}/100. ${en.slice(0, 2).map(x => x[1]).join('; ')}. Data as of ${day}.`;
+  const iss = D ? D.oi + D.ci : 0;
+  const row = (k, v) => `<tr><th>${k}</th><td>${v}</td></tr>`;
+  const li = list => list.map(([s, t]) => `<li class="${s === '+' ? 'p' : s === '-' ? 'm' : 'i'}">${hesc(t)}</li>`).join('');
+  const badgeUrl = `https://img.shields.io/endpoint?url=${encodeURIComponent(`${siteUrl}api/badge/${repoFile(r.n)}`)}`;
+  const badgeMd = `[![Star Board](${badgeUrl})](${url})`;
+  const ld = { '@context': 'https://schema.org', '@type': 'SoftwareSourceCode', name: r.n, codeRepository: `https://github.com/${r.n}`, description: r.d || '', programmingLanguage: r.l || undefined,
+    license: r.lic ? `https://spdx.org/licenses/${r.lic}.html` : undefined, dateModified: out.generatedAt, url };
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${hesc(r.n)}: ${hesc(ven)} | GitHub Star Board</title>
+<meta name="description" content="${hesc(metaDesc)}"><link rel="canonical" href="${hesc(url)}">
+<meta property="og:title" content="${hesc(r.n)}: ${hesc(ven)}"><meta property="og:description" content="${hesc(metaDesc)}"><meta property="og:url" content="${hesc(url)}">
+<link rel="alternate" type="application/json" href="${root}api/repo/${repoFile(r.n)}">
+<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
+<style>body{margin:0;background:#0d1117;color:#e6edf3;font:15px/1.6 -apple-system,"Segoe UI","Malgun Gothic",sans-serif}main{max-width:860px;margin:0 auto;padding:24px}a{color:#2f81f7}
+h1{margin:.2em 0;font-size:26px;word-break:break-all}h2{font-size:17px;margin:26px 0 8px;border-bottom:1px solid #30363d;padding-bottom:4px}.muted{color:#8b949e;font-size:13px}
+.v{display:inline-block;padding:3px 12px;border-radius:20px;border:1px solid #30363d;font-weight:600;margin:6px 0}.v-good{color:#3fb950}.v-hype{color:#d29922}.v-bad{color:#f85149}.v-gem,.v-mature{color:#a371f7}.v-doc{color:#39c5cf}
+.sc{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}.sc div{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px 14px}.sc b{display:block;font-size:22px}
+table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #30363d;vertical-align:top}th{color:#8b949e;font-weight:500;width:38%}
+li.p::marker{color:#3fb950}li.m::marker{color:#f85149}li.i::marker{color:#8b949e}textarea{width:100%;min-height:150px;background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:6px;font:12px/1.5 ui-monospace,Consolas,monospace;padding:8px}
+button{background:#238636;color:#fff;border:0;border-radius:6px;padding:7px 14px;font:inherit;cursor:pointer;margin-top:6px}header{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid #30363d;background:#161b22}</style></head><body>
+<header><a href="${root}"><b>GitHub Star Board</b></a><a href="${root}?lang=ko">한국어 대시보드</a>${boardRepo ? `<a href="https://github.com/${boardRepo}">★ Star this project</a>` : ''}</header>
+<main>
+<div class="muted">Repository verdict · data as of ${day} (updated daily)</div>
+<h1><a href="https://github.com/${hesc(r.n)}">${hesc(r.n)}</a></h1>
+<p>${hesc(r.d || '')}</p>
+<div class="v v-${sc.v}">${hesc(ven)} · ${hesc(vko)}</div>
+<div class="sc"><div>Utility<b>${sc.util ?? '-'}</b></div><div>Popularity<b>${sc.pop ?? '-'}</b></div><div>best-of quality<b>${sc.bo ?? '-'}</b></div><div>Stars<b>${nf(r.s)}</b></div><div>7-day gain<b>${sc.g7 != null ? '+' + nf(sc.g7) : '-'}</b></div></div>
+<h2>Evidence</h2><ul>${li(en)}</ul>
+<h2>근거 (한국어)</h2><ul>${li(r.why || [])}</ul>
+<h2>Key metrics</h2><table>
+${row('Stars / forks', `${nf(r.s)} / ${nf(r.f)}`)}${row('Language', hesc(r.l || '-'))}${row('License', `${hesc(r.lic || 'none')} (${LIC_EN[sc.lk] || '-'})`)}${row('Created / last push', `${r.c ? r.c.slice(0, 10) : '-'} / ${r.p ? r.p.slice(0, 10) : '-'} (${ACT_EN[sc.act] || '-'})`)}
+${D ? row('Commits (90 days / 1 year)', `${nf(D.c90)} / ${nf(D.c365)}`) + row('Contributors (approx.)', nf(D.ppl)) + row('Issues closed', `${nf(D.ci)} / ${nf(iss)}${iss ? ` (${Math.round((D.ci / iss) * 100)}%)` : ''}`) + row('Merged pull requests', nf(D.mp)) + row('Releases', D.lr ? `${nf(D.rel)} total, latest ${hesc(D.tag || '')} on ${D.lr.slice(0, 10)}${D.stable ? ' (stable)' : ''}` : 'none') + row('Watchers', nf(D.w)) : ''}
+${row('Package downloads / month', r.dl ? `<a href="${hesc(r.dl.u)}">${hesc(r.dl.e)} ${hesc(r.dl.k)}</a>: ${nf(r.dl.m)}` : '-')}${row('Used by (GitHub dependents)', r.ub && r.ub.r + r.ub.p > 0 ? `${nf(r.ub.r)} repositories, ${nf(r.ub.p)} packages` : '-')}
+${row('Topics', hesc((r.t || []).join(', ') || '-'))}${row('Trust (fake-star check)', sc.trust ?? 'not available: GitHub limits stargazer lists to repository admins since July 2026')}
+</table>
+<h2>Copy for AI</h2><p class="muted">Paste this into ChatGPT, Claude or Gemini to discuss this repository with sourced, dated facts.</p>
+<textarea id="ai" readonly>${hesc(aiSnapshot(r, out, siteUrl))}</textarea><button onclick="navigator.clipboard.writeText(document.getElementById('ai').value);this.textContent='Copied'">Copy</button>
+<h2>Badge</h2><p><img src="${hesc(badgeUrl)}" alt="Star Board badge"></p><textarea readonly style="min-height:60px">${hesc(badgeMd)}</textarea>
+<p class="muted">Machine-readable: <a href="${root}api/repo/${repoFile(r.n)}">api/repo/${hesc(repoFile(r.n))}</a> · <a href="${root}llms.txt">llms.txt</a> · Scores are heuristics from public GitHub data. Methodology: <a href="${root}?lang=en">dashboard guide</a>.</p>
+</main></body></html>`;
+}
+
+async function writePages(fs, path, root, out, siteUrl, boardRepo) {
+  await fs.rm(path.join(root, 'r'), { recursive: true, force: true });
+  await fs.mkdir(path.join(root, 'api', 'badge'), { recursive: true });
+  const list = Object.values(out.repos).filter(r => r.sc);
+  for (const r of list) {
+    const dir = path.join(root, 'r', ...r.n.split('/'));
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, 'index.html'), repoPage(r, out, siteUrl, boardRepo));
+    await fs.writeFile(path.join(root, 'api', 'badge', repoFile(r.n)), JSON.stringify({ schemaVersion: 1, label: 'Star Board',
+      message: `${VERDICT_EN[r.sc.v] || r.sc.v}${r.sc.util != null ? ` · utility ${r.sc.util}` : ''}`, color: BADGE_COLOR[r.sc.v] || 'lightgrey', cacheSeconds: 21600 }));
+  }
+  const day = out.generatedAt.slice(0, 10);
+  const urls = [siteUrl, `${siteUrl}?lang=en`, `${siteUrl}?lang=ko`, `${siteUrl}?lang=ja`, `${siteUrl}?lang=zh`, ...list.map(r => `${siteUrl}${pagePath(r.n)}`)];
+  await fs.writeFile(path.join(root, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `<url><loc>${hesc(u)}</loc><lastmod>${day}</lastmod><changefreq>daily</changefreq></url>`).join('\n')}\n</urlset>\n`);
+}
+
 async function writeOutputs(fs, path, dir, out, changes) {
   const day = out.generatedAt.slice(0, 10);
   await fs.mkdir(path.join(dir, 'history'), { recursive: true });
@@ -671,9 +768,11 @@ async function main() {
   await dependents(ctx, ubTargets);
   const out = finalize(ctx);
   const repoEnv = process.env.GITHUB_REPOSITORY;
+  out.repo = repoEnv || null;
   const siteUrl = repoEnv ? `https://${repoEnv.split('/')[0]}.github.io/${repoEnv.split('/')[1]}/` : null;
   await writeOutputs(fs, path, dir, out, buildChanges(ctx, out, siteUrl));
   await writeApi(fs, path, process.cwd(), out, siteUrl);
+  if (siteUrl) await writePages(fs, path, process.cwd(), out, siteUrl, repoEnv);
   ctx.log(`완료: 저장소 ${Object.keys(out.repos).length}개, 심층 ${out.deepCount}개, 오류 ${ctx.errors.length}건`);
 }
 

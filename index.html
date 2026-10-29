@@ -15,7 +15,10 @@ header{padding:16px 24px 0;background:var(--panel);border-bottom:1px solid var(-
 .top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
 h1{margin:0;font-size:19px}
 .meta{color:var(--muted);font-size:12px}
-#uiLang{margin-left:auto;font-size:13px;padding:4px 8px}
+#uiLang{font-size:13px;padding:4px 8px}
+#ghStar{margin-left:auto;display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:3px 10px;background:var(--panel2)}
+#ghStar:hover{text-decoration:none;border-color:var(--accent)}
+.act{background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 10px;cursor:pointer;font:inherit;font-size:12px;margin-left:6px}
 .badge{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;border:1px solid var(--border);color:var(--muted);white-space:nowrap}
 .controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 10px}
 input,select{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font:inherit}
@@ -77,6 +80,7 @@ code{background:var(--panel2);padding:1px 6px;border-radius:4px}
   <div class="top">
     <h1>GitHub Star Board</h1>
     <span class="meta" id="meta"></span>
+    <a id="ghStar" target="_blank" rel="noopener" style="display:none"></a>
     <select id="uiLang" aria-label="Language">
       <option value="ko">한국어</option><option value="en">English</option><option value="ja">日本語</option><option value="zh">中文</option>
     </select>
@@ -130,7 +134,7 @@ const I18N = {
     comp: { activity: '개발 활동', recency: '관리 상태', community: '커뮤니티', issues: '이슈 해결률', closed: '닫힌 이슈', prs: 'PR 머지', forks: '포크 비율', adoption: '실사용량', releases: '릴리스 품질', watchers: 'watchers', age: '프로젝트 나이' },
     real: { q: { good: '검증된 인기', hype: '하이프 주의', gem: '숨은 보석', early: '초기/정체' }, x: '인기도 →', y: '실효성 →', title: '인기도 x 실효성 분포', count: (deep, n) => `(${deep ? '심층 분석' : '간이'} ${n}개, 점 크기 = 스타)`,
       legend: ['검증된 인기', '숨은 보석/성숙', '하이프 주의', '조작 의심', '학습/문서형'], gem: '숨은 보석: 스타는 적지만 실사용/관리가 탄탄', hype: '하이프 주의: 스타 대비 실사용 신호 약함', bad: '스타 조작 의심', mature: '성숙/유지보수: 개발은 느리지만 다운로드 많음', good: '검증된 인기 Top 15', n: n => `(${n}개)`, empty: '해당 없음' },
-    detailOf: n => `"${n}" 상세 · 검색창을 비우면 원래 목록으로 돌아갑니다.`, noData: 'data/data.js가 없습니다. 수집이 한 번 돌고 나면 표시됩니다.',
+    detailOf: n => `"${n}" 상세 · 검색창을 비우면 원래 목록으로 돌아갑니다.`, star: '★ GitHub에서 스타', permalink: '고정 페이지', copyAI: 'AI에 붙여넣기용 복사', copied: '복사됨', aiFoot: '점수는 공개 GitHub 데이터 기반 휴리스틱입니다. 상업적 사용 전 라이선스 원문을 확인하세요.', noData: 'data/data.js가 없습니다. 수집이 한 번 돌고 나면 표시됩니다.',
     why: {
       g7: p => `최근 7일 약 +${N(p.n)} 스타`, c90hi: p => `90일 커밋 ${N(p.n)}개`, c90lo: p => `90일 커밋 ${p.n}개 (개발 정체)`, pplhi: p => `참여자 ${N(p.n)}명`, ppllo: p => `스타 ${N(p.s)}개에 참여자 ${p.n}명`,
       iss: p => `이슈 해결률 ${p.p}%`, ub: p => `Used by 저장소 ${N(p.r)}개 · 패키지 ${N(p.p)}개`, dl: p => `${p.e} 월 ${N(p.n)} 다운로드`, rel: p => `안정 릴리스 ${p.tag} (${p.d}일 전)`, norel: () => '릴리스 없음',
@@ -175,7 +179,7 @@ const I18N = {
     comp: { activity: 'Development', recency: 'Maintenance', community: 'Community', issues: 'Issue resolution', closed: 'Closed issues', prs: 'Merged PRs', forks: 'Fork ratio', adoption: 'Adoption', releases: 'Release quality', watchers: 'Watchers', age: 'Project age' },
     real: { q: { good: 'Proven popular', hype: 'Hype warning', gem: 'Hidden gem', early: 'Early / stalled' }, x: 'Popularity →', y: 'Utility →', title: 'Popularity x utility', count: (deep, n) => `(${n} ${deep ? 'deeply analyzed' : 'quick'}, dot size = stars)`,
       legend: ['Proven popular', 'Hidden gem / mature', 'Hype warning', 'Suspected fake', 'Learning / docs'], gem: 'Hidden gems: few stars, solid real usage', hype: 'Hype warning: weak usage signals for the stars', bad: 'Suspected fake stars', mature: 'Mature: slow development, many downloads', good: 'Proven popular Top 15', n: n => `(${n})`, empty: 'None' },
-    detailOf: n => `Details for "${n}" · clear the search box to go back.`, noData: 'data/data.js is missing. It appears after the first collection run.',
+    detailOf: n => `Details for "${n}" · clear the search box to go back.`, star: '★ Star on GitHub', permalink: 'Permalink', copyAI: 'Copy for AI', copied: 'Copied', aiFoot: 'Scores are heuristics from public GitHub data; check the license text before commercial use.', noData: 'data/data.js is missing. It appears after the first collection run.',
     why: {
       g7: p => `~+${N(p.n)} stars in the last 7 days`, c90hi: p => `${N(p.n)} commits in 90 days`, c90lo: p => `Only ${p.n} commits in 90 days (stalled)`, pplhi: p => `${N(p.n)} contributors`, ppllo: p => `${N(p.s)} stars but only ${p.n} contributors`,
       iss: p => `Issue resolution rate ${p.p}%`, ub: p => `Used by ${N(p.r)} repos · ${N(p.p)} packages`, dl: p => `${N(p.n)} ${p.e} downloads/month`, rel: p => `Stable release ${p.tag} (${p.d} days ago)`, norel: () => 'No releases',
@@ -220,7 +224,7 @@ const I18N = {
     comp: { activity: '開発活動', recency: '保守状態', community: 'コミュニティ', issues: 'Issue解決率', closed: 'クローズ済みIssue', prs: 'PRマージ', forks: 'フォーク比', adoption: '実利用量', releases: 'リリース品質', watchers: 'watchers', age: 'プロジェクト年齢' },
     real: { q: { good: '実証済みの人気', hype: '話題先行', gem: '隠れた名作', early: '初期/停滞' }, x: '人気度 →', y: '実用度 →', title: '人気度 x 実用度の分布', count: (deep, n) => `(${deep ? '詳細分析' : '簡易'} ${n}件、点の大きさ = スター)`,
       legend: ['実証済みの人気', '隠れた名作/成熟', '話題先行に注意', '操作の疑い', '学習/ドキュメント型'], gem: '隠れた名作: スターは少ないが実利用・保守が堅実', hype: '話題先行に注意: スターに比べ実利用の兆候が弱い', bad: 'スター操作の疑い', mature: '成熟/保守: 開発は緩やかだがDLが多い', good: '実証済みの人気 Top 15', n: n => `(${n}件)`, empty: '該当なし' },
-    detailOf: n => `「${n}」の詳細 · 検索欄を空にすると元の一覧に戻ります。`, noData: 'data/data.js がありません。最初の収集後に表示されます。',
+    detailOf: n => `「${n}」の詳細 · 検索欄を空にすると元の一覧に戻ります。`, star: '★ GitHubでスター', permalink: '固定ページ', copyAI: 'AI用にコピー', copied: 'コピーしました', aiFoot: 'スコアは公開GitHubデータに基づくヒューリスティックです。商用利用前にライセンス原文を確認してください。', noData: 'data/data.js がありません。最初の収集後に表示されます。',
     why: {
       g7: p => `直近7日で約+${N(p.n)}スター`, c90hi: p => `90日間のコミット ${N(p.n)}件`, c90lo: p => `90日間のコミット ${p.n}件のみ (開発停滞)`, pplhi: p => `コントリビューター ${N(p.n)}人`, ppllo: p => `スター${N(p.s)}に対しコントリビューター${p.n}人`,
       iss: p => `Issue解決率 ${p.p}%`, ub: p => `被依存: リポジトリ${N(p.r)} · パッケージ${N(p.p)}`, dl: p => `${p.e} 月間${N(p.n)}ダウンロード`, rel: p => `安定版リリース ${p.tag} (${p.d}日前)`, norel: () => 'リリースなし',
@@ -265,7 +269,7 @@ const I18N = {
     comp: { activity: '开发活跃度', recency: '维护状态', community: '社区', issues: 'Issue 解决率', closed: '已关闭 Issue', prs: 'PR 合并', forks: 'Fork 比例', adoption: '实际使用量', releases: '发布质量', watchers: 'watchers', age: '项目年龄' },
     real: { q: { good: '实证热门', hype: '注意炒作', gem: '遗珠', early: '早期/停滞' }, x: '热度 →', y: '实用度 →', title: '热度 x 实用度分布', count: (deep, n) => `(${deep ? '深度分析' : '简易'} ${n} 个，点大小 = Star)`,
       legend: ['实证热门', '遗珠/成熟', '注意炒作', '疑似刷星', '学习/文档类'], gem: '遗珠: Star 不多但实际使用与维护扎实', hype: '注意炒作: 相对 Star 而言实际使用信号弱', bad: '疑似刷星', mature: '成熟/维护期: 开发放缓但下载量大', good: '实证热门 Top 15', n: n => `(${n} 个)`, empty: '无' },
-    detailOf: n => `"${n}" 详情 · 清空搜索框即可返回原列表。`, noData: '缺少 data/data.js，首次采集后显示。',
+    detailOf: n => `"${n}" 详情 · 清空搜索框即可返回原列表。`, star: '★ 在 GitHub 上加星', permalink: '固定页面', copyAI: '复制给 AI', copied: '已复制', aiFoot: '分数基于公开 GitHub 数据的启发式计算；商用前请查看许可证原文。', noData: '缺少 data/data.js，首次采集后显示。',
     why: {
       g7: p => `近 7 天约 +${N(p.n)} Star`, c90hi: p => `90 天内提交 ${N(p.n)} 次`, c90lo: p => `90 天内仅提交 ${p.n} 次 (开发停滞)`, pplhi: p => `贡献者 ${N(p.n)} 人`, ppllo: p => `${N(p.s)} Star 但贡献者仅 ${p.n} 人`,
       iss: p => `Issue 解决率 ${p.p}%`, ub: p => `被 ${N(p.r)} 个仓库 · ${N(p.p)} 个包依赖`, dl: p => `${p.e} 月下载 ${N(p.n)}`, rel: p => `稳定版 ${p.tag} (${p.d} 天前)`, norel: () => '无发布版本',
@@ -324,6 +328,8 @@ function applyLang(lang) {
   $('#fV').value = fv; $('#fLic').value = fl;
   if (D) {
     const first = $('#fLang').options[0]; if (first) first.textContent = T.allLangs;
+    if (D.repo) { const gs = $('#ghStar'); gs.href = `https://github.com/${D.repo}`; gs.style.display = '';
+      gs.innerHTML = `${T.star} <img alt="" src="https://img.shields.io/github/stars/${D.repo}?style=flat&label=&color=30363d" height="16">`; }
     $('#meta').innerHTML = T.meta(new Date(D.generatedAt).toLocaleString(lang === 'zh' ? 'zh-CN' : lang), N(Object.keys(D.repos).length), N(D.deepCount), D.history.days) + ' ' +
       (D.mode === 'deep' ? `<span class="badge" style="color:var(--good)">${T.deepMode}</span>` : `<span class="badge" style="color:var(--warn)">${T.quickMode}</span>`);
     render();
@@ -413,7 +419,21 @@ function detail(r) {
   <div class="meta" style="margin:6px 0">${Object.entries(sc.comp || {}).map(([k, v]) => `${T.comp[k] || k} <b style="color:${col(v)}">${v ?? '–'}</b>`).join(' · ')}</div>
   ${d?.sgFlag?.length ? `<div class="meta">${L.suspEx}: ${d.sgFlag.map(l => `<a href="https://github.com/${esc(l)}" target="_blank" rel="noopener">${esc(l)}</a>`).join(', ')}</div>` : ''}
   ${sc.quick ? `<div class="meta">${L.quick}</div>` : ''}
-  <div style="margin-top:8px"><a href="https://github.com/${esc(r.n)}" target="_blank" rel="noopener">GitHub</a>${r.hp ? ` · <a href="${esc(r.hp)}" target="_blank" rel="noopener">${L.homepage}</a>` : ''} · <a href="https://star-history.com/#${esc(r.n)}&Date" target="_blank" rel="noopener">star-history</a></div>`;
+  <div style="margin-top:8px"><a href="https://github.com/${esc(r.n)}" target="_blank" rel="noopener">GitHub</a>${r.hp ? ` · <a href="${esc(r.hp)}" target="_blank" rel="noopener">${L.homepage}</a>` : ''} · <a href="https://star-history.com/#${esc(r.n)}&Date" target="_blank" rel="noopener">star-history</a>
+  · <a href="r/${esc(r.n)}/" target="_blank">${T.permalink}</a> <button class="act" data-copy="${esc(r.n)}">${T.copyAI}</button></div>`;
+}
+
+// 현재 언어로 AI에 붙여넣을 요약 만들기 (출처 링크 + 데이터 날짜 포함)
+function aiText(r) {
+  const sc = r.sc || {}, d = r.deep, L = T.d, H = T.th, iss = d ? d.oi + d.ci : 0;
+  const link = new URL(`r/${r.n}/`, location.href.split('?')[0]).href;
+  const facts = [`${H.stars} ${fmt(r.s)}${sc.g7 != null ? ` (+${fmt(sc.g7)} / 7d)` : ''}`, `${L.starsForks.split('/').pop().trim()} ${fmt(r.f)}`];
+  if (d) facts.push(`${L.commits} ${fmt(d.c90)} / ${fmt(d.c365)}`, `${L.contributors} ${fmt(d.ppl)}`, `${L.issues} ${fmt(d.ci)}/${fmt(iss)}`, `${L.prs} ${fmt(d.mp)}`);
+  if (r.dl) facts.push(`${L.downloads}: ${r.dl.e} ${fmt(r.dl.m)}`);
+  if (r.ub && r.ub.r + r.ub.p > 0) facts.push(`${L.usedBy}: ${L.usedByV(fmt(r.ub.r), fmt(r.ub.p))}`);
+  return [`# ${r.n} (GitHub Star Board, ${D.generatedAt.slice(0, 10)})`, link, '',
+    `${H.verdict}: ${vLabel(r)} | ${H.pop} ${sc.pop ?? '-'} | ${H.util} ${sc.util ?? '-'} | best-of ${sc.bo ?? '-'}`, facts.join(' | '),
+    `${L.license}: ${r.lic || L.none} (${T.licShort[sc.lk] || '-'})`, '', ...reasons(r).map(([s, t]) => `- ${s === '+' ? '(+)' : s === '-' ? '(-)' : '(i)'} ${t}`), '', T.aiFoot].join('\n');
 }
 
 function sortRows(rows, by) {
@@ -485,6 +505,8 @@ function realView() {
 }
 
 function onClick(e) {
+  const cp = e.target.closest('[data-copy]');
+  if (cp) { const r = D.repos[cp.dataset.copy]; navigator.clipboard.writeText(aiText(r)).then(() => { cp.textContent = T.copied; }); return; }
   const el = e.target.closest('[data-period],[data-tlang],[data-toplang],[data-newdays],[data-cat],[data-gperiod],[data-more],[data-open]');
   if (!el || e.target.closest('a')) return;
   const ds = el.dataset;

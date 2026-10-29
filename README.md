@@ -1,57 +1,86 @@
 # GitHub Star Board
 
-GitHub 스타 순위표 + 실효성 검증 대시보드. 매일 자동으로 수집해서 GitHub Pages에 게시합니다.
+**Stars tell you what's popular. Star Board tells you what's actually used.**
 
-## 보여주는 것
+A daily, fully automated GitHub ranking that checks every trending and top-starred repository against real-usage evidence: commits, contributors, issue resolution, releases, package downloads and GitHub "Used by" counts. Built for humans *and* AI agents.
 
-| 탭 | 내용 |
+**Live board: https://kiddongwook.github.io/star-board/** · [llms.txt](https://kiddongwook.github.io/star-board/llms.txt) · [Daily summary](https://kiddongwook.github.io/star-board/api/summary.md)
+
+![GitHub Star Board](docs/screenshot.png)
+
+## Why
+
+Star counts are easy to inflate and say nothing about whether a project is maintained or used. Since July 2026 GitHub also hides stargazer lists from non-collaborators, so you can't inspect who starred a repo anymore. Star Board looks at what stars can't fake:
+
+| Signal | Source |
 |-|-|
-| 급상승 | GitHub Trending (오늘 / 이번 주 / 이번 달, 언어별) + 기간 내 증가 스타 |
-| 스타 순위 | 누적 스타 Top 200, 언어별 Top 50 |
-| 신규 루키 | 최근 7일 / 30일 생성 저장소, 하루 평균 스타순 |
-| 분야별 | AI 코딩 에이전트, MCP, LLM, RAG, 보안, 생체인증, 컴퓨터 비전, 임베디드 등 |
-| 성장 순위 | 매일 저장한 스타 스냅샷으로 계산한 실측 1일 / 7일 / 30일 증가량 |
-| 실속 분석 | 인기도 x 실효성 분포, 숨은 보석 / 하이프 주의 / 스타 조작 의심 목록 |
+| Development activity | commits in the last 90 days / 1 year |
+| Community | contributors, merged PRs, issue resolution rate |
+| Real adoption | npm / PyPI / crates.io monthly downloads, GitHub "Used by" |
+| Release quality | multiple releases, stable semver, released in the last 6 months |
+| Health labels | new (< 6 months), inactive (6 months idle), abandoned (12 months idle) |
+| License risk | permissive / weak copyleft / copyleft / non-standard / none |
 
-각 저장소마다 인기도, 실효성(커밋, 참여자, 이슈 해결률, PR, 다운로드, GitHub Used by, 릴리스 품질), 점수와 판정, 근거가 붙습니다.
-best-of-lists 방식의 프로젝트 품질 점수, 라이선스 위험도(허용형/카피레프트/없음), 활동 상태(비활성 6개월, 중단 12개월), 신규(6개월 미만) 배지도 표시합니다.
+Each repository gets a **popularity** score, a **utility** score, a [best-of-lists](https://github.com/best-of-lists/best-of-generator)-style **quality** score and a verdict: *Proven popular*, *Hidden gem*, *Mature*, *Hype warning*, *Learning / docs*, *Abandoned*.
 
-매 실행마다 `data/changes.md`(급상승, 신규 진입, 점수 상승/하락)를 만들고 GitHub Release로 게시합니다. 저장소를 **Watch > Custom > Releases**로 구독하면 매일 알림을 받습니다.
+## What's on the board
 
-## 설치 (5분)
+- **Trending**: GitHub Trending (today / week / month, by language) with stars gained
+- **Top stars**: all-time Top 200 plus Top 50 per language
+- **Rookies**: repos created in the last 7 / 30 days, ranked by stars per day
+- **Categories**: AI coding agents, AI agent frameworks, MCP, LLM inference, RAG, dev tools, self-hosted, security, biometrics, computer vision, embedded/IoT
+- **Growth**: measured star gains and utility score changes from daily snapshots
+- **Hype vs. substance**: popularity x utility map with hidden gems and hype warnings
+- **Per-repo pages**: `/r/{owner}/{repo}/` with evidence, metrics, a "Copy for AI" block and a badge
+- **Languages**: English, 한국어, 日本語, 中文 (follows your browser setting)
 
-1. GitHub에서 새 저장소를 만듭니다 (예: `star-board`, Public 권장: Actions 무료).
-2. 이 폴더의 파일을 모두 올립니다 (`.github/workflows/collect.yml` 포함).
-3. 저장소 **Settings > Pages > Source**를 **GitHub Actions**로 선택합니다.
-4. **Actions** 탭 > `Collect & Deploy Star Board` > **Run workflow**로 첫 수집을 실행합니다 (약 5~10분).
-5. 완료되면 `https://<내아이디>.github.io/star-board/`에서 대시보드를 볼 수 있습니다.
+## For AI agents and LLMs
 
-이후 매일 06:00(KST)에 자동 수집됩니다. 커밋/참여자/이슈/다운로드 분석은 Actions 기본 `GITHUB_TOKEN`으로 동작합니다.
+Everything is published as plain files, regenerated daily:
 
-**가짜 스타 검사(신뢰도)**: GitHub가 2026년 7월부터 스타 누른 계정 목록(stargazers)을 해당 저장소의 관리자/협업자에게만 공개하도록 바꿔서, 다른 사람 저장소는 어떤 토큰으로도 검사할 수 없습니다. 수집기는 거부되면 자동으로 건너뛰고, 정책이 다시 풀리면 그대로 동작합니다.
+| File | Use |
+|-|-|
+| [`llms.txt`](https://kiddongwook.github.io/star-board/llms.txt) | Index: which file answers which question, field meanings |
+| [`api/summary.md`](https://kiddongwook.github.io/star-board/api/summary.md) | ~20 KB digest: trending, rookies, proven, hidden gems, hype, per category |
+| [`api/index.json`](https://kiddongwook.github.io/star-board/api/index.json) | Every repo in one table (`fields` + `rows`) |
+| `api/repo/{owner}__{repo}.json` | Full evidence for one repository |
+| `api/trending.json`, `api/top.json`, `api/rookies.json`, `api/category/*.json` | Lists per tab |
 
-선택: 개인 토큰을 `STAR_BOARD_TOKEN` 시크릿으로 등록하면 기본 토큰 대신 그 토큰의 API 한도를 씁니다. 지금 규모에서는 기본 토큰으로 충분합니다.
+## Badge for your README
 
-## 로컬 실행
+If your project is on the board, show its verdict:
 
-```bash
-GITHUB_TOKEN=github_pat_xxx node collect.mjs   # Node 20+
-# index.html을 브라우저로 열기 (data/data.js를 읽음)
+```markdown
+[![Star Board](https://img.shields.io/endpoint?url=https%3A%2F%2Fkiddongwook.github.io%2Fstar-board%2Fapi%2Fbadge%2FOWNER__REPO.json)](https://kiddongwook.github.io/star-board/r/OWNER/REPO/)
 ```
 
-토큰 없이도 실행되지만 간이 모드(Trending + 검색 순위만, 심층 분석 없음)로 수집됩니다.
+Each repo page has a ready-to-copy badge snippet.
 
-## 설정 바꾸기
+## Run your own board
 
-`collect.mjs` 맨 위 `DEFAULT_CONFIG`를 수정하거나, 같은 구조의 `config.json`을 만들어 덮어쓸 수 있습니다.
+This repository is a template. Click **Use this template**, then:
 
-- `categories`: 분야 추가/삭제 (GitHub topic 기준)
-- `trending.languages`: 수집할 Trending 언어
-- `top.languages`: 언어별 순위 대상
-- `enrich.max`: 심층 분석 저장소 수 (기본 2500, 1,500개 기준 GraphQL 약 250포인트 사용)
+1. **Settings > Pages > Source**: select **GitHub Actions**.
+2. **Actions > Collect & Deploy Star Board > Run workflow**.
+3. Your board appears at `https://<you>.github.io/<repo>/` and updates every day at 21:00 UTC.
 
-## 참고
+No token setup is needed; the workflow uses the built-in `GITHUB_TOKEN`. Edit `DEFAULT_CONFIG` at the top of `collect.mjs` (or add a `config.json`) to change languages, categories and limits. Run locally with `GITHUB_TOKEN=... node collect.mjs` (Node 20+, no dependencies).
 
-- 공개 저장소는 60일간 활동이 없으면 예약 워크플로가 멈출 수 있는데, 매일 데이터 커밋이 생기므로 보통 유지됩니다.
-- Trending은 공식 API가 없어 HTML을 파싱합니다. GitHub 페이지 구조가 바뀌면 `parseTrending`을 수정해야 합니다.
-- 가짜 스타 판정은 휴리스틱입니다.
+## Daily change alerts
+
+Each run writes `data/changes.md` (surges, new entries, score changes) and publishes it as a GitHub Release. **Watch > Custom > Releases** to get it every morning.
+
+## Limits
+
+- Coverage: trending, top-starred, new and the configured topics. Small niche projects may be missing.
+- Used by is scraped for the top 400 repos; downloads are found only when a root manifest names the package.
+- Fake-star detection by sampling stargazers is not possible since GitHub's July 2026 restriction; look for mismatches instead (huge star growth, few commits/contributors/downloads).
+- Scores are heuristics. Check license texts yourself before commercial use.
+
+## 한국어
+
+GitHub 스타 순위표 + 실효성 검증 대시보드입니다. 매일 자동으로 Trending, 누적 스타 순위, 신규 저장소, 분야별 저장소를 모으고 커밋, 참여자, 이슈 해결률, 릴리스, 다운로드, Used by로 "진짜 쓰이는지"를 판정합니다. 대시보드는 브라우저 언어를 따라 한국어로 표시되며, AI가 읽을 수 있는 `llms.txt`와 `api/` 파일을 함께 제공합니다. 이 저장소를 템플릿으로 자신만의 보드를 만들 수도 있습니다.
+
+## License
+
+MIT. If this saves you from a hyped dependency, a ⭐ helps others find it.

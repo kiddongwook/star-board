@@ -1,0 +1,37 @@
+name: Wrong verdict / 판정 이의 제기
+description: A repository got a verdict you think is wrong. / 판정이 틀렸다고 생각되는 저장소를 알려주세요.
+title: "Verdict: "
+labels: ["verdict"]
+body:
+  - type: input
+    id: repo
+    attributes:
+      label: Repository (owner/name)
+      placeholder: vercel/next.js
+    validations:
+      required: true
+  - type: input
+    id: current
+    attributes:
+      label: Current verdict / 현재 판정
+      placeholder: Hype warning
+  - type: dropdown
+    id: expected
+    attributes:
+      label: What it should be / 맞는 판정
+      options:
+        - Proven popular / 검증된 인기
+        - Mature / 성숙·유지보수
+        - Hidden gem / 숨은 보석
+        - Hype warning / 하이프 주의
+        - Stars outpace engagement / 참여 대비 스타 과다
+        - Learning / docs / 학습·문서형
+        - Not sure / 잘 모르겠음
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Why? Evidence helps (usage, downloads, who depends on it) / 근거
+    validations:
+      required: true

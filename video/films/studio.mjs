@@ -1,9 +1,10 @@
-// shared builder for studio-look films
+// shared builder for studio-look films (presenter mode: big Starby that hops between stages, points, speech-bubble captions)
 // Studio-look directed shorts (cream studio + 3D Starby sprites). A film = a plan of blocks; each block is one scene.
 // Blocks: hook, promise, why, shot, cuts, chips, diagram, beforeAfter, term, turn, verdict, end.
 export function studioFilm(H, C, plan) {
-  const { A, f2, esc, typed, brand, pushSfx } = H;
-  const F = { vert: true, W: 1080, H: 1920, capB: 360, capL: 60, capR: 170, botTop: 985, botL: -10, botW: 540 };
+  const { A, f2, esc, typed, brand, pushSfx } = H; const pushPose = H.pushPose || (() => {});
+  const F = { vert: true, W: 1080, H: 1920, capB: 360, capL: 60, capR: 170, botTop: 1000, botL: -10, botW: 520, botH: 585, bubble: true, bubFont: 42, bubMax: 28,
+    stages: { left: { x: 0, y: 0, s: 1 }, right: { x: 430, y: 0, s: 1 }, center: { x: 270, y: -330, s: 1.12 } } };
   const wAt = (x, w) => { if (w == null) return x.start; const i = x.text.toLowerCase().indexOf(String(w).toLowerCase()); return x.start + (x.dur * Math.max(0, i)) / x.text.length; };
   const IMS = plan.images; // key -> {w,h}
   const focus = (key, R, vw, vh) => { const [iw, ih] = [IMS[key].w, IMS[key].h], r = R || [0, 0, 1, 1], rw = (r[2] - r[0]) * iw, rh = (r[3] - r[1]) * ih, s = Math.min(vw / rw, vh / rh);
@@ -13,18 +14,20 @@ export function studioFilm(H, C, plan) {
     imgs.map(([k, iid, op]) => '<img id="' + iid + '" src="' + C.img(k) + '" style="width:' + IMS[k].w + 'px;height:' + IMS[k].h + 'px;opacity:' + (op ?? 1) + '">').join('') + '</div></div>';
   const stk = (id, txt, x, y, rot, bg = '#ffc83d', size = 52, col = '#1b1f24') => '<div class="fstk" id="' + id + '" style="left:' + x + 'px;top:' + y + 'px;transform:rotate(' + rot + 'deg);background:' + bg + ';color:' + col + ';font-size:' + size + 'px">' + txt + '</div>';
   const pop = (id, t, rot = -4, snd = 'pop') => { if (snd) pushSfx(t, snd); return "tl.fromTo('#" + id + "',{opacity:0,scale:.3,rotation:" + (rot - 16) + "},{opacity:1,scale:1,rotation:" + rot + ",duration:.34,ease:'back.out(2.4)'}," + f2(t) + ');'; };
-  const VW = 960, WH = 640, VH = WH - 44;
+  const VW = 960, WH = 720, VH = WH - 44;
+  const point = (t, x, dur = 1.1) => pushPose(t, dur, 'point', x);
+  const wow = (t, dur = 0.8) => pushPose(t, dur, 'wow');
   const POS = [[70, 190], [440, 885], [110, 885], [560, 190]], ROT = [-4, 4, -5, 3], BG = ['#e6edf3', '#3fb950', '#58a6ff', '#f78166'], FG = ['#1b1f24', '#fff', '#fff', '#fff'];
   const B = {
     hookProblem: b => ({ first: true, pose: 'idle', say: [b.say], ko: [b.ko], tts: b.tts && [b.tts],
-      html: p => '<div class="fz">' + brand(b.label || "today's pick") + win(p + 'w', b.title, 60, 230, VW, 760, [[b.img, p + 'i']], 'transform:perspective(1600px) rotateX(4deg) rotate(-2deg)', b.imgBg || '#fff') +
+      html: p => '<div class="fz">' + brand(b.label || "today's pick") + win(p + 'w', b.title, 60, 180, VW, 800, [[b.img, p + 'i']], 'transform:perspective(1600px) rotateX(4deg) rotate(-2deg)', b.imgBg || '#fff') +
         (b.tells || []).map((s, i) => stk(p + 's' + i, s.text, s.pos[0], s.pos[1], [-5, 4, -3][i % 3], '#1b1f24', 50, '#ffd23f')).join('') + (b.badge ? stk(p + 'b', b.badge, 730, 150, 4, '#f78166', 40, '#fff') : '') + '</div>',
-      anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; return zoom('#' + p + 'i', b.img, b.r0, b.r1, VW, 716, S, D) + (b.tells || []).map((s, i) => pop(p + 's' + i, wAt(x, s.word), [-5, 4, -3][i % 3])).join('') + (b.badge ? "tl.set('#" + p + "b',{opacity:1}," + f2(S) + ');' : ''); } }),
+      anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; return zoom('#' + p + 'i', b.img, b.r0, b.r1, VW, 756, S, D) + (b.tells || []).map((s, i) => { point(wAt(x, s.word), s.pos[0] + 150, 0.9); return pop(p + 's' + i, wAt(x, s.word), [-5, 4, -3][i % 3]); }).join('') + (b.badge ? "tl.set('#" + p + "b',{opacity:1}," + f2(S) + ');' : ''); } }),
     useSkip: b => ({ pose: 'idle', say: b.say, ko: b.ko, tts: b.tts, tail: 0.6,
       html: p => '<div class="fz">' + brand('should you use it?') + '<div class="fus">' + b.cards.map((c, i) => '<div class="fuc k-' + c.kind + '" id="' + p + 'u' + i + '"><b>' + ({ use: '✅ Use it if', skip: '⛔ Skip it if', warn: '⚠️ Heads up' }[c.kind]) + '</b><span>' + c.text + '</span></div>').join('') + '</div>' +
         '<div class="fev" id="' + p + 'e">' + b.evidence.map(e => '<i>' + esc(e) + '</i>').join('') + '</div>' + (b.stamp ? '<div class="fstamp sm" id="' + p + 'v" style="border-color:' + (b.color || '#1f9d55') + ';color:' + (b.color || '#1f9d55') + '">' + esc(b.stamp) + '</div>' : '') + '</div>',
-      anim: (p, S, D, M, F2, t) => b.cards.map((c, i) => { const at = (t.sents[c.s ?? i] || t.sents[0]).start - 0.1; pushSfx(at + 0.1, c.kind === 'use' ? 'check' : c.kind === 'skip' ? 'snap' : 'ding', 0.5); return "tl.from('#" + p + "u" + i + "',{opacity:0,x:-140,duration:.38,ease:'back.out(1.5)'}," + f2(at) + ');'; }).join('') +
-        "tl.from('#" + p + "e i',{opacity:0,y:20,duration:.3,stagger:.12}," + f2(t.sents[0].start + 0.6) + ');' + (b.stamp ? (pushSfx(S + D - 1.35, 'stamp'), "tl.fromTo('#" + p + "v',{opacity:0,scale:2.4,rotation:-16},{opacity:1,scale:1,rotation:-6,duration:.4,ease:'back.out(2.2)'}," + f2(S + D - 1.5) + ');') : '') }),
+      anim: (p, S, D, M, F2, t) => b.cards.map((c, i) => { const at = (t.sents[c.s ?? i] || t.sents[0]).start - 0.1; pushSfx(at + 0.1, c.kind === 'use' ? 'check' : c.kind === 'skip' ? 'snap' : 'ding', 0.5); point(at + 0.1, 540, 1.0); return "tl.from('#" + p + "u" + i + "',{opacity:0,x:-140,duration:.38,ease:'back.out(1.5)'}," + f2(at) + ');'; }).join('') +
+        "tl.from('#" + p + "e i',{opacity:0,y:20,duration:.3,stagger:.12}," + f2(t.sents[0].start + 0.6) + ');' + (b.stamp ? (pushSfx(S + D - 1.35, 'stamp'), wow(S + D - 1.3, 0.9), "tl.fromTo('#" + p + "v',{opacity:0,scale:2.4,rotation:-16},{opacity:1,scale:1,rotation:-6,duration:.4,ease:'back.out(2.2)'}," + f2(S + D - 1.5) + ');') : '') }),
     hook: b => ({ first: true, intro: 'wow', introLen: 1.0, say: [b.say], ko: [b.ko], tts: b.tts && [b.tts],
       html: p => '<div class="fz">' + brand(b.label || "today's pick") + win(p + 'w', b.title, 60, 210, VW, WH, [[b.img, p + 'i']], 'transform:perspective(1600px) rotateX(5deg) rotate(-2.5deg)', b.imgBg || '#fff') +
         stk(p + 'g', b.stat, 90, 770, -6, '#1b1f24', b.statSize || 140, '#ffd23f') + (b.tag ? stk(p + 'y', b.tag, 600, 830, 5, '#f78166', 52, '#fff') : '') +
@@ -42,34 +45,34 @@ export function studioFilm(H, C, plan) {
       anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; let s = '';
         if (b.release) { const a1 = wAt(x, b.release.word); pushSfx(a1, 'open'); s += "tl.from('#" + p + "r',{opacity:0,y:80,scale:.9,duration:.45,ease:'back.out(1.6)'}," + f2(a1) + ');'; }
         if (b.chips) { const a0 = wAt(x, b.chipsWord), step = Math.min(0.32, Math.max(0.12, (x.start + x.dur - a0) / (b.chips.length + 1))); b.chips.forEach((_, i) => { pushSfx(a0 + i * step, i % 2 ? 'snap' : 'pop', 0.35); s += "tl.fromTo('#" + p + "c" + i + "',{opacity:0,scale:.4,y:30},{opacity:1,scale:1,y:0,duration:.3,ease:'back.out(2.2)'}," + f2(a0 + i * step) + ');'; }); }
-        if (b.counter) { const a2 = wAt(x, b.counter.word); pushSfx(a2 + 1.3, 'ding'); s += "tl.from('#" + p + "n,#" + p + " .flbl',{opacity:0,y:60,duration:.35}," + f2(a2 - 0.2) + ');' + "tl.fromTo('#" + p + "n .num',{innerText:0},{innerText:" + b.counter.value + ",snap:{innerText:1},duration:1.3,ease:'power2.out'}," + f2(a2) + ');'; }
+        if (b.counter) { const a2 = wAt(x, b.counter.word); pushSfx(a2 + 1.3, 'ding'); wow(a2 + 1.2, 0.9); s += "tl.from('#" + p + "n,#" + p + " .flbl',{opacity:0,y:60,duration:.35}," + f2(a2 - 0.2) + ');' + "tl.fromTo('#" + p + "n .num',{innerText:0},{innerText:" + b.counter.value + ",snap:{innerText:1},duration:1.3,ease:'power2.out'}," + f2(a2) + ');'; }
         return s; } }),
     shot: b => ({ pose: b.pose || 'point', say: [b.say], ko: [b.ko], tts: b.tts && [b.tts],
-      html: p => '<div class="fz">' + brand(b.label || 'what it does') + win(p + 'w', b.title, 60, 260, VW, b.h || WH, [[b.img, p + 'i']], '', b.imgBg || '#fff') + (b.stickers || []).map((s, i) => stk(p + 's' + i, s.text, (s.pos || POS[i])[0], (s.pos || POS[i])[1], ROT[i], s.bg || BG[i], s.size || 54, s.col || FG[i])).join('') + '</div>',
-      anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; return zoom('#' + p + 'i', b.img, b.r0, b.r1, VW, (b.h || WH) - 44, S, D) + (b.stickers || []).map((s, i) => pop(p + 's' + i, wAt(x, s.word), ROT[i])).join(''); } }),
+      html: p => '<div class="fz">' + brand(b.label || 'what it does') + win(p + 'w', b.title, 60, 190, VW, b.h || WH, [[b.img, p + 'i']], '', b.imgBg || '#fff') + (b.stickers || []).map((s, i) => stk(p + 's' + i, s.text, (s.pos || POS[i])[0], (s.pos || POS[i])[1], ROT[i], s.bg || BG[i], s.size || 54, s.col || FG[i])).join('') + '</div>',
+      anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; return zoom('#' + p + 'i', b.img, b.r0, b.r1, VW, (b.h || WH) - 44, S, D) + (b.stickers || []).map((s, i) => { point(wAt(x, s.word), (s.pos || POS[i])[0] + 150, 1.0); return pop(p + 's' + i, wAt(x, s.word), ROT[i]); }).join(''); } }),
     cuts: b => ({ pose: b.pose || 'idle', intro: b.intro, introLen: 0.8, say: [b.say], ko: [b.ko], tts: b.tts && [b.tts],
-      html: p => '<div class="fz">' + brand(b.label || 'what it does') + win(p + 'w', b.title, 60, 250, VW, b.h || 700, b.cuts.map((c, i) => [c.img, p + 'i' + i, i ? 0 : 1]), '', b.imgBg || '#fff') + b.cuts.map((c, i) => stk(p + 's' + i, c.label, 90 + i * 40, 190, [-5, 4, -3][i % 3], c.bg || ['#ffc83d', '#3fb950', '#a371f7'][i % 3], 56, i % 3 === 1 ? '#fff' : '#1b1f24')).join('') + '</div>',
-      anim: (p, S, D, M, F2, t) => { const x = t.sents[0], vh = (b.h || 700) - 44; return b.cuts.map((c, i) => { const at = i ? wAt(x, c.word) : Math.min(wAt(x, c.word), S + 0.3), nx = i < b.cuts.length - 1 ? wAt(x, b.cuts[i + 1].word) : S + D; pushSfx(at, i ? 'snap' : 'pop');
+      html: p => '<div class="fz">' + brand(b.label || 'what it does') + win(p + 'w', b.title, 60, 200, VW, b.h || 760, b.cuts.map((c, i) => [c.img, p + 'i' + i, i ? 0 : 1]), '', b.imgBg || '#fff') + b.cuts.map((c, i) => stk(p + 's' + i, c.label, 90 + i * 40, 190, [-5, 4, -3][i % 3], c.bg || ['#ffc83d', '#3fb950', '#a371f7'][i % 3], 56, i % 3 === 1 ? '#fff' : '#1b1f24')).join('') + '</div>',
+      anim: (p, S, D, M, F2, t) => { const x = t.sents[0], vh = (b.h || 760) - 44; return b.cuts.map((c, i) => { const at = i ? wAt(x, c.word) : Math.min(wAt(x, c.word), S + 0.3), nx = i < b.cuts.length - 1 ? wAt(x, b.cuts[i + 1].word) : S + D; pushSfx(at, i ? 'snap' : 'pop'); if (i) point(at, 250 + i * 40, 0.9);
         return "tl.set('#" + p + "i" + i + "'," + focus(c.img, c.r, VW, vh) + ',' + f2(S) + ');' + (i ? "tl.to('#" + p + "i" + (i - 1) + "',{opacity:0,duration:.12}," + f2(at - 0.05) + ");tl.to('#" + p + "i" + i + "',{opacity:1,duration:.12}," + f2(at - 0.05) + ');' : '') +
           "tl.to('#" + p + "i" + i + "',{scale:'+=0.04',duration:" + f2(Math.max(0.5, nx - at)) + ",ease:'none'}," + f2(at) + ');' + pop(p + 's' + i, at + 0.05, [-5, 4, -3][i % 3], null) + (i < b.cuts.length - 1 ? "tl.to('#" + p + "s" + i + "',{opacity:0,duration:.12}," + f2(nx - 0.1) + ');' : ''); }).join(''); } }),
     chips: b => ({ pose: b.pose || 'point', say: [b.say], ko: [b.ko], tts: b.tts && [b.tts],
       html: p => '<div class="fz">' + brand(b.label || 'what it does') + (b.head ? '<div class="fh" style="top:220px;font-size:70px">' + b.head + '</div>' : '') + '<div class="fcmd" style="top:' + (b.head ? 420 : 280) + 'px">' + b.chips.map((c, i) => '<div class="fcm" id="' + p + 'c' + i + '"><code>' + esc(c.cmd) + '</code><span>' + esc(c.desc) + '</span></div>').join('') + '</div>' +
         (b.badge ? stk(p + 'z', b.badge.text, 560, 960, 5, '#1b1f24', 46, '#ffd23f') : '') + '</div>',
-      anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; return "tl.from('#" + p + " .fh',{opacity:0,y:40,duration:.35}," + f2(S + 0.05) + ');' + b.chips.map((c, i) => { const at = wAt(x, c.word) - 0.1; pushSfx(at, 'pop', 0.45); return "tl.from('#" + p + "c" + i + "',{opacity:0,x:-140,duration:.35,ease:'back.out(1.6)'}," + f2(at) + ');'; }).join('') + (b.badge ? pop(p + 'z', wAt(x, b.badge.word), 5, 'stamp') : ''); } }),
+      anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; return "tl.from('#" + p + " .fh',{opacity:0,y:40,duration:.35}," + f2(S + 0.05) + ');' + b.chips.map((c, i) => { const at = wAt(x, c.word) - 0.1; pushSfx(at, 'pop', 0.45); point(at, 260, 0.8); return "tl.from('#" + p + "c" + i + "',{opacity:0,x:-140,duration:.35,ease:'back.out(1.6)'}," + f2(at) + ');'; }).join('') + (b.badge ? pop(p + 'z', wAt(x, b.badge.word), 5, 'stamp') : ''); } }),
     diagram: b => ({ pose: b.pose || 'point', say: [b.say], ko: [b.ko], tts: b.tts && [b.tts],
       html: p => '<div class="fz">' + brand(b.label || 'how it works') + '<div class="fdg" style="top:' + (b.top || 200) + 'px">' + b.steps.map((s, i) => '<div class="fdn" id="' + p + 'n' + i + '"><b>' + (i + 1) + '</b><span>' + esc(s.label) + '</span>' + (s.note ? '<em>' + esc(s.note) + '</em>' : '') + '</div>' + (i < b.steps.length - 1 ? '<div class="fda" id="' + p + 'a' + i + '"></div>' : '')).join('') + '</div></div>',
-      anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; return b.steps.map((s, i) => { const at = Math.max(S + 0.2, wAt(x, s.word) - 0.1); pushSfx(at, 'pop', 0.45); return "tl.from('#" + p + "n" + i + "',{opacity:0,y:30,scale:.85,duration:.3,ease:'back.out(2)'}," + f2(at) + ');' + (i ? "tl.from('#" + p + "a" + (i - 1) + "',{scaleY:0,transformOrigin:'50% 0%',duration:.2}," + f2(at - 0.15) + ');' : ''); }).join(''); } }),
+      anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; return b.steps.map((s, i) => { const at = Math.max(S + 0.2, wAt(x, s.word) - 0.1); pushSfx(at, 'pop', 0.45); point(at, 540, 0.8); return "tl.from('#" + p + "n" + i + "',{opacity:0,y:30,scale:.85,duration:.3,ease:'back.out(2)'}," + f2(at) + ');' + (i ? "tl.from('#" + p + "a" + (i - 1) + "',{scaleY:0,transformOrigin:'50% 0%',duration:.2}," + f2(at - 0.15) + ');' : ''); }).join(''); } }),
     beforeAfter: b => ({ pose: 'point', say: [b.say], ko: [b.ko], tts: b.tts && [b.tts],
-      html: p => '<div class="fz">' + brand('before / after') + '<div class="fba" style="top:250px;height:' + (b.h || 720) + 'px"><img id="' + p + 'b" src="' + C.img(b.before) + '"><div class="fbaa" id="' + p + 'm"><img src="' + C.img(b.after) + '"></div><div class="fbal" id="' + p + 'l"></div></div>' +
+      html: p => '<div class="fz">' + brand('before / after') + '<div class="fba" style="top:200px;height:' + (b.h || 760) + 'px"><img id="' + p + 'b" src="' + C.img(b.before) + '"><div class="fbaa" id="' + p + 'm"><img src="' + C.img(b.after) + '"></div><div class="fbal" id="' + p + 'l"></div></div>' +
         stk(p + 'x', b.beforeLabel || 'WITHOUT', 80, 190, -4, '#e6edf3', 50) + stk(p + 'y', b.afterLabel || 'WITH', b.afterX || 700, 190, 4, '#3fb950', 50, '#fff') + (b.topChip ? '<div class="ftop" id="' + p + 't">' + esc(b.topChip) + '</div>' : '') + (b.nameTag ? stk(p + 'n', b.nameTag, 560, 990, -3, '#1b1f24', 54, '#ffd23f') : '') + '</div>',
-      anim: (p, S, D, M, F2, t) => { const x = t.sents[0], a = wAt(x, b.afterWord); pushSfx(a - 0.1, 'whoosh');
+      anim: (p, S, D, M, F2, t) => { const x = t.sents[0], a = wAt(x, b.afterWord); pushSfx(a - 0.1, 'whoosh'); point(wAt(x, b.beforeWord), 200, 0.9); wow(a + 0.6, 1.0);
         return "tl.set('#" + p + "m',{clipPath:'inset(0 0 0 100%)'}," + f2(S) + ");tl.set('#" + p + "l',{left:'100%'}," + f2(S) + ');' + pop(p + 'x', wAt(x, b.beforeWord), -4) +
           "tl.to('#" + p + "m',{clipPath:'inset(0 0 0 0%)',duration:.9,ease:'power2.inOut'}," + f2(a - 0.1) + ");tl.to('#" + p + "l',{left:'0%',duration:.9,ease:'power2.inOut'}," + f2(a - 0.1) + ');' + pop(p + 'y', a + 0.7, 4) + (b.topChip ? "tl.from('#" + p + "t',{opacity:0,y:-20,duration:.3}," + f2(S + 0.2) + ');' : '') + (b.nameTag ? pop(p + 'n', a + 1.1, -3, 'stamp') : ''); } }),
     term: b => ({ pose: 'point', tail: b.tail ?? 2.8, say: [b.say], ko: [b.ko],
       html: p => '<div class="fz">' + brand('try it') + '<div class="fterm" style="top:330px"><div class="fwb dark"><i style="background:#f85149"></i><i style="background:#e3b341"></i><i style="background:#3fb950"></i><span>terminal</span></div><pre>' +
         b.cmds.map((c, i) => '<div id="' + p + 'l' + i + '"><span class="pr">' + (c.startsWith('/') ? '› ' : '$ ') + '</span><span id="' + p + 'c' + i + '">' + typed(c) + '</span></div>').join('') + '</pre></div>' +
         (b.cmds.length > 1 ? b.cmds.map((_, i) => stk(p + 'k' + i, (i + 1) + '/' + b.cmds.length, 880, 352 + i * 81, 6, '#ffc83d', 36)).join('') : stk(p + 'k0', b.badge || '1 line', 760, 520, 6, '#ffc83d', 44)) + '</div>',
-      anim: (p, S, D) => { let at = S + 0.5; return "tl.from('#" + p + " .fterm',{opacity:0,y:60,duration:.4}," + f2(S + 0.05) + ');' + b.cmds.map((c, i) => { const d = Math.max(0.5, Math.min(2.4, c.length / 28)); const s0 = at; at += d + 0.35;
+      anim: (p, S, D) => { let at = S + 0.5; point(S + 0.4, 540, 1.4); return "tl.from('#" + p + " .fterm',{opacity:0,y:60,duration:.4}," + f2(S + 0.05) + ');' + b.cmds.map((c, i) => { const d = Math.max(0.5, Math.min(2.4, c.length / 28)); const s0 = at; at += d + 0.35;
         return "tl.from('#" + p + "l" + i + "',{opacity:0,duration:.01}," + f2(s0) + ');' + A.type('#' + p + 'c' + i, c, s0, d) + pop(p + 'k' + i, s0 + d, 6, 'check'); }).join(''); } }),
     turn: b => ({ pose: 'skeptic', noWhoosh: true, tail: 0.7, say: [b.say], ko: [b.ko],
       html: p => '<div class="fz">' + brand('reality check') + '<div class="fspot"></div><div class="fh" style="top:430px;font-size:96px">' + b.head + '</div><div class="fmag" id="' + p + 'm">🔍</div></div>',
@@ -77,16 +80,16 @@ export function studioFilm(H, C, plan) {
     verdict: b => ({ pose: 'idle', say: b.say, ko: b.ko, tts: b.tts,
       html: p => '<div class="fz">' + brand('reality check') + b.stats.map(([, v, k], i) => '<div class="fstat" id="' + p + 't' + i + '" style="top:' + (230 + i * 210) + 'px"><b>' + esc(v) + '</b><span>' + esc(k) + '</span></div>').join('') +
         '<div class="fstamp" id="' + p + 'v" style="border-color:' + (b.color || '#1f9d55') + ';color:' + (b.color || '#1f9d55') + '">' + esc(b.stamp) + '</div></div>',
-      anim: (p, S, D, M, F2, t) => { const x = t.sents[0], y = t.sents[t.sents.length - 1]; pushSfx(y.start - 0.05, 'stamp'); if (!b.color || b.color === '#1f9d55') pushSfx(y.start + 0.4, 'success', 0.4);
+      anim: (p, S, D, M, F2, t) => { const x = t.sents[0], y = t.sents[t.sents.length - 1]; pushSfx(y.start - 0.05, 'stamp'); wow(y.start, 0.9); if (!b.color || b.color === '#1f9d55') pushSfx(y.start + 0.4, 'success', 0.4);
         return b.stats.map(([w, , , si], i) => { const xx = t.sents[si || 0]; const at = wAt(xx, w) - 0.35; pushSfx(at + 0.1, 'check'); return "tl.from('#" + p + "t" + i + "',{opacity:0,x:-160,duration:.4,ease:'back.out(1.6)'}," + f2(at) + ');'; }).join('') +
           "tl.fromTo('#" + p + "v',{opacity:0,scale:2.6,rotation:-18},{opacity:1,scale:1,rotation:-7,duration:.42,ease:'back.out(2.2)'}," + f2(y.start - 0.15) + ');'; } }),
-    end: b => ({ pose: 'wave', bot: 'center', botPos: { x: 280, y: -420, s: 1.25 }, noExit: true, tail: 1.6, say: [b.say], ko: [b.ko],
+    end: b => ({ pose: 'wave', stage: 'center', noBubble: true, noExit: true, tail: 1.6, say: [b.say], ko: [b.ko],
       html: p => '<div class="fz"><div class="fh" style="top:200px;font-size:76px">' + b.head + '</div><div class="fask" id="' + p + 'a">💬 Tell me below</div>' +
         '<div class="fend" id="' + p + 'e"><div class="fl">★ GitHub Star Board</div><div class="fs">daily GitHub picks, checked for real use</div><div class="fu">' + esc(C.siteHost) + '</div></div></div>',
       anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; pushSfx(wAt(x, 'Tell'), 'pop'); pushSfx(S + D - 1.3, 'levelup', 0.45);
         return "tl.from('#" + p + " .fh',{opacity:0,y:40,duration:.4}," + f2(S + 0.1) + ');' + "tl.from('#" + p + "a',{opacity:0,scale:.6,duration:.35,ease:'back.out(2)'}," + f2(wAt(x, 'Tell') - 0.05) + ');' + "tl.from('#" + p + "e',{opacity:0,y:60,duration:.45,ease:'power3.out'}," + f2(S + D - 1.5) + ');'; } }),
   };
-  const sc = plan.blocks.map(b => Object.assign({ mood: 'happy', bot: 'corner' }, B[b.type](b), b.extra || {}));
+  const sc = plan.blocks.map((b, i) => Object.assign({ mood: 'happy', bot: 'corner', stage: i % 2 ? 'right' : 'left' }, B[b.type](b), b.extra || {}));
   const turnIdx = plan.blocks.findIndex(b => b.type === 'turn'), usIdx = plan.blocks.findIndex(b => b.type === 'useSkip');
   const grainSvg = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23n)'/></svg>\")";
   const bgHtml = '<div style="position:absolute;inset:0;background:#f3efe6"></div><div style="position:absolute;left:-300px;top:1120px;width:1700px;height:1000px;border-radius:50%;background:radial-gradient(closest-side,#ffd76a59,transparent)"></div>' +
@@ -111,8 +114,8 @@ export function studioFilm(H, C, plan) {
     '.fask{position:absolute;left:0;right:0;top:400px;text-align:center;font-size:50px;font-weight:800;color:#c98a00}.fend{position:absolute;left:60px;right:60px;top:1250px;text-align:center}.fend .fl{font-size:64px;font-weight:900;color:#1b1f24}.fend .fs{font-size:36px;color:#8a7f69;margin-top:8px}.fend .fu{font-size:40px;color:#2f6fe0;font-weight:800;margin-top:14px}' +
     '.fus{position:absolute;left:70px;right:70px;top:200px;display:flex;flex-direction:column;gap:20px}.fuc{display:block;text-align:left;background:#fff;border:2px solid #e4dccb;border-left-width:14px;border-radius:24px;padding:22px 30px;box-shadow:0 12px 30px #3a2a0a14}.fuc b{display:block;font-size:40px;font-weight:900;margin-bottom:6px}.fuc span{display:block;font-size:39px;line-height:1.25;font-weight:700;color:#1b1f24}' +
     '.fuc.k-use{border-left-color:#1f9d55}.fuc.k-use b{color:#1f9d55}.fuc.k-skip{border-left-color:#d1242f}.fuc.k-skip b{color:#d1242f}.fuc.k-warn{border-left-color:#c98a00}.fuc.k-warn b{color:#c98a00}' +
-    '.fev{position:absolute;left:70px;right:70px;top:905px;display:flex;flex-wrap:wrap;gap:12px}.fev i{font-style:normal;background:#ffffffb0;border:2px solid #e4dccb;border-radius:40px;padding:8px 20px;font-size:26px;font-weight:700;color:#5c5442}' +
-    '.fstamp.sm{left:auto;right:60px;top:985px;font-size:52px;padding:10px 26px;border-width:7px}.ftop{position:absolute;left:0;right:0;top:1000px;text-align:center;font-size:40px;font-weight:800;color:#5c5442}' +
+    '.fev{position:absolute;left:70px;right:70px;top:790px;display:flex;flex-wrap:wrap;gap:12px}.fev i{font-style:normal;background:#ffffffb0;border:2px solid #e4dccb;border-radius:40px;padding:8px 20px;font-size:26px;font-weight:700;color:#5c5442}' +
+    '.fstamp.sm{left:auto;right:60px;top:860px;font-size:52px;padding:10px 26px;border-width:7px}.ftop{position:absolute;left:0;right:0;top:1000px;text-align:center;font-size:40px;font-weight:800;color:#5c5442}' +
     '.brand{color:#8a7f69}.brand b{color:#1b1f24}.cap span{background:#1b1f24f0;box-shadow:0 10px 30px #3a2a0a40}';
   const sprites = C.sprites ? Object.fromEntries(['idle', 'talkE', 'talkO', 'blink', 'wow', 'point', 'pointTalk', 'skeptic', 'skepticTalk', 'wave', 'waveTalk'].map(k => [k, C.sprites(k)])) : null;
   return { id: plan.id, F, bgHtml, sprites, title: plan.title, scenes: sc, css,
@@ -122,7 +125,7 @@ export function studioFilm(H, C, plan) {
 export async function runFilm(H, plan, OUT) {
   const C = { img: k => 'assets/' + k + '.' + (plan.images[k].ext || 'png'), sprites: k => 'assets/sb-' + k + '.jpg', siteHost: 'kiddongwook.github.io/star-board' };
   const spec = studioFilm(H, C, plan);
-  spec.assets = Object.entries(plan.images).map(([k, v]) => ({ url: v.url, name: k + '.' + (v.ext || 'png') })).concat(Object.keys(spec.sprites).map(k => ({ file: 'video/starby3d/' + k + '.jpg', name: 'sb-' + k + '.jpg' })));
+  spec.assets = Object.entries(plan.images).map(([k, v]) => ({ url: v.url, name: k + '.' + (v.ext || 'png') })).concat(Object.keys(spec.sprites).map(k => ({ file: 'video/starby3d/tight/' + k + '.jpg', name: 'sb-' + k + '.jpg' })));
   spec.music = { urls: ['https://cdn.freesound.org/previews/653/653510_13228046-hq.mp3'] };
   spec.sfxUrls = { 'fs-whoosh.mp3': 'https://cdn.freesound.org/previews/60/60007_71257-hq.mp3', 'fs-pop.mp3': 'https://cdn.freesound.org/previews/244/244654_3624044-hq.mp3' };
   return H.produceFilm(spec, { OUT: OUT || 'out' });

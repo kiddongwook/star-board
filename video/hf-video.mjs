@@ -748,6 +748,32 @@ async function main() {
 // ---------------- one-off films (hand-directed spec, same renderer) ----------------
 const pushSfx = (at, kind, vol, dur) => SFXQ.push([at, kind, vol, dur]);
 const getSfxQ = () => SFXQ;
+
+// fallback music bed written in code (84 BPM lo-fi: e-piano 7th chords, bass with harmonics, soft kick/snare/hats, vinyl)
+function synthLofi(sec, SR = 44100) {
+  const N = Math.ceil(sec * SR), out = new Float32Array(N), beat = 60 / 84, bar = beat * 4;
+  let seed = 4242; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  const CH = [[53, 57, 60, 64], [52, 55, 59, 62], [50, 53, 57, 60], [48, 52, 55, 59]];
+  const note = (t0, f, len, g, kind) => { const s0 = Math.round(t0 * SR), n = Math.round(len * SR);
+    for (let i = 0; i < n && s0 + i < N; i++) { const t = i / SR, a = Math.min(1, t / 0.012);
+      let v; if (kind === 'ep') v = (Math.sin(2 * Math.PI * f * t) + 0.32 * Math.sin(2 * Math.PI * 2 * f * t) * Math.exp(-t * 3) + 0.5 * Math.sin(2 * Math.PI * f * 1.003 * t)) * Math.exp(-t * 1.5);
+      else v = (Math.sin(2 * Math.PI * f * t) + 0.45 * Math.sin(2 * Math.PI * 2 * f * t) + 0.25 * Math.sin(2 * Math.PI * 3 * f * t)) * Math.exp(-t * 2.2);
+      out[s0 + i] += v * a * g; } };
+  for (let b = 0; b * bar < sec; b++) {
+    const c = CH[b % 4], t0 = b * bar;
+    c.forEach((m, k) => { note(t0 + k * 0.018, hz(m), bar * 0.95, 0.07, 'ep'); note(t0 + beat * 2.5 + k * 0.015, hz(m), beat * 1.4, 0.035, 'ep'); });
+    note(t0, hz(c[0] - 12), beat * 1.6, 0.16, 'bass'); note(t0 + beat * 2, hz(c[0] - 12), beat * 1.2, 0.12, 'bass'); note(t0 + beat * 3.5, hz(c[2] - 12), beat * 0.45, 0.08, 'bass');
+    for (let q = 0; q < 4; q++) { const tb = t0 + q * beat, s0 = Math.round(tb * SR);
+      if (q % 2 === 0) { let ph = 0; for (let i = 0; i < SR * 0.25 && s0 + i < N; i++) { const t = i / SR; ph += 2 * Math.PI * (45 + 70 * Math.exp(-t * 28)) / SR; out[s0 + i] += Math.sin(ph) * Math.exp(-t * 11) * 0.42; } }
+      else { let lp = 0; for (let i = 0; i < SR * 0.18 && s0 + i < N; i++) { const t = i / SR, w = rnd() * 2 - 1; lp += 0.5 * (w - lp); out[s0 + i] += (w - lp) * Math.exp(-t * 22) * 0.16 + Math.sin(2 * Math.PI * 190 * t) * Math.exp(-t * 30) * 0.08; } }
+      for (const h of [0, 0.58]) { const sh = Math.round((tb + h * beat) * SR); let lp = 0; for (let i = 0; i < SR * 0.04 && sh + i < N; i++) { const w = rnd() * 2 - 1; lp += 0.7 * (w - lp); out[sh + i] += (w - lp) * Math.exp(-(i / SR) * 90) * (h ? 0.05 : 0.07); } }
+    }
+  }
+  let lp = 0, pk = 1e-4; for (let i = 0; i < N; i++) { lp += 0.35 * (out[i] - lp); out[i] = lp + (rnd() < 0.0004 ? (rnd() - 0.5) * 0.15 : 0) + (rnd() - 0.5) * 0.004; pk = Math.max(pk, Math.abs(out[i])); }
+  for (let i = 0; i < N; i++) out[i] *= 0.55 / pk;
+  return out;
+}
 // sound bed: CC0 music (ducked under narration, with deliberate silences) + CC0 UI sound effects, mixed in JS
 async function mixBed({ total, sents, events, drops = [], musicFile, sfxDir, out, run }) {
   const fsP = await import('node:fs/promises'), path = await import('node:path');
@@ -764,7 +790,8 @@ async function mixBed({ total, sents, events, drops = [], musicFile, sfxDir, out
     if (kind === 'keys') { let t = at, k = 0; const end = at + (dur || 1); while (t < end) { add(b, t, g * (0.7 + 0.3 * ((k * 0.618) % 1))); t += 0.075 + ((k * 0.37) % 1) * 0.05; k++; } }
     else add(b, at, g);
   }
-  const m = musicFile && await pcm(musicFile);
+  let m = musicFile && await pcm(musicFile), synth = false;
+  if (!m || m.length < SR) { m = synthLofi(Math.min(total + 1, 120), SR); synth = true; }
   if (m && m.length > SR) {
     const talk = new Uint8Array(Math.ceil(total * 20) + 1); for (const x of sents) for (let k = Math.floor(x.start * 20); k < Math.min(talk.length, Math.ceil((x.start + x.dur) * 20)); k++) talk[k] = 1;
     let gPrev = 0;
@@ -778,7 +805,7 @@ async function mixBed({ total, sents, events, drops = [], musicFile, sfxDir, out
   }
   for (let i = 0; i < N; i++) bed[i] = Math.tanh(bed[i] * 1.1) / 1.1;
   await fsP.writeFile(out, wavBuf(bed, SR));
-  return !!m;
+  return synth ? 'synth lo-fi (download failed)' : 'file';
 }
 const srtTime = s => { const ms = Math.max(0, Math.round(s * 1000)), h = Math.floor(ms / 36e5), mi = Math.floor(ms / 6e4) % 60, se = Math.floor(ms / 1000) % 60; return String(h).padStart(2, '0') + ':' + String(mi).padStart(2, '0') + ':' + String(se).padStart(2, '0') + ',' + String(ms % 1000).padStart(3, '0'); };
 const toSrt = (sents, key) => sents.map((x, i) => (i + 1) + '\n' + srtTime(x.start) + ' --> ' + srtTime(x.start + Math.max(1.8, x.dur + 0.3)) + '\n' + (x[key] || x.text) + '\n').join('\n');
@@ -791,8 +818,8 @@ async function produceFilm(spec, { OUT = 'out', sfxDir = 'video/sfx' } = {}) {
   for (const a of spec.assets || []) { try { const b = a.file ? await fs.readFile(a.file) : Buffer.from(await (await tfetch(a.url, { redirect: 'follow' })).arrayBuffer()); await fs.writeFile(path.join(assets, a.name), b); } catch (e) { console.log('asset failed ' + a.name + ': ' + e.message); } }
   const okAudio = (r, b) => r.ok && b.length > 1500 && !/^\s*</.test(b.slice(0, 20).toString());
   let musicFile = null;
-  for (const u of spec.music?.urls || []) { try { const r = await tfetch(u, { redirect: 'follow' }); const b = Buffer.from(await r.arrayBuffer()); if (okAudio(r, b) && b.length > 50000) { musicFile = path.join(assets, 'music.mp3'); await fs.writeFile(musicFile, b); break; } } catch {} }
-  for (const [n, u] of Object.entries(spec.sfxUrls || {})) { try { const r = await tfetch(u, { redirect: 'follow' }); const b = Buffer.from(await r.arrayBuffer()); if (okAudio(r, b)) await fs.writeFile(path.join(sfxDir, n), b); } catch {} }
+  for (const u of spec.music?.urls || []) { try { const r = await tfetch(u, { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36', Referer: 'https://freesound.org/' } }); const b = Buffer.from(await r.arrayBuffer()); console.log('music ' + r.status + ' ' + b.length + 'B ' + u); if (okAudio(r, b) && b.length > 50000) { musicFile = path.join(assets, 'music.mp3'); await fs.writeFile(musicFile, b); break; } } catch (e) { console.log('music fetch failed: ' + e.message); } }
+  for (const [n, u] of Object.entries(spec.sfxUrls || {})) { try { const r = await tfetch(u, { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36', Referer: 'https://freesound.org/' } }); console.log('sfx ' + n + ' ' + r.status); const b = Buffer.from(await r.arrayBuffer()); if (okAudio(r, b)) await fs.writeFile(path.join(sfxDir, n), b); } catch {} }
   let cur = 0; const tsc = [];
   for (const [i, s] of spec.scenes.entries()) {
     const S = cur; let t = S + (s.head ?? HEAD); const M = [], sents = [];
@@ -810,7 +837,7 @@ async function produceFilm(spec, { OUT = 'out', sfxDir = 'video/sfx' } = {}) {
   const html = compose(spec, timing, { bed: 'assets/bed.wav' });
   const allS = tsc.flatMap(x => x.sents);
   const hadMusic = await mixBed({ total: timing.total, sents: allS, events: getSfxQ().filter(([at]) => at >= 0 && at < timing.total), drops: spec.drops ? spec.drops(timing) : [], musicFile, sfxDir, out: path.join(assets, 'bed.wav'), run });
-  console.log('bed: music ' + (hadMusic ? 'yes' : 'NO') + ', sfx events ' + getSfxQ().length);
+  console.log('bed: music ' + hadMusic + ', sfx events ' + getSfxQ().length);
   await fs.writeFile(path.join(dir, 'index.html'), html);
   const outFile = path.join(path.resolve(OUT), spec.id + '.mp4');
   console.log('render: ' + spec.id + ' (' + timing.total.toFixed(1) + 's)');

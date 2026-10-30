@@ -16,6 +16,15 @@ export function studioFilm(H, C, plan) {
   const VW = 960, WH = 640, VH = WH - 44;
   const POS = [[70, 190], [440, 885], [110, 885], [560, 190]], ROT = [-4, 4, -5, 3], BG = ['#e6edf3', '#3fb950', '#58a6ff', '#f78166'], FG = ['#1b1f24', '#fff', '#fff', '#fff'];
   const B = {
+    hookProblem: b => ({ first: true, pose: 'idle', say: [b.say], ko: [b.ko], tts: b.tts && [b.tts],
+      html: p => '<div class="fz">' + brand(b.label || "today's pick") + win(p + 'w', b.title, 60, 230, VW, 760, [[b.img, p + 'i']], 'transform:perspective(1600px) rotateX(4deg) rotate(-2deg)', b.imgBg || '#fff') +
+        (b.tells || []).map((s, i) => stk(p + 's' + i, s.text, s.pos[0], s.pos[1], [-5, 4, -3][i % 3], '#1b1f24', 50, '#ffd23f')).join('') + (b.badge ? stk(p + 'b', b.badge, 730, 150, 4, '#f78166', 40, '#fff') : '') + '</div>',
+      anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; return zoom('#' + p + 'i', b.img, b.r0, b.r1, VW, 716, S, D) + (b.tells || []).map((s, i) => pop(p + 's' + i, wAt(x, s.word), [-5, 4, -3][i % 3])).join('') + (b.badge ? "tl.set('#" + p + "b',{opacity:1}," + f2(S) + ');' : ''); } }),
+    useSkip: b => ({ pose: 'idle', say: b.say, ko: b.ko, tts: b.tts, tail: 0.6,
+      html: p => '<div class="fz">' + brand('should you use it?') + '<div class="fus">' + b.cards.map((c, i) => '<div class="fuc k-' + c.kind + '" id="' + p + 'u' + i + '"><b>' + ({ use: '✅ Use it if', skip: '⛔ Skip it if', warn: '⚠️ Heads up' }[c.kind]) + '</b><span>' + c.text + '</span></div>').join('') + '</div>' +
+        '<div class="fev" id="' + p + 'e">' + b.evidence.map(e => '<i>' + esc(e) + '</i>').join('') + '</div>' + (b.stamp ? '<div class="fstamp sm" id="' + p + 'v" style="border-color:' + (b.color || '#1f9d55') + ';color:' + (b.color || '#1f9d55') + '">' + esc(b.stamp) + '</div>' : '') + '</div>',
+      anim: (p, S, D, M, F2, t) => b.cards.map((c, i) => { const at = (t.sents[c.s ?? i] || t.sents[0]).start - 0.1; pushSfx(at + 0.1, c.kind === 'use' ? 'check' : c.kind === 'skip' ? 'snap' : 'ding', 0.5); return "tl.from('#" + p + "u" + i + "',{opacity:0,x:-140,duration:.38,ease:'back.out(1.5)'}," + f2(at) + ');'; }).join('') +
+        "tl.from('#" + p + "e i',{opacity:0,y:20,duration:.3,stagger:.12}," + f2(t.sents[0].start + 0.6) + ');' + (b.stamp ? (pushSfx(S + D - 1.35, 'stamp'), "tl.fromTo('#" + p + "v',{opacity:0,scale:2.4,rotation:-16},{opacity:1,scale:1,rotation:-6,duration:.4,ease:'back.out(2.2)'}," + f2(S + D - 1.5) + ');') : '') }),
     hook: b => ({ first: true, intro: 'wow', introLen: 1.0, say: [b.say], ko: [b.ko], tts: b.tts && [b.tts],
       html: p => '<div class="fz">' + brand(b.label || "today's pick") + win(p + 'w', b.title, 60, 210, VW, WH, [[b.img, p + 'i']], 'transform:perspective(1600px) rotateX(5deg) rotate(-2.5deg)', b.imgBg || '#fff') +
         stk(p + 'g', b.stat, 90, 770, -6, '#1b1f24', b.statSize || 140, '#ffd23f') + (b.tag ? stk(p + 'y', b.tag, 600, 830, 5, '#f78166', 52, '#fff') : '') +
@@ -52,10 +61,10 @@ export function studioFilm(H, C, plan) {
       anim: (p, S, D, M, F2, t) => { const x = t.sents[0]; return b.steps.map((s, i) => { const at = Math.max(S + 0.2, wAt(x, s.word) - 0.1); pushSfx(at, 'pop', 0.45); return "tl.from('#" + p + "n" + i + "',{opacity:0,y:30,scale:.85,duration:.3,ease:'back.out(2)'}," + f2(at) + ');' + (i ? "tl.from('#" + p + "a" + (i - 1) + "',{scaleY:0,transformOrigin:'50% 0%',duration:.2}," + f2(at - 0.15) + ');' : ''); }).join(''); } }),
     beforeAfter: b => ({ pose: 'point', say: [b.say], ko: [b.ko], tts: b.tts && [b.tts],
       html: p => '<div class="fz">' + brand('before / after') + '<div class="fba" style="top:250px;height:' + (b.h || 720) + 'px"><img id="' + p + 'b" src="' + C.img(b.before) + '"><div class="fbaa" id="' + p + 'm"><img src="' + C.img(b.after) + '"></div><div class="fbal" id="' + p + 'l"></div></div>' +
-        stk(p + 'x', b.beforeLabel || 'WITHOUT', 80, 190, -4, '#e6edf3', 50) + stk(p + 'y', b.afterLabel || 'WITH', 700, 190, 4, '#3fb950', 50, '#fff') + '</div>',
+        stk(p + 'x', b.beforeLabel || 'WITHOUT', 80, 190, -4, '#e6edf3', 50) + stk(p + 'y', b.afterLabel || 'WITH', b.afterX || 700, 190, 4, '#3fb950', 50, '#fff') + (b.topChip ? '<div class="ftop" id="' + p + 't">' + esc(b.topChip) + '</div>' : '') + (b.nameTag ? stk(p + 'n', b.nameTag, 560, 990, -3, '#1b1f24', 54, '#ffd23f') : '') + '</div>',
       anim: (p, S, D, M, F2, t) => { const x = t.sents[0], a = wAt(x, b.afterWord); pushSfx(a - 0.1, 'whoosh');
         return "tl.set('#" + p + "m',{clipPath:'inset(0 0 0 100%)'}," + f2(S) + ");tl.set('#" + p + "l',{left:'100%'}," + f2(S) + ');' + pop(p + 'x', wAt(x, b.beforeWord), -4) +
-          "tl.to('#" + p + "m',{clipPath:'inset(0 0 0 0%)',duration:.9,ease:'power2.inOut'}," + f2(a - 0.1) + ");tl.to('#" + p + "l',{left:'0%',duration:.9,ease:'power2.inOut'}," + f2(a - 0.1) + ');' + pop(p + 'y', a + 0.7, 4); } }),
+          "tl.to('#" + p + "m',{clipPath:'inset(0 0 0 0%)',duration:.9,ease:'power2.inOut'}," + f2(a - 0.1) + ");tl.to('#" + p + "l',{left:'0%',duration:.9,ease:'power2.inOut'}," + f2(a - 0.1) + ');' + pop(p + 'y', a + 0.7, 4) + (b.topChip ? "tl.from('#" + p + "t',{opacity:0,y:-20,duration:.3}," + f2(S + 0.2) + ');' : '') + (b.nameTag ? pop(p + 'n', a + 1.1, -3, 'stamp') : ''); } }),
     term: b => ({ pose: 'point', tail: b.tail ?? 2.8, say: [b.say], ko: [b.ko],
       html: p => '<div class="fz">' + brand('try it') + '<div class="fterm" style="top:330px"><div class="fwb dark"><i style="background:#f85149"></i><i style="background:#e3b341"></i><i style="background:#3fb950"></i><span>terminal</span></div><pre>' +
         b.cmds.map((c, i) => '<div id="' + p + 'l' + i + '"><span class="pr">' + (c.startsWith('/') ? '› ' : '$ ') + '</span><span id="' + p + 'c' + i + '">' + typed(c) + '</span></div>').join('') + '</pre></div>' +
@@ -78,7 +87,7 @@ export function studioFilm(H, C, plan) {
         return "tl.from('#" + p + " .fh',{opacity:0,y:40,duration:.4}," + f2(S + 0.1) + ');' + "tl.from('#" + p + "a',{opacity:0,scale:.6,duration:.35,ease:'back.out(2)'}," + f2(wAt(x, 'Tell') - 0.05) + ');' + "tl.from('#" + p + "e',{opacity:0,y:60,duration:.45,ease:'power3.out'}," + f2(S + D - 1.5) + ');'; } }),
   };
   const sc = plan.blocks.map(b => Object.assign({ mood: 'happy', bot: 'corner' }, B[b.type](b), b.extra || {}));
-  const turnIdx = plan.blocks.findIndex(b => b.type === 'turn');
+  const turnIdx = plan.blocks.findIndex(b => b.type === 'turn'), usIdx = plan.blocks.findIndex(b => b.type === 'useSkip');
   const grainSvg = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='220' height='220' filter='url(%23n)'/></svg>\")";
   const bgHtml = '<div style="position:absolute;inset:0;background:#f3efe6"></div><div style="position:absolute;left:-300px;top:1120px;width:1700px;height:1000px;border-radius:50%;background:radial-gradient(closest-side,#ffd76a59,transparent)"></div>' +
     '<div style="position:absolute;left:-250px;top:-350px;width:1500px;height:1000px;border-radius:50%;background:radial-gradient(closest-side,#ffffffcc,transparent)"></div><div style="position:absolute;inset:0;opacity:.06;background-image:' + grainSvg.replace(/"/g, '&quot;') + '"></div>';
@@ -100,10 +109,14 @@ export function studioFilm(H, C, plan) {
     '.fstat{position:absolute;left:90px;right:90px;display:flex;align-items:baseline;gap:30px;background:#fff;border:2px solid #e4dccb;border-radius:28px;padding:30px 40px;box-shadow:0 12px 30px #3a2a0a14}.fstat b{font-size:112px;font-weight:900;line-height:1;color:#1b1f24}.fstat span{font-size:42px;color:#8a7f69;font-weight:700}' +
     '.fstamp{position:absolute;left:130px;top:880px;border:9px solid;border-radius:26px;padding:16px 40px;font-size:88px;font-weight:900;letter-spacing:2px;background:#ffffffd0;white-space:nowrap}' +
     '.fask{position:absolute;left:0;right:0;top:400px;text-align:center;font-size:50px;font-weight:800;color:#c98a00}.fend{position:absolute;left:60px;right:60px;top:1250px;text-align:center}.fend .fl{font-size:64px;font-weight:900;color:#1b1f24}.fend .fs{font-size:36px;color:#8a7f69;margin-top:8px}.fend .fu{font-size:40px;color:#2f6fe0;font-weight:800;margin-top:14px}' +
+    '.fus{position:absolute;left:70px;right:70px;top:200px;display:flex;flex-direction:column;gap:20px}.fuc{display:block;text-align:left;background:#fff;border:2px solid #e4dccb;border-left-width:14px;border-radius:24px;padding:22px 30px;box-shadow:0 12px 30px #3a2a0a14}.fuc b{display:block;font-size:40px;font-weight:900;margin-bottom:6px}.fuc span{display:block;font-size:39px;line-height:1.25;font-weight:700;color:#1b1f24}' +
+    '.fuc.k-use{border-left-color:#1f9d55}.fuc.k-use b{color:#1f9d55}.fuc.k-skip{border-left-color:#d1242f}.fuc.k-skip b{color:#d1242f}.fuc.k-warn{border-left-color:#c98a00}.fuc.k-warn b{color:#c98a00}' +
+    '.fev{position:absolute;left:70px;right:70px;top:905px;display:flex;flex-wrap:wrap;gap:12px}.fev i{font-style:normal;background:#ffffffb0;border:2px solid #e4dccb;border-radius:40px;padding:8px 20px;font-size:26px;font-weight:700;color:#5c5442}' +
+    '.fstamp.sm{left:auto;right:60px;top:985px;font-size:52px;padding:10px 26px;border-width:7px}.ftop{position:absolute;left:0;right:0;top:1000px;text-align:center;font-size:40px;font-weight:800;color:#5c5442}' +
     '.brand{color:#8a7f69}.brand b{color:#1b1f24}.cap span{background:#1b1f24f0;box-shadow:0 10px 30px #3a2a0a40}';
   const sprites = C.sprites ? Object.fromEntries(['idle', 'talkE', 'talkO', 'blink', 'wow', 'point', 'pointTalk', 'skeptic', 'skepticTalk', 'wave', 'waveTalk'].map(k => [k, C.sprites(k)])) : null;
   return { id: plan.id, F, bgHtml, sprites, title: plan.title, scenes: sc, css,
-    drops: turnIdx >= 0 ? (timing => { const a = timing.scenes[turnIdx], b = timing.scenes[turnIdx + 1]; return [[a.S - 0.15, (b ? b.S : a.S + a.D) + 0.25]]; }) : null,
+    drops: turnIdx >= 0 ? (timing => { const a = timing.scenes[turnIdx], b = timing.scenes[turnIdx + 1]; return [[a.S - 0.15, (b ? b.S : a.S + a.D) + 0.25]]; }) : (usIdx >= 0 ? (timing => { const a = timing.scenes[usIdx]; return [[a.S - 0.2, a.S + 0.45]]; }) : null),
     credits: plan.credits || '' };
 }
 export async function runFilm(H, plan, OUT) {

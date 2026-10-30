@@ -243,9 +243,9 @@ body,html{background:#0b0f17}
 .scene{position:absolute;left:0;right:0;top:0;height:${F.vert ? 1260 : 760}px;padding:${F.vert ? '150px 70px 0' : '70px 120px 0 460px'};display:flex;flex-direction:column;justify-content:center;align-items:${F.vert ? 'center' : 'flex-start'};text-align:${F.vert ? 'center' : 'left'}}
 .brand{position:absolute;top:${F.vert ? 70 : 34}px;left:${F.vert ? 70 : 120}px;font-size:${F.vert ? 30 : 24}px;color:#8b949e}.brand b{color:#e6edf3}
 .prog{position:absolute;top:0;left:0;height:9px;width:100%;background:linear-gradient(90deg,#ffc83d,#f78166,#a371f7);transform-origin:left center}
-.cap{position:absolute;left:${F.vert ? 50 : 420}px;right:${F.vert ? 50 : 80}px;bottom:${F.vert ? 120 : 60}px;text-align:center}
+.cap{position:absolute;left:${F.capL ?? (F.vert ? 50 : 420)}px;right:${F.capR ?? (F.vert ? 50 : 80)}px;bottom:${F.capB ?? (F.vert ? 120 : 60)}px;text-align:center}
 .cap span{display:inline-block;background:#000000d0;border-radius:18px;padding:${F.vert ? '18px 28px' : '14px 26px'};font-size:${F.vert ? 48 : 38}px;line-height:1.35;font-weight:700;color:#fff;box-shadow:0 10px 40px #0008}
-#bot{position:absolute;width:${F.vert ? 300 : 300}px;height:${F.vert ? 300 : 300}px;left:${F.vert ? 40 : 70}px;top:${F.vert ? 1300 : 560}px;transform-origin:50% 100%}
+#bot{position:absolute;width:${F.vert ? 300 : 300}px;height:${F.vert ? 300 : 300}px;left:${F.botL ?? (F.vert ? 40 : 70)}px;top:${F.botTop ?? (F.vert ? 1300 : 560)}px;transform-origin:50% 100%}
 
 .avatar{width:${F.vert ? 190 : 150}px;height:${F.vert ? 190 : 150}px;border-radius:40px;border:5px solid #30363d;object-fit:cover;background:#161b22}
 .repo{font-size:${F.vert ? 96 : 84}px;font-weight:900;line-height:1.05;letter-spacing:-1px;word-break:break-word;margin-top:20px}
@@ -494,11 +494,11 @@ function compose(spec, timing, opts = {}) {
   spec.scenes.forEach((s, i) => {
     const t = timing.scenes[i], p = `s${i}`;
     parts.push(`<div id="${p}" class="clip scene${s.first ? ' hook' : ''}" data-start="${f2(t.S)}" data-duration="${f2(t.D)}" data-track-index="1">${s.html(p, F, t)}</div>`);
-    if (i > 0) SFXQ.push([t.S - 0.08, 'whoosh']);
-    anims.push(s.first ? '' : A.enter(p, t.S), s.anim(p, t.S, t.D, t.M, F), i < spec.scenes.length - 1 ? A.exit(p, t.S, t.D) : '');
+    if (i > 0 && !s.noWhoosh) SFXQ.push([t.S - 0.08, 'whoosh']);
+    anims.push(s.first || s.noEnter ? '' : A.enter(p, t.S), s.anim(p, t.S, t.D, t.M, F, t), i < spec.scenes.length - 1 && !s.noExit ? A.exit(p, t.S, t.D) : '');
     // Starby: position, mood
     const center = F.vert ? { x: 350, y: -30, s: 1.5 } : { x: 30, y: -40, s: 1.4 };
-    const pos = s.bot === 'center' ? center : s.bot === 'hide' ? { x: -500, y: 0, s: 1 } : { x: 0, y: 0, s: 1 };
+    const pos = s.botPos || (s.bot === 'center' ? center : s.bot === 'hide' ? { x: -500, y: 0, s: 1 } : { x: 0, y: 0, s: 1 });
     anims.push(`tl.to('#bot',{x:${pos.x},y:${pos.y},scale:${pos.s},duration:.7,ease:'power3.inOut'},${f2(Math.max(0, t.S - 0.1))});`);
     anims.push(starbyAct(s.mood || 'happy', t.S));
     t.sents.forEach((x, j) => {
@@ -521,12 +521,12 @@ function compose(spec, timing, opts = {}) {
   // irregular blinks (sometimes a double blink) + slow breathing; no fast bobbing
   for (let b = 1.4, k = 0; b < total - 0.3; k++) { anims.push("tl.to('.sblid',{scaleY:1,duration:.07,yoyo:true,repeat:" + (k % 5 === 3 ? 3 : 1) + "}," + f2(b) + ');'); b += 2.3 + ((k * 0.618) % 1) * 2.6; }
   anims.push("tl.to('#sbbody',{scaleY:1.014,scaleX:.996,svgOrigin:'120 250',duration:1.7,yoyo:true,repeat:" + Math.max(1, Math.floor(total / 1.7)) + ",ease:'sine.inOut'},0);");
-  const sfx = SFXQ.filter(([at]) => at >= 0 && at < total - 0.2).sort((a, b) => a[0] - b[0]).map(([at, kind, vol, dur], k) =>
+  const sfx = opts.bed ? ['<audio data-start="0" data-duration="' + f2(total) + '" data-track-index="5" data-volume="1" src="' + esc(opts.bed) + '"></audio>'] : SFXQ.filter(([at]) => at >= 0 && at < total - 0.2).sort((a, b) => a[0] - b[0]).map(([at, kind, vol, dur], k) =>
     '<audio data-start="' + f2(at) + '" data-duration="' + f2(Math.min(kind === 'keys' ? Math.min(2.9, dur || 1) : kind === 'ding' ? 0.9 : 0.4, total - at)) + '" data-track-index="' + (12 + (k % 6)) + '" data-volume="' + (vol || SFX_VOL[kind] || 0.3) + '" src="assets/sfx-' + kind + '.wav"></audio>');
   const bgCols = ['#1f6feb', '#a371f7', '#f78166', '#ffc83d'];
   const blobs = bgCols.map((c, i) => `<div class="blob" id="b${i}" style="background:radial-gradient(circle,${c} 0%,${c}55 35%,transparent 70%);width:${F.W * 0.6}px;height:${F.W * 0.6}px;left:${[10, 55, 20, 60][i]}%;top:${[5, 15, 60, 55][i]}%"></div>`).join('');
   const bgAnim = bgCols.map((_, i) => `tl.to('#b${i}',{x:${[260, -220, 180, -260][i]},y:${[180, 240, -200, -160][i]},scale:${[1.25, 0.85, 1.2, 0.9][i]},duration:${f2(total / 2)},ease:'sine.inOut',yoyo:true,repeat:1},0);`).join('\n');
-  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(spec.id)}</title><style>${css(F)}</style></head><body>
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(spec.id)}</title><style>${css(F)}${spec.css || ''}</style></head><body>
 <div id="root" data-composition-id="root" data-start="0" data-width="${F.W}" data-height="${F.H}">
   <div id="bgwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="0" style="position:absolute;inset:0"><div class="bg">${blobs}</div><div class="grid"></div></div>
   ${parts.join('\n  ')}
@@ -743,6 +743,85 @@ async function main() {
   }
   if (browser) await browser.close();
 }
+
+
+// ---------------- one-off films (hand-directed spec, same renderer) ----------------
+const pushSfx = (at, kind, vol, dur) => SFXQ.push([at, kind, vol, dur]);
+const getSfxQ = () => SFXQ;
+// sound bed: CC0 music (ducked under narration, with deliberate silences) + CC0 UI sound effects, mixed in JS
+async function mixBed({ total, sents, events, drops = [], musicFile, sfxDir, out, run }) {
+  const fsP = await import('node:fs/promises'), path = await import('node:path');
+  const SR = 44100, N = Math.ceil(total * SR), bed = new Float32Array(N), cache = {};
+  const pcm = async f => { if (cache[f] !== undefined) return cache[f]; try { const { stdout } = await run('ffmpeg', ['-v', 'error', '-i', f, '-ac', '1', '-ar', String(SR), '-f', 'f32le', '-'], { encoding: 'buffer', maxBuffer: 256e6 }); const ab = stdout.buffer.slice(stdout.byteOffset, stdout.byteOffset + Math.floor(stdout.length / 4) * 4); cache[f] = new Float32Array(ab); } catch { cache[f] = null; } return cache[f]; };
+  const has = async f => fsP.access(f).then(() => true, () => false);
+  const pick = async (...names) => { for (const n of names) { const f = path.join(sfxDir, n); if (await has(f)) return f; } return null; };
+  const MAP = { whoosh: ['fs-whoosh.mp3', 'ui-swipe.mp3'], pop: ['fs-pop.mp3', 'ui-reaction.mp3'], stamp: ['ui-badge.mp3'], thud: ['ui-snap.mp3'], ding: ['ui-ding.mp3'], check: ['ui-check.mp3'], open: ['ui-open.mp3'], success: ['ui-success.mp3'], levelup: ['ui-levelup.mp3'], snap: ['ui-snap.mp3'], keys: ['ui-typing.mp3'] };
+  const VOL = { whoosh: 0.5, pop: 0.6, stamp: 0.8, thud: 0.6, ding: 0.55, check: 0.6, open: 0.5, success: 0.6, levelup: 0.6, snap: 0.5, keys: 0.45 };
+  const add = (buf, at, g) => { const o = Math.round(at * SR); for (let i = 0; i < buf.length && o + i < N; i++) if (o + i >= 0) bed[o + i] += buf[i] * g; };
+  for (const [at, kind, vol, dur] of events) {
+    const f = await pick(...(MAP[kind] || [])); const b = f && await pcm(f); if (!b) continue;
+    const g = vol || VOL[kind] || 0.5;
+    if (kind === 'keys') { let t = at, k = 0; const end = at + (dur || 1); while (t < end) { add(b, t, g * (0.7 + 0.3 * ((k * 0.618) % 1))); t += 0.075 + ((k * 0.37) % 1) * 0.05; k++; } }
+    else add(b, at, g);
+  }
+  const m = musicFile && await pcm(musicFile);
+  if (m && m.length > SR) {
+    const talk = new Uint8Array(Math.ceil(total * 20) + 1); for (const x of sents) for (let k = Math.floor(x.start * 20); k < Math.min(talk.length, Math.ceil((x.start + x.dur) * 20)); k++) talk[k] = 1;
+    let gPrev = 0;
+    for (let i = 0; i < N; i++) {
+      const t = i / SR; let g = talk[Math.floor(t * 20)] ? 0.11 : 0.2;
+      for (const [a, b] of drops) if (t >= a && t < b) g = 0;
+      g *= Math.min(1, t / 0.4) * Math.max(0, Math.min(1, (total - t) / 1.2));
+      gPrev += (g - gPrev) * 0.0006;
+      bed[i] += m[i % m.length] * gPrev;
+    }
+  }
+  for (let i = 0; i < N; i++) bed[i] = Math.tanh(bed[i] * 1.1) / 1.1;
+  await fsP.writeFile(out, wavBuf(bed, SR));
+  return !!m;
+}
+const srtTime = s => { const ms = Math.max(0, Math.round(s * 1000)), h = Math.floor(ms / 36e5), mi = Math.floor(ms / 6e4) % 60, se = Math.floor(ms / 1000) % 60; return String(h).padStart(2, '0') + ':' + String(mi).padStart(2, '0') + ':' + String(se).padStart(2, '0') + ',' + String(ms % 1000).padStart(3, '0'); };
+const toSrt = (sents, key) => sents.map((x, i) => (i + 1) + '\n' + srtTime(x.start) + ' --> ' + srtTime(x.start + Math.max(1.8, x.dur + 0.3)) + '\n' + (x[key] || x.text) + '\n').join('\n');
+// spec: { id, F, title, scenes:[{say:[en], ko:[ko], tts?:[..], html, anim, mood, bot}], assets:[{url|file, name}], music:{urls:[]}, sfxUrls:{name:url}, drops(timing)=>[[a,b]] }
+async function produceFilm(spec, { OUT = 'out', sfxDir = 'video/sfx' } = {}) {
+  const fs = await import('node:fs/promises'), path = await import('node:path');
+  const { execFile, spawn } = await import('node:child_process'); const run = (await import('node:util')).promisify(execFile);
+  const dir = path.resolve(OUT, 'projects', spec.id), assets = path.join(dir, 'assets'); await fs.mkdir(assets, { recursive: true });
+  await fs.writeFile(path.join(assets, 'gsap.min.js'), await fs.readFile(path.resolve('node_modules/gsap/dist/gsap.min.js'), 'utf8'));
+  for (const a of spec.assets || []) { try { const b = a.file ? await fs.readFile(a.file) : Buffer.from(await (await tfetch(a.url, { redirect: 'follow' })).arrayBuffer()); await fs.writeFile(path.join(assets, a.name), b); } catch (e) { console.log('asset failed ' + a.name + ': ' + e.message); } }
+  const okAudio = (r, b) => r.ok && b.length > 1500 && !/^\s*</.test(b.slice(0, 20).toString());
+  let musicFile = null;
+  for (const u of spec.music?.urls || []) { try { const r = await tfetch(u, { redirect: 'follow' }); const b = Buffer.from(await r.arrayBuffer()); if (okAudio(r, b) && b.length > 50000) { musicFile = path.join(assets, 'music.mp3'); await fs.writeFile(musicFile, b); break; } } catch {} }
+  for (const [n, u] of Object.entries(spec.sfxUrls || {})) { try { const r = await tfetch(u, { redirect: 'follow' }); const b = Buffer.from(await r.arrayBuffer()); if (okAudio(r, b)) await fs.writeFile(path.join(sfxDir, n), b); } catch {} }
+  let cur = 0; const tsc = [];
+  for (const [i, s] of spec.scenes.entries()) {
+    const S = cur; let t = S + (s.head ?? HEAD); const M = [], sents = [];
+    for (const [j, txt] of s.say.entries()) {
+      const f = 'assets/a' + i + '_' + j + '.mp3'; let dur = 0;
+      for (let a = 0; a < 3 && !dur; a++) { try { await run('edge-tts', ['--voice', VOICE, '--rate=' + RATE, '--text', s.tts?.[j] || txt, '--write-media', path.join(dir, f)], { timeout: 30000 }); const { stdout } = await run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path.join(dir, f)]); dur = parseFloat(stdout) || 0; } catch (e) { await new Promise(r => setTimeout(r, 2500)); } }
+      if (!dur) { dur = Math.max(1.5, txt.split(/\s+/).length / 2.6); await run('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=24000:cl=mono', '-t', String(dur), path.join(dir, f)]); }
+      let env = null;
+      try { const { stdout } = await run('ffmpeg', ['-v', 'error', '-i', path.join(dir, f), '-ac', '1', '-ar', '8000', '-f', 's16le', '-'], { encoding: 'buffer', maxBuffer: 64e6 }); const win = Math.round(8000 / 12), n = Math.floor(stdout.length / 2), raw = []; for (let q = 0; q + win <= n; q += win) { let q2 = 0; for (let k = 0; k < win; k++) { const v = stdout.readInt16LE((q + k) * 2) / 32768; q2 += v * v; } raw.push(Math.sqrt(q2 / win)); } const mx = Math.max(1e-4, ...raw); env = raw.map(v => Math.max(0, Math.min(1, (v / mx - 0.08) / 0.62))); } catch {}
+      M.push(t); sents.push({ start: t, dur, audio: f, text: txt, ko: s.ko?.[j], env }); t += dur + (s.gap?.[j] ?? GAP);
+    }
+    const D = t - S + (s.tail ?? TAIL); tsc.push({ S, D, M, sents }); cur = S + D;
+  }
+  const timing = { total: cur, scenes: tsc };
+  const html = compose(spec, timing, { bed: 'assets/bed.wav' });
+  const allS = tsc.flatMap(x => x.sents);
+  const hadMusic = await mixBed({ total: timing.total, sents: allS, events: getSfxQ().filter(([at]) => at >= 0 && at < timing.total), drops: spec.drops ? spec.drops(timing) : [], musicFile, sfxDir, out: path.join(assets, 'bed.wav'), run });
+  console.log('bed: music ' + (hadMusic ? 'yes' : 'NO') + ', sfx events ' + getSfxQ().length);
+  await fs.writeFile(path.join(dir, 'index.html'), html);
+  const outFile = path.join(path.resolve(OUT), spec.id + '.mp4');
+  console.log('render: ' + spec.id + ' (' + timing.total.toFixed(1) + 's)');
+  await new Promise((res, rej) => { const ch = spawn('npx', ['hyperframes', 'render', dir, '--output', outFile, '--quality', 'standard', '--fps', ENV.HF_FPS || '30'], { stdio: 'inherit' }); ch.on('close', c => (c === 0 ? res() : rej(new Error('render exit ' + c)))); });
+  await fs.writeFile(path.join(path.resolve(OUT), spec.id + '.en.srt'), toSrt(allS, 'text'));
+  await fs.writeFile(path.join(path.resolve(OUT), spec.id + '.ko.srt'), toSrt(allS, 'ko'));
+  await fs.writeFile(path.join(path.resolve(OUT), spec.id + '-script.txt'), spec.scenes.map((s, i) => '[' + (i + 1) + '] ' + s.say.join(' ') + '\n    ' + (s.ko || []).join(' ')).join('\n\n') + '\n\n' + (spec.credits || ''));
+  console.log('done: ' + outFile);
+  return { outFile, timing };
+}
+export { A, f2, esc, brand, winBar, typed, num, words, short, say, compose, estimateTiming, starbySvg, pushSfx, getSfxQ, produceFilm, toSrt, HEAD, GAP, TAIL };
 
 if (typeof process !== 'undefined' && /hf-video\.mjs$/.test(process.argv?.[1] || '')) {
   main().catch(e => { console.error(e); process.exit(1); });

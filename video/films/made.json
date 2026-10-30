@@ -1,0 +1,35 @@
+{
+  "note": "Repos that already have a Star Board short. The daily routine skips these (remake only if >30 days old, a newer release exists, and the repo is back in the daily top 10).",
+  "films": [
+    {
+      "repo": "HKUDS/DeepTutor",
+      "date": "2026-10-30",
+      "film": "deeptutor2",
+      "release": "v1.7.0"
+    },
+    {
+      "repo": "obra/superpowers",
+      "date": "2026-10-30",
+      "film": "superpowers2",
+      "release": "v7.0.1"
+    },
+    {
+      "repo": "pbakaus/impeccable",
+      "date": "2026-10-30",
+      "film": "impeccable2",
+      "release": "cli-v4.8.0"
+    },
+    {
+      "repo": "JetBrains/thinkrail",
+      "date": "2026-10-30",
+      "film": "thinkrail2",
+      "release": "v0.3.0"
+    },
+    {
+      "repo": "milind-soni/OpenMausBot",
+      "date": "2026-10-30",
+      "film": "openmausbot2",
+      "release": "v0.1.133"
+    }
+  ]
+}

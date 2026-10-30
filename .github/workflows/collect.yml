@@ -2,7 +2,7 @@ name: Collect & Deploy Star Board
 
 on:
   schedule:
-    - cron: '0 21 * * *'   # 매일 06:00 KST
+    - cron: '0 18 * * *'   # 매일 03:00 KST (GitHub 예약 실행이 몇 시간 늦을 수 있어 07:30 쇼츠 전에 끝나도록 일찍 잡음)
   workflow_dispatch: {}     # Actions 탭에서 수동 실행 가능
 
 permissions:

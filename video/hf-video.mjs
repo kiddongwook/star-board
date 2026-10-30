@@ -245,7 +245,7 @@ body,html{background:#0b0f17}
 .prog{position:absolute;top:0;left:0;height:9px;width:100%;background:linear-gradient(90deg,#ffc83d,#f78166,#a371f7);transform-origin:left center}
 .cap{position:absolute;left:${F.capL ?? (F.vert ? 50 : 420)}px;right:${F.capR ?? (F.vert ? 50 : 80)}px;bottom:${F.capB ?? (F.vert ? 120 : 60)}px;text-align:center}
 .cap span{display:inline-block;background:#000000d0;border-radius:18px;padding:${F.vert ? '18px 28px' : '14px 26px'};font-size:${F.vert ? 48 : 38}px;line-height:1.35;font-weight:700;color:#fff;box-shadow:0 10px 40px #0008}
-#bot{position:absolute;width:${F.botW ?? 300}px;height:${F.botW ?? 300}px;left:${F.botL ?? (F.vert ? 40 : 70)}px;top:${F.botTop ?? (F.vert ? 1300 : 560)}px;transform-origin:50% 100%}
+#bot{position:absolute;width:${F.botW ?? 300}px;height:${F.botH ?? F.botW ?? 300}px;left:${F.botL ?? (F.vert ? 40 : 70)}px;top:${F.botTop ?? (F.vert ? 1300 : 560)}px;transform-origin:50% 100%}
 
 .avatar{width:${F.vert ? 190 : 150}px;height:${F.vert ? 190 : 150}px;border-radius:40px;border:5px solid #30363d;object-fit:cover;background:#161b22}
 .repo{font-size:${F.vert ? 96 : 84}px;font-weight:900;line-height:1.05;letter-spacing:-1px;word-break:break-word;margin-top:20px}
@@ -290,7 +290,8 @@ body,html{background:#0b0f17}
 .heroshade{position:absolute;left:0;top:0;width:${F.W}px;height:${F.H}px;z-index:1;background:linear-gradient(180deg,#0b0f17cc 0%,#0b0f1744 40%,#0b0f17aa 70%,#0b0f17f2 88%)}
 .pw{position:relative;transform-origin:0 0}.hl{position:absolute;border:5px solid #ffc83d;border-radius:12px;box-shadow:0 0 0 4000px #0009,0 0 30px #ffc83d88;opacity:0}
 .cur{color:#3fb950}
-.sbs{position:absolute;left:0;top:0;width:100%;height:100%}#botinner{transform-origin:50% 82%}
+.sbs{position:absolute;left:0;top:0;width:100%;height:100%}#botflip{position:absolute;inset:0;transform-origin:50% 50%}
+.cap.bub{right:auto;bottom:auto;text-align:left;z-index:9}.cap.bub span{background:#fff;color:#1b1f24;border:4px solid #1b1f24;border-radius:30px;font-size:${F.bubFont ?? 42}px;line-height:1.28;padding:18px 28px;box-shadow:0 10px 0 #1b1f2426;position:relative;display:inline-block}.cap.bub span:after{content:'';position:absolute;top:44px;width:26px;height:26px;background:#fff;border:4px solid #1b1f24;border-top:0;border-right:0;transform:rotate(45deg)}.cap.bub.bl span:after{left:-17px}.cap.bub.br span:after{right:-17px;transform:rotate(-135deg)}#botinner{transform-origin:50% 82%}
 
 .row img{width:64px;height:64px;border-radius:16px}.row .n{font-size:36px;font-weight:800}.row .m{font-size:26px;color:#8b949e}
 `;
@@ -491,28 +492,36 @@ function buildSpecs(data, types, site, infos = {}) {
 // 3D sprite host: swap pre-rendered sprites (same framing) for mouth, blink and pose; 12 fps like 2D cut-out animation
 function spriteHost(spec, timing) {
   const S = spec.sprites, FPS = 12, N = Math.ceil(timing.total * FPS), a = [];
-  const html = Object.keys(S).map(k => '<img class="sbs" id="sb_' + k + '" src="' + esc(S[k]) + '" style="opacity:' + (k === 'idle' ? 1 : 0) + '">').join('');
+  const html = '<div id="botflip">' + Object.keys(S).map(k => '<img class="sbs" id="sb_' + k + '" src="' + esc(S[k]) + '" style="opacity:' + (k === 'idle' ? 1 : 0) + '">').join('') + '</div>';
+  const F = spec.F, stX = i => { const s = spec.scenes[i] || {}; const P = s.botPos || (F.stages && F.stages[s.stage || 'left']) || { x: 0 }; return (F.botL ?? 0) + P.x + (F.botW ?? 300) / 2; };
+  let flip = 1;
   const blink = new Set(); for (let b = 1.7, k = 0; b < timing.total; k++) { const f0 = Math.round(b * FPS); blink.add(f0); blink.add(f0 + 1); if (k % 5 === 3) { blink.add(f0 + 3); blink.add(f0 + 4); } b += 2.3 + ((k * 0.618) % 1) * 2.5; }
   let prev = 'idle';
   for (let f = 0; f < N; f++) {
     const t = f / FPS, si = timing.scenes.findIndex(x => t >= x.S && t < x.S + x.D), sc = spec.scenes[si] || {}, T = timing.scenes[si];
     let o = 0; for (const x of T?.sents || []) if (t >= x.start && t < x.start + x.dur) { const env = mouthEnv(x); o = env[Math.min(env.length - 1, Math.floor((t - x.start) * 12))] || 0; }
-    let pose = sc.pose || 'idle', st;
+    let pose = sc.pose || 'idle', st, wantFlip = 1;
+    const ev = POSEQ.filter(e => t >= e.at && t < e.at + e.dur).pop();
+    if (ev) { pose = ev.pose; if (ev.pose === 'point' && ev.targetX != null) wantFlip = ev.targetX > stX(si) ? -1 : 1; }
+    if (wantFlip !== flip) { a.push("tl.set('#botflip',{scaleX:" + wantFlip + '},' + f2(t) + ');'); flip = wantFlip; }
     if (sc.intro && T && t < T.S + (sc.introLen || 0.9)) st = sc.intro;
+    else if (ev && (ev.pose === 'wow' || ev.pose === 'blink')) st = ev.pose;
     else if (pose === 'idle') st = o > 0.58 ? 'talkO' : o > 0.22 ? 'talkE' : blink.has(f) ? 'blink' : 'idle';
     else { st = o > 0.3 && S[pose + 'Talk'] ? pose + 'Talk' : pose; }
     if (!S[st]) st = 'idle';
     if (st !== prev) { a.push("tl.set('#sb_" + prev + "',{opacity:0}," + f2(t) + ");tl.set('#sb_" + st + "',{opacity:1}," + f2(t) + ');'); prev = st; }
   }
   // body motion: scene-change hop with anticipation, slow breathing (no fast bobbing)
-  timing.scenes.forEach((T, i) => { if (!i) return; const at = T.S;
-    a.push("tl.to('#botinner',{scaleY:.94,scaleX:1.04,duration:.1,ease:'power2.in'}," + f2(at) + ");tl.to('#botinner',{y:-34,scaleY:1.05,scaleX:.97,duration:.18,ease:'power2.out'}," + f2(at + 0.1) + ");tl.to('#botinner',{y:0,scaleY:1,scaleX:1,duration:.34,ease:'bounce.out'}," + f2(at + 0.28) + ');'); });
+  timing.scenes.forEach((T, i) => { if (!i) return; const at = T.S, moved = Math.abs(stX(i) - stX(i - 1)) > 20, hop = moved ? 110 : 34;
+    a.push("tl.to('#botinner',{scaleY:.92,scaleX:1.06,duration:.1,ease:'power2.in'}," + f2(at - 0.12) + ");tl.to('#botinner',{y:-" + hop + ",scaleY:1.06,scaleX:.96,duration:.24,ease:'power2.out'}," + f2(at - 0.02) + ");tl.to('#botinner',{y:0,scaleY:1,scaleX:1,duration:.38,ease:'bounce.out'}," + f2(at + 0.22) + ');');
+    T.sents.forEach((x, j) => { a.push("tl.to('#botinner',{rotation:" + (j % 2 ? -3 : 3) + ",duration:.22,yoyo:true,repeat:1,ease:'sine.inOut'}," + f2(x.start) + ');'); }); });
   a.push("tl.to('#botinner .sbs',{scaleY:1.012,transformOrigin:'50% 82%',duration:1.6,yoyo:true,repeat:" + Math.max(1, Math.floor(timing.total / 1.6)) + ",ease:'sine.inOut'},0);");
   return { html, anims: a.join('\n') };
 }
 function compose(spec, timing, opts = {}) {
   const { F } = spec, total = timing.total, gsapSrc = opts.gsapSrc || 'assets/gsap.min.js';
-  const parts = [], anims = [], audios = [], caps = []; SFXQ = [];
+  const parts = [], anims = [], audios = [], caps = []; SFXQ = []; POSEQ = [];
+  const stagePos = s => s.botPos || (F.stages && F.stages[s.stage || 'left']) || null;
   if (!spec.sprites) anims.push("tl.set('.sblid',{scaleY:0,transformOrigin:'50% 0%'},0);tl.set('#sbmo',{attr:{ry:5}},0);tl.set('#sbtg',{attr:{cy:147.5}},0);");
   spec.scenes.forEach((s, i) => {
     const t = timing.scenes[i], p = `s${i}`;
@@ -521,13 +530,13 @@ function compose(spec, timing, opts = {}) {
     anims.push(s.first || s.noEnter ? '' : A.enter(p, t.S), s.anim(p, t.S, t.D, t.M, F, t), i < spec.scenes.length - 1 && !s.noExit ? A.exit(p, t.S, t.D) : '');
     // Starby: position, mood
     const center = F.vert ? { x: 350, y: -30, s: 1.5 } : { x: 30, y: -40, s: 1.4 };
-    const pos = s.botPos || (s.bot === 'center' ? center : s.bot === 'hide' ? { x: -500, y: 0, s: 1 } : { x: 0, y: 0, s: 1 });
-    anims.push(`tl.to('#bot',{x:${pos.x},y:${pos.y},scale:${pos.s},duration:.7,ease:'power3.inOut'},${f2(Math.max(0, t.S - 0.1))});`);
+    const pos = stagePos(s) || (s.bot === 'center' ? center : s.bot === 'hide' ? { x: -500, y: 0, s: 1 } : { x: 0, y: 0, s: 1 });
+    anims.push(F.stages ? `tl.to('#bot',{x:${pos.x},y:${pos.y || 0},scale:${pos.s || 1},duration:.5,ease:'power2.inOut'},${f2(Math.max(0, t.S - 0.02))});` : `tl.to('#bot',{x:${pos.x},y:${pos.y},scale:${pos.s},duration:.7,ease:'power3.inOut'},${f2(Math.max(0, t.S - 0.1))});`);
     if (!spec.sprites) anims.push(starbyAct(s.mood || 'happy', t.S));
     t.sents.forEach((x, j) => {
       audios.push(`<audio data-start="${f2(x.start)}" data-duration="${f2(x.dur)}" data-track-index="${6 + (j % 2)}" data-volume="1" src="${esc(x.audio)}"></audio>`);
       if (!spec.sprites) anims.push(lipSync(x));
-      const cap = noUrl(SUBS === 'ko' ? (x.ko || x.text) : x.text), max = F.vert ? (SUBS === 'ko' ? 36 : 44) : 64;
+      const cap = noUrl(SUBS === 'ko' ? (x.ko || x.text) : x.text), max = F.bubble && !s.noBubble ? (F.bubMax ?? 30) : F.vert ? (SUBS === 'ko' ? 36 : 44) : 64;
       const pieces = []; let buf = '';
       for (const seg of cap.split(/(?<=[.!?。,，])\s+/)) { if ((buf + ' ' + seg).trim().length > max && buf) { pieces.push(buf.trim()); buf = seg; } else buf = (buf + ' ' + seg).trim(); }
       if (buf) pieces.push(buf.trim());
@@ -536,7 +545,12 @@ function compose(spec, timing, opts = {}) {
       pieces.forEach((pc, k) => {
         const st = x.start + (x.dur * off) / tl0, du = (x.dur * pc.length) / tl0 + (k === pieces.length - 1 ? GAP : 0); off += pc.length;
         const id = `c${i}_${j}_${k}`;
-        caps.push(`<div id="${id}" class="clip cap" data-start="${f2(st)}" data-duration="${f2(du)}" data-track-index="${8 + ((j + k) % 2)}"><span>${esc(cut(pc, max + 16))}</span></div>`);
+        let capCls = 'clip cap', capSt = '';
+        if (F.bubble && !s.noBubble) { const P = stagePos(s) || { x: 0, y: 0 }, bx = (F.botL ?? 0) + P.x, by = (F.botTop ?? 0) + P.y, bw = F.botW ?? 300;
+          const rightSide = bx + bw * 0.5 < F.W * 0.5; // Starby on the left -> bubble on its right
+          capCls += ' bub ' + (rightSide ? 'bl' : 'br');
+          capSt = rightSide ? 'left:' + Math.round(bx + bw * 0.8) + 'px;top:' + Math.round(by + 40) + 'px;max-width:' + Math.round(F.W - 40 - (bx + bw * 0.8)) + 'px' : 'right:' + Math.round(F.W - (bx + bw * 0.2)) + 'px;left:auto;top:' + Math.round(by + 40) + 'px;max-width:' + Math.round(bx + bw * 0.2 - 40) + 'px;text-align:right'; }
+        caps.push(`<div id="${id}" class="${capCls}" style="${capSt}" data-start="${f2(st)}" data-duration="${f2(du)}" data-track-index="${8 + ((j + k) % 2)}"><span>${esc(cut(pc, max + 16))}</span></div>`);
         anims.push(`tl.from('#${id} span',{opacity:0,y:24,duration:.18,ease:'power2.out'},${f2(st)});`);
       });
     });
@@ -771,6 +785,8 @@ async function main() {
 
 // ---------------- one-off films (hand-directed spec, same renderer) ----------------
 const pushSfx = (at, kind, vol, dur) => SFXQ.push([at, kind, vol, dur]);
+let POSEQ = [];
+const pushPose = (at, dur, pose, targetX) => POSEQ.push({ at, dur, pose, targetX });
 const getSfxQ = () => SFXQ;
 
 // fallback music bed written in code (84 BPM lo-fi: e-piano 7th chords, bass with harmonics, soft kick/snare/hats, vinyl)
@@ -875,7 +891,7 @@ async function produceFilm(spec, { OUT = 'out', sfxDir = 'video/sfx' } = {}) {
   console.log('done: ' + outFile);
   return { outFile, timing };
 }
-export { A, f2, esc, brand, winBar, typed, num, words, short, say, compose, estimateTiming, starbySvg, pushSfx, getSfxQ, produceFilm, toSrt, HEAD, GAP, TAIL };
+export { A, f2, esc, brand, winBar, typed, num, words, short, say, compose, estimateTiming, starbySvg, pushSfx, pushPose, getSfxQ, produceFilm, toSrt, HEAD, GAP, TAIL };
 
 if (typeof process !== 'undefined' && /hf-video\.mjs$/.test(process.argv?.[1] || '')) {
   main().catch(e => { console.error(e); process.exit(1); });

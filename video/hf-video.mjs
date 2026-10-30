@@ -245,7 +245,7 @@ body,html{background:#0b0f17}
 .prog{position:absolute;top:0;left:0;height:9px;width:100%;background:linear-gradient(90deg,#ffc83d,#f78166,#a371f7);transform-origin:left center}
 .cap{position:absolute;left:${F.capL ?? (F.vert ? 50 : 420)}px;right:${F.capR ?? (F.vert ? 50 : 80)}px;bottom:${F.capB ?? (F.vert ? 120 : 60)}px;text-align:center}
 .cap span{display:inline-block;background:#000000d0;border-radius:18px;padding:${F.vert ? '18px 28px' : '14px 26px'};font-size:${F.vert ? 48 : 38}px;line-height:1.35;font-weight:700;color:#fff;box-shadow:0 10px 40px #0008}
-#bot{position:absolute;width:${F.vert ? 300 : 300}px;height:${F.vert ? 300 : 300}px;left:${F.botL ?? (F.vert ? 40 : 70)}px;top:${F.botTop ?? (F.vert ? 1300 : 560)}px;transform-origin:50% 100%}
+#bot{position:absolute;width:${F.botW ?? 300}px;height:${F.botW ?? 300}px;left:${F.botL ?? (F.vert ? 40 : 70)}px;top:${F.botTop ?? (F.vert ? 1300 : 560)}px;transform-origin:50% 100%}
 
 .avatar{width:${F.vert ? 190 : 150}px;height:${F.vert ? 190 : 150}px;border-radius:40px;border:5px solid #30363d;object-fit:cover;background:#161b22}
 .repo{font-size:${F.vert ? 96 : 84}px;font-weight:900;line-height:1.05;letter-spacing:-1px;word-break:break-word;margin-top:20px}
@@ -290,6 +290,7 @@ body,html{background:#0b0f17}
 .heroshade{position:absolute;left:0;top:0;width:${F.W}px;height:${F.H}px;z-index:1;background:linear-gradient(180deg,#0b0f17cc 0%,#0b0f1744 40%,#0b0f17aa 70%,#0b0f17f2 88%)}
 .pw{position:relative;transform-origin:0 0}.hl{position:absolute;border:5px solid #ffc83d;border-radius:12px;box-shadow:0 0 0 4000px #0009,0 0 30px #ffc83d88;opacity:0}
 .cur{color:#3fb950}
+.sbs{position:absolute;left:0;top:0;width:100%;height:100%}#botinner{transform-origin:50% 82%}
 
 .row img{width:64px;height:64px;border-radius:16px}.row .n{font-size:36px;font-weight:800}.row .m{font-size:26px;color:#8b949e}
 `;
@@ -487,10 +488,32 @@ function buildSpecs(data, types, site, infos = {}) {
 }
 
 // ---------------- composition ----------------
+// 3D sprite host: swap pre-rendered sprites (same framing) for mouth, blink and pose; 12 fps like 2D cut-out animation
+function spriteHost(spec, timing) {
+  const S = spec.sprites, FPS = 12, N = Math.ceil(timing.total * FPS), a = [];
+  const html = Object.keys(S).map(k => '<img class="sbs" id="sb_' + k + '" src="' + esc(S[k]) + '" style="opacity:' + (k === 'idle' ? 1 : 0) + '">').join('');
+  const blink = new Set(); for (let b = 1.7, k = 0; b < timing.total; k++) { const f0 = Math.round(b * FPS); blink.add(f0); blink.add(f0 + 1); if (k % 5 === 3) { blink.add(f0 + 3); blink.add(f0 + 4); } b += 2.3 + ((k * 0.618) % 1) * 2.5; }
+  let prev = 'idle';
+  for (let f = 0; f < N; f++) {
+    const t = f / FPS, si = timing.scenes.findIndex(x => t >= x.S && t < x.S + x.D), sc = spec.scenes[si] || {}, T = timing.scenes[si];
+    let o = 0; for (const x of T?.sents || []) if (t >= x.start && t < x.start + x.dur) { const env = mouthEnv(x); o = env[Math.min(env.length - 1, Math.floor((t - x.start) * 12))] || 0; }
+    let pose = sc.pose || 'idle', st;
+    if (sc.intro && T && t < T.S + (sc.introLen || 0.9)) st = sc.intro;
+    else if (pose === 'idle') st = o > 0.58 ? 'talkO' : o > 0.22 ? 'talkE' : blink.has(f) ? 'blink' : 'idle';
+    else { st = o > 0.3 && S[pose + 'Talk'] ? pose + 'Talk' : pose; }
+    if (!S[st]) st = 'idle';
+    if (st !== prev) { a.push("tl.set('#sb_" + prev + "',{opacity:0}," + f2(t) + ");tl.set('#sb_" + st + "',{opacity:1}," + f2(t) + ');'); prev = st; }
+  }
+  // body motion: scene-change hop with anticipation, slow breathing (no fast bobbing)
+  timing.scenes.forEach((T, i) => { if (!i) return; const at = T.S;
+    a.push("tl.to('#botinner',{scaleY:.94,scaleX:1.04,duration:.1,ease:'power2.in'}," + f2(at) + ");tl.to('#botinner',{y:-34,scaleY:1.05,scaleX:.97,duration:.18,ease:'power2.out'}," + f2(at + 0.1) + ");tl.to('#botinner',{y:0,scaleY:1,scaleX:1,duration:.34,ease:'bounce.out'}," + f2(at + 0.28) + ');'); });
+  a.push("tl.to('#botinner .sbs',{scaleY:1.012,transformOrigin:'50% 82%',duration:1.6,yoyo:true,repeat:" + Math.max(1, Math.floor(timing.total / 1.6)) + ",ease:'sine.inOut'},0);");
+  return { html, anims: a.join('\n') };
+}
 function compose(spec, timing, opts = {}) {
   const { F } = spec, total = timing.total, gsapSrc = opts.gsapSrc || 'assets/gsap.min.js';
   const parts = [], anims = [], audios = [], caps = []; SFXQ = [];
-  anims.push("tl.set('.sblid',{scaleY:0,transformOrigin:'50% 0%'},0);tl.set('#sbmo',{attr:{ry:5}},0);tl.set('#sbtg',{attr:{cy:147.5}},0);");
+  if (!spec.sprites) anims.push("tl.set('.sblid',{scaleY:0,transformOrigin:'50% 0%'},0);tl.set('#sbmo',{attr:{ry:5}},0);tl.set('#sbtg',{attr:{cy:147.5}},0);");
   spec.scenes.forEach((s, i) => {
     const t = timing.scenes[i], p = `s${i}`;
     parts.push(`<div id="${p}" class="clip scene${s.first ? ' hook' : ''}" data-start="${f2(t.S)}" data-duration="${f2(t.D)}" data-track-index="1">${s.html(p, F, t)}</div>`);
@@ -500,10 +523,10 @@ function compose(spec, timing, opts = {}) {
     const center = F.vert ? { x: 350, y: -30, s: 1.5 } : { x: 30, y: -40, s: 1.4 };
     const pos = s.botPos || (s.bot === 'center' ? center : s.bot === 'hide' ? { x: -500, y: 0, s: 1 } : { x: 0, y: 0, s: 1 });
     anims.push(`tl.to('#bot',{x:${pos.x},y:${pos.y},scale:${pos.s},duration:.7,ease:'power3.inOut'},${f2(Math.max(0, t.S - 0.1))});`);
-    anims.push(starbyAct(s.mood || 'happy', t.S));
+    if (!spec.sprites) anims.push(starbyAct(s.mood || 'happy', t.S));
     t.sents.forEach((x, j) => {
       audios.push(`<audio data-start="${f2(x.start)}" data-duration="${f2(x.dur)}" data-track-index="${6 + (j % 2)}" data-volume="1" src="${esc(x.audio)}"></audio>`);
-      anims.push(lipSync(x));
+      if (!spec.sprites) anims.push(lipSync(x));
       const cap = noUrl(SUBS === 'ko' ? (x.ko || x.text) : x.text), max = F.vert ? (SUBS === 'ko' ? 36 : 44) : 64;
       const pieces = []; let buf = '';
       for (const seg of cap.split(/(?<=[.!?。,，])\s+/)) { if ((buf + ' ' + seg).trim().length > max && buf) { pieces.push(buf.trim()); buf = seg; } else buf = (buf + ' ' + seg).trim(); }
@@ -519,8 +542,9 @@ function compose(spec, timing, opts = {}) {
     });
   });
   // irregular blinks (sometimes a double blink) + slow breathing; no fast bobbing
-  for (let b = 1.4, k = 0; b < total - 0.3; k++) { anims.push("tl.to('.sblid',{scaleY:1,duration:.07,yoyo:true,repeat:" + (k % 5 === 3 ? 3 : 1) + "}," + f2(b) + ');'); b += 2.3 + ((k * 0.618) % 1) * 2.6; }
-  anims.push("tl.to('#sbbody',{scaleY:1.014,scaleX:.996,svgOrigin:'120 250',duration:1.7,yoyo:true,repeat:" + Math.max(1, Math.floor(total / 1.7)) + ",ease:'sine.inOut'},0);");
+  const SH = spec.sprites ? spriteHost(spec, timing) : null; if (SH) anims.push(SH.anims);
+  for (let b = 1.4, k = 0; !SH && b < total - 0.3; k++) { anims.push("tl.to('.sblid',{scaleY:1,duration:.07,yoyo:true,repeat:" + (k % 5 === 3 ? 3 : 1) + "}," + f2(b) + ');'); b += 2.3 + ((k * 0.618) % 1) * 2.6; }
+  if (!SH) anims.push("tl.to('#sbbody',{scaleY:1.014,scaleX:.996,svgOrigin:'120 250',duration:1.7,yoyo:true,repeat:" + Math.max(1, Math.floor(total / 1.7)) + ",ease:'sine.inOut'},0);");
   const sfx = opts.bed ? ['<audio data-start="0" data-duration="' + f2(total) + '" data-track-index="5" data-volume="1" src="' + esc(opts.bed) + '"></audio>'] : SFXQ.filter(([at]) => at >= 0 && at < total - 0.2).sort((a, b) => a[0] - b[0]).map(([at, kind, vol, dur], k) =>
     '<audio data-start="' + f2(at) + '" data-duration="' + f2(Math.min(kind === 'keys' ? Math.min(2.9, dur || 1) : kind === 'ding' ? 0.9 : 0.4, total - at)) + '" data-track-index="' + (12 + (k % 6)) + '" data-volume="' + (vol || SFX_VOL[kind] || 0.3) + '" src="assets/sfx-' + kind + '.wav"></audio>');
   const bgCols = ['#1f6feb', '#a371f7', '#f78166', '#ffc83d'];
@@ -528,9 +552,9 @@ function compose(spec, timing, opts = {}) {
   const bgAnim = bgCols.map((_, i) => `tl.to('#b${i}',{x:${[260, -220, 180, -260][i]},y:${[180, 240, -200, -160][i]},scale:${[1.25, 0.85, 1.2, 0.9][i]},duration:${f2(total / 2)},ease:'sine.inOut',yoyo:true,repeat:1},0);`).join('\n');
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(spec.id)}</title><style>${css(F)}${spec.css || ''}</style></head><body>
 <div id="root" data-composition-id="root" data-start="0" data-width="${F.W}" data-height="${F.H}">
-  <div id="bgwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="0" style="position:absolute;inset:0"><div class="bg">${blobs}</div><div class="grid"></div></div>
+  <div id="bgwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="0" style="position:absolute;inset:0">${spec.bgHtml || '<div class="bg">' + blobs + '</div><div class="grid"></div>'}</div>
   ${parts.join('\n  ')}
-  <div id="botwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="4" style="position:absolute;inset:0;pointer-events:none"><div id="bot"><div id="botinner" style="width:100%;height:100%">${starbySvg()}</div></div></div>
+  <div id="botwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="4" style="position:absolute;inset:0;pointer-events:none${SH ? ';mix-blend-mode:multiply' : ''}"><div id="bot"><div id="botinner" style="width:100%;height:100%">${SH ? SH.html : starbySvg()}</div></div></div>
   ${caps.join('\n  ')}
   <div id="progwrap" class="clip" data-start="0" data-duration="${f2(total)}" data-track-index="10" style="position:absolute;inset:0;pointer-events:none"><div class="prog" id="prog"></div></div>
   ${audios.join('\n  ')}
@@ -539,7 +563,7 @@ function compose(spec, timing, opts = {}) {
   <script>
     const tl = gsap.timeline({ paused: true });
     tl.fromTo('#prog', { scaleX: 0 }, { scaleX: 1, duration: ${f2(total)}, ease: 'none' }, 0);
-    ${bgAnim}
+    ${spec.bgHtml ? '' : bgAnim}
     ${anims.filter(Boolean).join('\n    ')}
     tl.set({}, {}, ${f2(total)});
     window.__timelines = window.__timelines || {};

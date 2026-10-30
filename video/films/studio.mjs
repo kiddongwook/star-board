@@ -1,4 +1,4 @@
-// shared builder for studio-look films (presenter mode: big Starby that hops between stages, points, speech-bubble captions)
+// shared builder for studio-look films (presenter mode + how-it-works flow and usage blocks)
 // Studio-look directed shorts (cream studio + 3D Starby sprites). A film = a plan of blocks; each block is one scene.
 // Blocks: hook, promise, why, shot, cuts, chips, diagram, beforeAfter, term, turn, verdict, end.
 export function studioFilm(H, C, plan) {
@@ -19,6 +19,30 @@ export function studioFilm(H, C, plan) {
   const wow = (t, dur = 0.8) => pushPose(t, dur, 'wow');
   const POS = [[70, 190], [440, 885], [110, 885], [560, 190]], ROT = [-4, 4, -5, 3], BG = ['#e6edf3', '#3fb950', '#58a6ff', '#f78166'], FG = ['#1b1f24', '#fff', '#fff', '#fff'];
   const B = {
+    // animated "how it works" diagram: nodes appear on their words, edges draw in, a packet travels along them, nodes pulse on arrival
+    flow: b => ({ pose: 'idle', say: b.say, ko: b.ko, tts: b.tts,
+      html: p => { const N = b.nodes, ix = Object.fromEntries(N.map((n, i) => [n.id, i])), cx = n => n.x + (n.w || 300) / 2, cy = n => n.y + 60;
+        const edges = (b.edges || []).map(([f, t, bend], k) => { const a = N[ix[f]], z = N[ix[t]]; const x1 = cx(a), y1 = cy(a), x2 = cx(z), y2 = cy(z);
+          const d = bend ? 'M' + x1 + ',' + y1 + ' C' + (x1 + bend) + ',' + y1 + ' ' + (x2 + bend) + ',' + y2 + ' ' + x2 + ',' + y2 : 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
+          return '<path id="' + p + 'e' + k + '" d="' + d + '" class="fedge" style="opacity:0"/>'; }).join('');
+        return '<div class="fz">' + brand(b.label || 'how it works') + (b.head ? '<div class="fh" style="top:150px;font-size:58px">' + b.head + '</div>' : '') +
+          '<svg class="fsvg" width="1080" height="1100" viewBox="0 0 1080 1100"><defs><marker id="' + p + 'ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a7f69"/></marker></defs>' + edges + '</svg>' +
+          N.map((n, i) => '<div class="fnode' + (n.kind ? ' ' + n.kind : '') + '" id="' + p + 'n' + i + '" style="left:' + n.x + 'px;top:' + n.y + 'px;width:' + (n.w || 300) + 'px"><b>' + (n.icon || '') + '</b><span>' + esc(n.label) + '</span>' + (n.sub ? '<em>' + esc(n.sub) + '</em>' : '') + '</div>').join('') +
+          '<div class="fpk" id="' + p + 'pk"></div>' + (b.tag ? '<div class="fdiag">' + esc(b.tag) + '</div>' : '') + '</div>'; },
+      anim: (p, S, D, M, F2, t) => { const N = b.nodes, ix = Object.fromEntries(N.map((n, i) => [n.id, i])), cx = n => n.x + (n.w || 300) / 2, cy = n => n.y + 60; let s = '';
+        const atOf = n => { const x = t.sents[n.s || 0] || t.sents[0]; return Math.max(S + 0.15, wAt(x, n.word) - 0.1); };
+        N.forEach((n, i) => { const at = atOf(n); pushSfx(at, 'pop', 0.4); point(at, cx(n), 0.8); s += "tl.from('#" + p + "n" + i + "',{opacity:0,scale:.6,y:20,duration:.32,ease:'back.out(2)'}," + f2(at) + ');'; });
+        (b.edges || []).forEach(([f, tt, bend], k) => { const a = N[ix[f]], z = N[ix[tt]], at0 = atOf(a) + 0.25, at1 = Math.max(at0 + 0.35, atOf(z) - 0.05); const L = Math.hypot(cx(z) - cx(a), cy(z) - cy(a)) * (bend ? 1.6 : 1) + 40;
+          s += "tl.fromTo('#" + p + "e" + k + "',{opacity:1,strokeDasharray:3000,strokeDashoffset:3000},{opacity:1,strokeDashoffset:" + Math.max(0, 3000 - L * 1.0).toFixed(0) + ",immediateRender:false,duration:" + f2(Math.min(0.6, at1 - at0)) + ",ease:'power1.inOut'}," + f2(at0) + ');' + "tl.to('#" + p + "e" + k + "',{strokeDashoffset:0,duration:.25}," + f2(at0 + Math.min(0.6, at1 - at0)) + ');';
+          const pts = bend ? [[cx(a), cy(a)], [cx(a) + bend * 0.75, cy(a) + (cy(z) - cy(a)) * 0.25], [cx(z) + bend * 0.75, cy(a) + (cy(z) - cy(a)) * 0.75], [cx(z), cy(z)]] : [[cx(a), cy(a)], [cx(z), cy(z)]];
+          s += "tl.set('#" + p + "pk',{opacity:1,x:" + (pts[0][0] - 14) + ",y:" + (pts[0][1] - 14) + "}," + f2(at0) + ");tl.to('#" + p + "pk',{keyframes:[" + pts.slice(1).map(q => '{x:' + (q[0] - 14) + ',y:' + (q[1] - 14) + '}').join(',') + "],duration:" + f2(Math.max(0.35, at1 - at0)) + ",ease:'power1.inOut'}," + f2(at0) + ');' +
+            "tl.to('#" + p + "n" + ix[tt] + "',{scale:1.07,boxShadow:'0 0 0 8px #ffd23f88',duration:.16,yoyo:true,repeat:1}," + f2(at0 + Math.max(0.35, at1 - at0)) + ");tl.set('#" + p + "pk',{opacity:0}," + f2(at0 + Math.max(0.35, at1 - at0) + 0.05) + ');'; });
+        return s; } }),
+    // "how to use": numbered steps with a typed command, each step lights up on its word
+    usage: b => ({ pose: 'idle', say: b.say, ko: b.ko, tts: b.tts,
+      html: p => '<div class="fz">' + brand(b.label || 'how to use it') + '<div class="fsteps">' + b.steps.map((st, i) => '<div class="fstep" id="' + p + 'u' + i + '"><b>' + (i + 1) + '</b><div>' + (st.cmd ? '<code id="' + p + 'c' + i + '">' + typed(st.cmd) + '</code>' : '') + '<span class="stx">' + esc(st.text) + '</span></div></div>' + (i < b.steps.length - 1 ? '<div class="fsarrow">↓</div>' : '')).join('') + '</div>' + (b.tag ? '<div class="fdiag">' + esc(b.tag) + '</div>' : '') + '</div>',
+      anim: (p, S, D, M, F2, t) => b.steps.map((st, i) => { const x = t.sents[st.s || 0] || t.sents[0], at = Math.max(S + 0.15, wAt(x, st.word) - 0.15); pushSfx(at, st.cmd ? 'keys' : 'pop', 0.45, st.cmd ? Math.min(1.2, st.cmd.length / 26) : undefined); point(at, 540, 0.9);
+        return "tl.from('#" + p + "u" + i + "',{opacity:0,x:-120,duration:.35,ease:'back.out(1.6)'}," + f2(at) + ');' + (st.cmd ? A.type('#' + p + 'c' + i, st.cmd, at + 0.2, Math.min(1.2, st.cmd.length / 26)) : '') + "tl.to('#" + p + "u" + i + "',{borderColor:'#ffd23f',duration:.2}," + f2(at + 0.2) + ');'; }).join('') }),
     hookProblem: b => ({ first: true, pose: 'idle', say: [b.say], ko: [b.ko], tts: b.tts && [b.tts],
       html: p => '<div class="fz">' + brand(b.label || "today's pick") + win(p + 'w', b.title, 60, 180, VW, 800, [[b.img, p + 'i']], 'transform:perspective(1600px) rotateX(4deg) rotate(-2deg)', b.imgBg || '#fff') +
         (b.tells || []).map((s, i) => stk(p + 's' + i, s.text, s.pos[0], s.pos[1], [-5, 4, -3][i % 3], '#1b1f24', 50, '#ffd23f')).join('') + (b.badge ? stk(p + 'b', b.badge, 730, 150, 4, '#f78166', 40, '#fff') : '') + '</div>',
@@ -115,6 +139,11 @@ export function studioFilm(H, C, plan) {
     '.fuc.k-use{border-left-color:#1f9d55}.fuc.k-use b{color:#1f9d55}.fuc.k-skip{border-left-color:#d1242f}.fuc.k-skip b{color:#d1242f}.fuc.k-warn{border-left-color:#c98a00}.fuc.k-warn b{color:#c98a00}' +
     '.ffoot{display:flex;align-items:center;gap:16px;margin-top:4px}.fev{position:static;flex:1;display:flex;flex-wrap:wrap;gap:8px}.fev i{font-style:normal;background:#ffffffb0;border:2px solid #e4dccb;border-radius:40px;padding:8px 20px;font-size:26px;font-weight:700;color:#5c5442}' +
     '.fstamp.sm{position:static;flex:none;font-size:40px;padding:8px 20px;border-width:6px;letter-spacing:1px}.ftop2{position:absolute;left:0;right:0;bottom:0;padding:14px 20px;text-align:center;font-size:34px;font-weight:800;color:#fff;background:linear-gradient(transparent,#000000c0 40%)}.tok{color:#3fb950;font-weight:900}' +
+    '.fsvg{position:absolute;left:0;top:0;pointer-events:none}.fedge{fill:none;stroke:#8a7f69;stroke-width:6;stroke-linecap:round}' +
+    '.fnode{position:absolute;display:flex;flex-direction:column;align-items:center;text-align:center;background:#fff;border:3px solid #e4dccb;border-radius:26px;padding:16px 18px;box-shadow:0 12px 30px #3a2a0a1c;z-index:2}.fnode b{font-size:52px;line-height:1}.fnode span{font-size:36px;font-weight:900;color:#1b1f24;margin-top:6px;line-height:1.15}.fnode em{font-style:normal;font-size:26px;font-weight:700;color:#8a7f69;margin-top:4px}' +
+    '.fnode.dark{background:#1b1f24;border-color:#1b1f24}.fnode.dark span{color:#ffd23f}.fnode.dark em{color:#c9bfa8}.fnode.hot{border-color:#f78166}.fpk{position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;background:#ffd23f;box-shadow:0 0 0 6px #ffd23f55,0 0 24px #ffb000;opacity:0;z-index:3}' +
+    '.fdiag{position:absolute;right:70px;top:110px;font-size:24px;font-weight:800;color:#8a7f69;border:2px solid #d9cfba;border-radius:30px;padding:4px 16px}' +
+    '.fsteps{position:absolute;left:70px;right:70px;top:180px;display:flex;flex-direction:column}.fstep{display:flex;gap:22px;align-items:center;background:#fff;border:3px solid #e4dccb;border-radius:24px;padding:24px 28px;box-shadow:0 10px 26px #3a2a0a14}.fstep>b{flex:none;width:60px;height:60px;border-radius:50%;background:#1b1f24;color:#ffd23f;font-size:34px;display:flex;align-items:center;justify-content:center}.fstep code{display:block;font-family:"DejaVu Sans Mono",monospace;font-size:34px;font-weight:700;background:#0d1117;color:#e6edf3;border-radius:12px;padding:12px 18px;margin-bottom:10px;word-break:break-all}.fstep code span{color:#e6edf3}.fstep .stx{display:block;font-size:40px;font-weight:800;color:#1b1f24;line-height:1.2}.fsarrow{text-align:center;font-size:46px;color:#c9bfa8;line-height:1.25}' +
     '.brand{color:#8a7f69}.brand b{color:#1b1f24}.cap span{background:#1b1f24f0;box-shadow:0 10px 30px #3a2a0a40}';
   const sprites = C.sprites ? Object.fromEntries(['idle', 'talkE', 'talkO', 'blink', 'wow', 'point', 'pointTalk', 'skeptic', 'skepticTalk', 'wave', 'waveTalk'].map(k => [k, C.sprites(k)])) : null;
   return { id: plan.id, F, bgHtml, sprites, title: plan.title, scenes: sc, css,

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       film:
-        description: "video/films/ 아래 파일 이름 (확장자 없이)"
+        description: "video/films/ 아래 파일 이름, 쉼표로 여러 개 (확장자 없이)"
         default: "deeptutor"
         required: true
 
@@ -16,7 +16,7 @@ permissions:
 jobs:
   film:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -41,11 +41,16 @@ jobs:
         env:
           HYPERFRAMES_NO_UPDATE_CHECK: "1"
           HYPERFRAMES_SKIP_SKILLS: "1"
-        run: node video/films/${{ github.event.inputs.film }}.mjs out
+        run: |
+          for f in $(echo "${{ github.event.inputs.film }}" | tr ',' ' '); do
+            echo "::group::film $f"
+            node video/films/$f.mjs out || echo "FAILED: $f"
+            echo "::endgroup::"
+          done
 
       - uses: actions/upload-artifact@v4
         with:
-          name: film-${{ github.event.inputs.film }}
+          name: films
           path: |
             out/*.mp4
             out/*.srt

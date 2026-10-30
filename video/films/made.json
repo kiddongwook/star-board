@@ -30,6 +30,24 @@
       "date": "2026-10-30",
       "film": "openmausbot2",
       "release": "v0.1.133"
+    },
+    {
+      "repo": "nightly-labs/openbot",
+      "date": "2026-10-31",
+      "film": "nightlyopenbot",
+      "release": "v0.54.0"
+    },
+    {
+      "repo": "thedotmack/claude-mem",
+      "date": "2026-10-31",
+      "film": "claudemem",
+      "release": "v15.6.0"
+    },
+    {
+      "repo": "CopilotKit/OpenBot",
+      "date": "2026-10-31",
+      "film": "copilotopenbot",
+      "release": "v0.2.0"
     }
   ]
 }

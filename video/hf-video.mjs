@@ -866,6 +866,9 @@ async function produceFilm(spec, { OUT = 'out', sfxDir = 'video/sfx' } = {}) {
   const outFile = path.join(path.resolve(OUT), spec.id + '.mp4');
   console.log('render: ' + spec.id + ' (' + timing.total.toFixed(1) + 's)');
   await new Promise((res, rej) => { const ch = spawn('npx', ['hyperframes', 'render', dir, '--output', outFile, '--quality', 'standard', '--fps', ENV.HF_FPS || '30'], { stdio: 'inherit' }); ch.on('close', c => (c === 0 ? res() : rej(new Error('render exit ' + c)))); });
+  // trim anything past the composition end (avoids a black tail when an audio track runs long)
+  try { const { stdout } = await run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', outFile]); const d = parseFloat(stdout) || 0;
+    if (d > timing.total + 0.15) { const tmp = outFile.replace(/\.mp4$/, '.trim.mp4'); await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', outFile, '-t', timing.total.toFixed(2), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', tmp]); await fs.rename(tmp, outFile); console.log('trimmed ' + d.toFixed(2) + 's -> ' + timing.total.toFixed(2) + 's'); } } catch (e) { console.log('trim skipped: ' + e.message); }
   await fs.writeFile(path.join(path.resolve(OUT), spec.id + '.en.srt'), toSrt(allS, 'text'));
   await fs.writeFile(path.join(path.resolve(OUT), spec.id + '.ko.srt'), toSrt(allS, 'ko'));
   await fs.writeFile(path.join(path.resolve(OUT), spec.id + '-script.txt'), spec.scenes.map((s, i) => '[' + (i + 1) + '] ' + s.say.join(' ') + '\n    ' + (s.ko || []).join(' ')).join('\n\n') + '\n\n' + (spec.credits || ''));

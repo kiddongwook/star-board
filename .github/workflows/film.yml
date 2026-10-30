@@ -1,0 +1,52 @@
+name: Make Film
+
+# 손으로 연출한 한 편짜리 영상 (video/films/<name>.mjs) 렌더.
+# 결과(mp4, 영어/한국어 SRT, 대본)는 Actions 아티팩트로 받는다.
+on:
+  workflow_dispatch:
+    inputs:
+      film:
+        description: "video/films/ 아래 파일 이름 (확장자 없이)"
+        default: "deeptutor"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  film:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ffmpeg, fonts, TTS, HyperFrames
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends ffmpeg fonts-noto-cjk fonts-noto-color-emoji fonts-dejavu-core
+          pip install edge-tts
+          npm install --no-save hyperframes gsap playwright@1
+          npx playwright install --with-deps chromium
+          npx hyperframes doctor || true
+
+      - name: Render film
+        env:
+          HYPERFRAMES_NO_UPDATE_CHECK: "1"
+          HYPERFRAMES_SKIP_SKILLS: "1"
+        run: node video/films/${{ github.event.inputs.film }}.mjs out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: film-${{ github.event.inputs.film }}
+          path: |
+            out/*.mp4
+            out/*.srt
+            out/*.txt

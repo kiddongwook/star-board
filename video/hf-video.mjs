@@ -549,7 +549,7 @@ function compose(spec, timing, opts = {}) {
         if (F.bubble && !s.noBubble) { const P = stagePos(s) || { x: 0, y: 0 }, bx = (F.botL ?? 0) + P.x, by = (F.botTop ?? 0) + P.y, bw = F.botW ?? 300;
           const rightSide = bx + bw * 0.5 < F.W * 0.5; // Starby on the left -> bubble on its right
           capCls += ' bub ' + (rightSide ? 'bl' : 'br');
-          capSt = rightSide ? 'left:' + Math.round(bx + bw * 0.8) + 'px;top:' + Math.round(by + 40) + 'px;max-width:' + Math.round(F.W - 40 - (bx + bw * 0.8)) + 'px' : 'right:' + Math.round(F.W - (bx + bw * 0.2)) + 'px;left:auto;top:' + Math.round(by + 40) + 'px;max-width:' + Math.round(bx + bw * 0.2 - 40) + 'px;text-align:right'; }
+          capSt = rightSide ? 'left:' + Math.round(bx + bw * 0.88) + 'px;top:' + Math.round(by + 30) + 'px;max-width:' + Math.round(F.W - 30 - (bx + bw * 0.88)) + 'px' : 'right:' + Math.round(F.W - (bx + bw * 0.12)) + 'px;left:auto;top:' + Math.round(by + 30) + 'px;max-width:' + Math.round(bx + bw * 0.12 - 30) + 'px;text-align:right'; }
         caps.push(`<div id="${id}" class="${capCls}" style="${capSt}" data-start="${f2(st)}" data-duration="${f2(du)}" data-track-index="${8 + ((j + k) % 2)}"><span>${esc(cut(pc, max + 16))}</span></div>`);
         anims.push(`tl.from('#${id} span',{opacity:0,y:24,duration:.18,ease:'power2.out'},${f2(st)});`);
       });

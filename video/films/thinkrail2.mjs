@@ -10,7 +10,7 @@ export const plan = {
       img: 'specs', r0: [0.2, 0.05, 0.7, 0.7], r1: [0.2, 0.37, 0.7, 0.63], title: 'ThinkRail · the problem', badge: '+1.1k ⭐ today',
       tells: [{ word: 'several', text: 'parallel agents', pos: [560, 300] }, { word: 'trip', text: 'collide', pos: [100, 800] }] },
     { type: 'shot', say: 'ThinkRail, from JetBrains, gives each agent its own workspace on its own branch.', ko: 'JetBrains의 ThinkRail은 에이전트마다 자기 브랜치에 자기 워크스페이스를 줘요.', img: 'bench', r0: [0, 0, 1, 1], r1: [0, 0.04, 0.46, 0.44], title: 'ThinkRail · workspaces',
-      stickers: [{ word: 'JetBrains', text: 'by JetBrains', pos: [70, 190] }, { word: 'workspace', text: 'own workspace', pos: [440, 885] }, { word: 'branch', text: 'own branch', pos: [110, 885] }] },
+      stickers: [{ word: 'JetBrains', text: 'by JetBrains', pos: [70, 190] }, { word: 'workspace', text: 'own workspace', pos: [500, 885] }, { word: 'branch', text: 'own branch', pos: [70, 885] }] },
     { type: 'shot', say: 'And living specs, so the agent remembers how your project works.', ko: '그리고 살아 있는 스펙 문서로, 에이전트가 프로젝트 구조를 기억해요.', img: 'specs', r0: [0, 0, 1, 1], r1: [0.2, 0.05, 0.98, 0.58], title: 'ThinkRail · specs',
       stickers: [{ word: 'living specs', text: 'living specs', pos: [70, 190] }, { word: 'remembers', text: 'remembers', pos: [440, 885] }] },
     { type: 'term', say: 'Install is one command.', ko: '설치는 명령어 한 줄이에요.', cmds: ['curl -fsSL https://raw.githubusercontent.com/JetBrains/thinkrail/main/install.sh | bash'], badge: '1 line' },

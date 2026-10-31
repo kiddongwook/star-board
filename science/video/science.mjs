@@ -6,7 +6,7 @@
 export const STYLE = {
   navy: '#14213d', deep: '#0b1426', orange: '#fca311', ink: '#f4f1ea', mute: '#9aa6bd', line: '#2a3b63',
   mat: { steel: ['#dfe6ee', '#8c99aa'], wood: ['#c98c55', '#8a5730'], plastic: ['#f1ece0', '#cfc6b2'] },
-  safe: { top: 380, bottom: 1500 }, // 쇼츠 UI가 덮는 위·아래를 피한 핵심 영역
+  safe: { top: 380, bottom: 1500, capTop: 1330 }, // 쇼츠 UI가 덮는 위·아래를 피한 핵심 영역. 자막이 1340~1520을 쓰므로 장면 요소는 1330 위에서 끝낸다
 };
 
 export function scienceFilm(H, plan) {
@@ -69,7 +69,7 @@ export function scienceFilm(H, plan) {
     // 막대: 실제 비율 그대로 (나무 막대가 거의 안 보이는 것 자체가 메시지)
     bars: s => ({
       html: p => { const mx = Math.max(...s.props.items.map(i => i.value)); return '<div class="sx">' + '<div class="sx-h sm" style="top:430px">' + esc(s.props.title) + '</div>' +
-        s.props.items.map((it, i) => '<div class="sx-bar" style="top:' + (720 + i * 230) + 'px"><span class="k">' + esc(it.label) + '</span><div class="t"><i id="' + p + 'b' + i + '" style="background:' + matBg(it.kind) + ';width:' + Math.max(0.8, (it.value / mx) * 100).toFixed(2) + '%"></i></div><span class="v" id="' + p + 'v' + i + '">' + esc(it.display) + '</span></div>').join('') +
+        s.props.items.map((it, i) => '<div class="sx-bar" style="top:' + (640 + i * 200) + 'px"><span class="k">' + esc(it.label) + '</span><div class="t"><i id="' + p + 'b' + i + '" style="background:' + matBg(it.kind) + ';width:' + Math.max(0.8, (it.value / mx) * 100).toFixed(2) + '%"></i></div><span class="v" id="' + p + 'v' + i + '">' + esc(it.display) + '</span></div>').join('') +
         '<div class="sx-unit">단위 ' + esc(s.props.unit) + '</div><div class="sx-stamp" id="' + p + 's">' + esc(s.props.ratio) + '</div></div>'; },
       anim: (p, S, D, _M, _F, t) => { const a = cueAt(t, s.props.cue, 0.3), r = cueAt(t, s.props.ratioCue, 1.2); pushSfx(r, 'stamp', 0.5);
         return s.props.items.map((_, i) => "tl.fromTo('#" + p + "b" + i + "',{scaleX:0},{scaleX:1,transformOrigin:'0 50%',duration:.8,ease:'power2.out'}," + f2(a + i * 0.25) + ');' + rise('#' + p + 'v' + i, a + 0.6 + i * 0.25, 20)).join('') +
@@ -80,8 +80,8 @@ export function scienceFilm(H, plan) {
       html: p => { const top = 33.5, bot = 22, Y = v => 160 + ((top - v) / (top - bot)) * 560, X0 = 140, X1 = 720;
         const path = (end, k) => { const pts = []; for (let i = 0; i <= 40; i++) { const x = i / 40, y = s.props.start - (s.props.start - end) * (1 - Math.exp(-x * (k === 'steel' ? 9 : 4))); pts.push((X0 + x * (X1 - X0)).toFixed(0) + ',' + Y(y).toFixed(0)); } return 'M' + pts.join(' L'); };
         return '<div class="sx">' + '<div class="sx-h sm" style="top:430px">' + esc(s.props.title) + '</div>' +
-          '<svg class="sx-chart" viewBox="0 0 1000 800" style="top:600px"><line x1="140" y1="160" x2="140" y2="730" class="ax"/><line x1="140" y1="730" x2="920" y2="730" class="ax"/>' +
-          '<text x="120" y="' + (Y(s.props.start) + 12) + '" class="yl">' + s.props.start + '°C</text><text x="900" y="780" class="xl">시간 →</text>' +
+          '<svg class="sx-chart" viewBox="0 0 1000 800" style="top:520px"><line x1="140" y1="160" x2="140" y2="730" class="ax"/><line x1="140" y1="730" x2="920" y2="730" class="ax"/>' +
+          '<text x="120" y="' + (Y(s.props.start) + 12) + '" class="yl">' + s.props.start + '°C</text><text x="900" y="772" class="xl">시간 →</text>' +
           s.props.series.map((se, i) => '<path id="' + p + 'c' + i + '" d="' + path(se.end, se.kind) + '" class="cv ' + se.kind + '"/>' +
             '<g id="' + p + 'g' + i + '"><circle cx="' + X1 + '" cy="' + Y(se.end).toFixed(0) + '" r="14" class="dt ' + se.kind + '"/><text x="' + (X1 + 30) + '" y="' + (Y(se.end) + 14).toFixed(0) + '" class="el">' + esc(se.label) + ' ' + se.end + '°</text></g>').join('') +
           '</svg>' + tagHtml(s.props.tag) + '</div>'; },
@@ -107,7 +107,7 @@ export function scienceFilm(H, plan) {
       anim: (p, S) => { pushSfx(S + 0.25, 'stamp', 0.4); return "tl.fromTo('#" + p + "a',{opacity:0,scale:.85},{opacity:1,scale:1,duration:.45,ease:'back.out(1.8)'}," + f2(S + 0.2) + ');' + "tl.from('#" + p + "s i',{opacity:0,y:20,duration:.3,stagger:.15}," + f2(S + 0.9) + ');'; } }),
 
     // 덤 정보 + 댓글 질문 + 시리즈명
-    end: s => ({ noExit: true, tail: 1.4,
+    end: s => ({ noExit: true, tail: 1.0,
       html: p => '<div class="sx">' + '<div class="sx-h sm" style="top:420px">' + esc(s.props.head) + '</div><div class="sx-hot" id="' + p + 'r">🔥<span>' + esc(s.props.reverse.label) + '</span></div>' +
         '<div class="sx-ask" id="' + p + 'k">💬 ' + esc(s.props.ask) + '</div><div class="sx-series" id="' + p + 'e">' + esc(s.props.series) + '</div></div>',
       anim: (p, S, D, _M, _F, t) => { const k = t.sents[1] ? t.sents[1].start : S + D - 1.5; pushSfx(k, 'pop', 0.45);
@@ -123,7 +123,7 @@ export function scienceFilm(H, plan) {
   const css = '.sx{position:absolute;left:0;top:0;width:1080px;height:1920px;word-break:keep-all;color:' + S0.ink + ';font-family:"Pretendard","Noto Sans CJK KR","Noto Sans KR",sans-serif}' +
     '.sx-h{position:absolute;left:70px;right:70px;text-align:center;font-size:104px;font-weight:900;line-height:1.12;letter-spacing:-2px}.sx-h.sm{font-size:62px;color:' + S0.ink + ';letter-spacing:-1px}.sx-h em,.sx-ans em{font-style:normal;color:' + S0.orange + '}' +
     '.sx-q2{position:absolute;width:380px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:18px}.sx-q2 .sx-ico{width:300px;height:auto;filter:drop-shadow(0 26px 40px #0008)}.sx-q2 span{font-size:52px;font-weight:800}' +
-    '.sx-qm{position:absolute;left:480px;top:1240px;font-size:150px;font-weight:900;color:' + S0.orange + '}' +
+    '.sx-qm{position:absolute;left:498px;top:960px;font-size:150px;font-weight:900;color:' + S0.orange + '}' +
     '.sx-th{position:absolute;width:80px}.sx-tube{position:relative;width:80px;height:460px;border-radius:40px;background:#ffffff14;border:6px solid #ffffff55;overflow:hidden}.sx-tube i{position:absolute;left:0;right:0;bottom:0;height:100%;background:linear-gradient(#ff6b4a,#e63946);transform-origin:50% 100%}' +
     '.sx-th b{position:absolute;left:-20px;top:430px;width:120px;height:120px;border-radius:50%;background:#e63946;border:6px solid #ffffff55}' +
     '.sx-thv{position:absolute;width:220px;text-align:center;font-size:80px;font-weight:900}.sx-eq{position:absolute;left:470px;top:1160px;font-size:140px;font-weight:900;color:' + S0.orange + '}' +
@@ -133,8 +133,8 @@ export function scienceFilm(H, plan) {
     '.sx-flow{position:absolute;top:780px;height:300px;width:0;border-left:6px dashed #fca31166;transform-origin:50% 0}' +
     '.sx-dot{position:absolute;left:-14px;top:-14px;width:28px;height:28px;border-radius:50%;background:' + S0.orange + ';box-shadow:0 0 18px #fca311;opacity:0}.sx-dot.slow{width:22px;height:22px;opacity:0}' +
     '.sx-bar{position:absolute;left:70px;right:70px;display:flex;align-items:center;gap:24px}.sx-bar .k{width:170px;font-size:52px;font-weight:900;text-align:right}.sx-bar .t{flex:1;height:110px;background:#ffffff12;border-radius:20px;overflow:hidden}.sx-bar .t i{display:block;height:100%;border-radius:20px}.sx-bar .v{width:170px;font-size:60px;font-weight:900;color:' + S0.orange + '}' +
-    '.sx-unit{position:absolute;left:0;right:0;top:1200px;text-align:center;font-size:38px;color:' + S0.mute + '}' +
-    '.sx-stamp{position:absolute;left:300px;top:1280px;padding:14px 46px;border:10px solid ' + S0.orange + ';border-radius:28px;color:' + S0.orange + ';font-size:100px;font-weight:900;background:#14213dcc}' +
+    '.sx-unit{position:absolute;left:0;right:0;top:990px;text-align:center;font-size:38px;color:' + S0.mute + '}' +
+    '.sx-stamp{position:absolute;left:300px;top:1080px;padding:14px 46px;border:10px solid ' + S0.orange + ';border-radius:28px;color:' + S0.orange + ';font-size:100px;font-weight:900;background:#14213dcc}' +
     '.sx-chart{position:absolute;left:40px;width:1000px;height:800px}.sx-chart .ax{stroke:#ffffff55;stroke-width:5}.sx-chart .yl{fill:' + S0.mute + ';font-size:36px;text-anchor:end;font-weight:700}.sx-chart .xl{fill:' + S0.mute + ';font-size:34px;text-anchor:end}' +
     '.sx-chart .cv{fill:none;stroke-width:14;stroke-linecap:round}.sx-chart .cv.steel{stroke:#c9d4e2}.sx-chart .cv.wood{stroke:#d9935a}.sx-chart .dt.steel{fill:#c9d4e2}.sx-chart .dt.wood{fill:#d9935a}.sx-chart .el{fill:' + S0.ink + ';font-size:40px;font-weight:900}' +
     '.sx-pl{position:absolute;width:380px;height:70px;border-radius:16px;box-shadow:0 30px 50px #0009}' +

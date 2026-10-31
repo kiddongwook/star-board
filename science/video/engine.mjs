@@ -25,12 +25,14 @@ export function capPieces(text, max = CAP_MAX) {
   return out;
 }
 
-// 음성 없이 길이 추정 (한국어 약 7자/초). 미리보기용
+// 음성 없이 길이 추정. 미리보기용. Hyunsu +0%가 실측 약 4.7자/초 (EP001 렌더, 공백 제외)
+export const CPS = 4.7;
+export const rateFactor = r => 1 + (parseFloat(String(r || '0').replace('%', '')) || 0) / 100;
 export function estimateTiming(spec) {
-  let cur = 0; const scenes = [];
+  let cur = 0; const scenes = []; const cps = CPS * rateFactor(spec.voice?.rate);
   for (const s of spec.scenes) {
     const S = cur; let t = S + (s.head ?? HEAD); const sents = [];
-    s.say.forEach(txt => { const d = Math.max(1.3, txt.replace(/\s/g, '').length / 7); sents.push({ start: t, dur: d, text: txt }); t += d + GAP; });
+    s.say.forEach(txt => { const d = Math.max(1.3, txt.replace(/\s/g, '').length / cps); sents.push({ start: t, dur: d, text: txt }); t += d + GAP; });
     const D = t - S + (s.tail ?? TAIL); scenes.push({ S, D, sents }); cur = S + D;
   }
   return { total: cur, scenes };
@@ -66,7 +68,7 @@ export function compose(spec, timing, opts = {}) {
   });
   const bed = opts.bed ? `<audio data-start="0" data-duration="${f2(total)}" data-track-index="5" data-volume="1" src="${esc(opts.bed)}"></audio>` : '';
   const pv = opts.preview
-    ? `document.querySelectorAll('#root [data-start]').forEach(el=>{if(el.tagName==='AUDIO')return;const a=+el.dataset.start,d=+el.dataset.duration;tl.set(el,{autoAlpha:0},0);tl.set(el,{autoAlpha:1},a);if(a+d<${f2(total)}-.01)tl.set(el,{autoAlpha:0},a+d);});
+    ? `document.querySelectorAll('#root [data-start]').forEach(el=>{if(el.tagName==='AUDIO')return;const a=+el.dataset.start,d=+el.dataset.duration;if(a>.001){gsap.set(el,{autoAlpha:0});tl.set(el,{autoAlpha:1},a);}if(a+d<${f2(total)}-.01)tl.set(el,{autoAlpha:0},a+d);});
     window.TL=tl;window.SCENES=${JSON.stringify(timing.scenes.map((t, i) => ({ id: spec.scenes[i].sceneId, S: +f2(t.S), D: +f2(t.D) })))};` : '';
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(spec.id)}</title><style>${BASE_CSS(F)}${spec.css || ''}</style></head><body>
 <div id="root" data-composition-id="root" data-start="0" data-width="${F.W}" data-height="${F.H}">
@@ -77,12 +79,14 @@ export function compose(spec, timing, opts = {}) {
   ${bed}
   <script src="${gsapSrc}"></script>
   <script>
+    (() => { // 함수로 감싼다: 같은 탭에 document.write를 다시 해도 'const tl' 중복 선언으로 멈추지 않게
     const tl = gsap.timeline({ paused: true });
     ${anims.filter(Boolean).join('\n    ')}
     tl.set({}, {}, ${f2(total)});
     ${pv}
     window.__timelines = window.__timelines || {};
     window.__timelines.root = tl;
+    })();
   </script>
 </div></body></html>`;
 }

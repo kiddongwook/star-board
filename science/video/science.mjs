@@ -8,6 +8,8 @@
 // 화면 영역: 내용 y 250~1150, 자막 1180~1330, 오른쪽 아이콘 줄(x>960, y>900)에는 글자 금지.
 // 새 템플릿을 추가하면 rules/channel.md 표와 skills/03-design 템플릿 목록도 같이 고친다.
 
+import { moreTemplates, MORE_CSS } from './scenes-more.mjs';
+
 export const STYLE = {
   navy: '#14213d', deep: '#0b1426', orange: '#fca311', ink: '#f4f1ea', mute: '#9aa6bd', line: '#2a3b63', cold: '#7fd3ff', warm: '#ff7a45',
   mat: { steel: ['#dfe6ee', '#8c99aa'], wood: ['#c98c55', '#8a5730'], plastic: ['#f1ece0', '#cfc6b2'] },
@@ -212,34 +214,47 @@ export function scienceFilm(H, plan) {
 
     // 한 문장 답: 단어가 차례로 선명해지고, 강조어만 주황으로 물든다. 출처 칩은 그 뒤에. 자리 잡으면 정지
     answer: s => ({ trans: 'iris', irisAt: [290, 760],
-      html: p => `<div class="sx-ans" id="${p}a">${words(s.props.text)}</div><div class="sx-src" id="${p}s">${s.props.chips.map(c => `<i>${esc(c)}</i>`).join('')}</div>`,
+      html: p => { const n = Math.max(...s.props.text.replace(/<\/?em>/g, '').split('<br>').map(l => l.length)), fs = Math.min(110, Math.floor(980 / Math.max(1, n))); return `<div class="sx-ans" id="${p}a" style="font-size:${fs}px">${words(s.props.text)}</div><div class="sx-src" id="${p}s">${s.props.chips.map(c => `<i>${esc(c)}</i>`).join('')}</div>`; },
       // 내레이션을 따라: 강조 아닌 단어는 바로, 강조어(em)는 cue 단어에서, 출처 칩은 문장 끝에서
       anim: (p, S, D, _M, _F, t) => { pushSfx(S + 0.3, 'stamp', 0.3);
         const emAt = s.props.emCue && has(t, s.props.emCue) ? cueAt(t, s.props.emCue) - 0.1 : S + 1.0;
         const chipAt = s.props.chipCue && has(t, s.props.chipCue) ? cueAt(t, s.props.chipCue) : S + D - 1.4;
-        return blurIn(`#${p}a .tw:not(.em)`, S + 0.35, 0.1) + blurIn(`#${p}a .em`, emAt, 0.12) + inkIn(`#${p}a .em`, emAt + 0.35, S0.orange, 0.1) +
+        const nNon = (s.props.text.replace(/<em>.*?<\/em>/g, '').replace(/<br>/g, ' ').trim().split(/\s+/).filter(Boolean).length) || 1, st = Math.max(0.1, Math.min(0.4, (emAt - S - 0.8) / nNon)); // 강조어 전까지 말 속도에 맞춰 퍼뜨린다
+        // 내레이션에 같은 단어가 있으면 그 단어를 말할 때 나타난다 (없으면 순서대로)
+        const toks = []; { let em = false; for (const tok of s.props.text.split(/(<br>|<em>|<\/em>|\s+)/)) { if (!tok || /^\s+$/.test(tok) || tok === '<br>') continue; if (tok === '<em>') { em = true; continue; } if (tok === '</em>') { em = false; continue; } toks.push({ w: tok, em }); } }
+        let prev = S + 0.25, perWord = '';
+        toks.forEach((tk, i) => { const key = tk.w.replace(/[=,.!?]/g, '').slice(0, 3); let at = key && has(t, key) ? cueAt(t, key) - 0.1 : prev + (tk.em ? 0.12 : st); at = Math.max(at, prev + 0.06); prev = at;
+          perWord += `tl.fromTo('#${p}a .tw:nth-of-type(${i + 1})',{opacity:0,filter:'blur(6px)'},{opacity:1,filter:'blur(0px)',duration:.18,ease:'power2.out'},${f2(at)});`; });
+        if (toks.length) return perWord + inkIn(`#${p}a .em`, Math.max(emAt, prev) + 0.2, S0.orange, 0.1) +
+          `tl.fromTo('#${p}s i',{opacity:0,y:24},{opacity:1,y:0,duration:.45,stagger:.07,ease:'expo.out'},${f2(Math.max(chipAt, prev + 0.4))});`;
+        return blurIn(`#${p}a .tw:not(.em)`, S + 0.35, st) + blurIn(`#${p}a .em`, emAt, 0.12) + inkIn(`#${p}a .em`, emAt + 0.35, S0.orange, 0.1) +
           `tl.fromTo('#${p}s i',{opacity:0,y:24},{opacity:1,y:0,duration:.45,stagger:.07,ease:'expo.out'},${f2(chipAt)});`; } }),
 
     // 마무리: 배경이 뜨거운 색으로 물들고(flood), 불꽃이 자라며 "반대" 상황을 보여준 뒤 댓글 질문
-    end: s => ({ trans: 'flood', floodAt: [540, 500], noExit: true, tail: 1.0,
-      under: () => `<div style="position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 28%,#5b1f1a 0%,#2a0f14 55%,#14080c 100%)"></div>`,
+    // props: head, icon(기본 🔥), bg('warm'이면 flood 전환+따뜻한 배경, 기본은 icon이 🔥일 때), reverse.label, hotCue, ask, series
+    end: s => { const warm = s.props.bg ? s.props.bg === 'warm' : (s.props.icon || '🔥') === '🔥'; return { trans: warm ? 'flood' : 'blur', floodAt: [540, 500], noExit: true, tail: 1.0,
+      under: () => !warm ? '' : `<div style="position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 28%,#5b1f1a 0%,#2a0f14 55%,#14080c 100%)"></div>`,
       html: p => `<div class="sx-h sm" id="${p}hd" style="top:290px">${words(esc(s.props.head))}</div>` +
-        `<div class="sx-hot" id="${p}r"><b id="${p}fl">🔥</b><span>${words(esc(s.props.reverse.label))}</span></div>` +
+        `<div class="sx-hot" id="${p}r"><b id="${p}fl">${s.props.icon || '🔥'}</b><span>${words(esc(s.props.reverse?.label || ''))}</span></div>` +
         `<div class="sx-ask" id="${p}k">💬 ${esc(s.props.ask)}</div><div class="sx-dots" id="${p}dd"><i></i><i></i><i></i></div><div class="sx-series" id="${p}e">${esc(s.props.series)}</div>`,
       anim: (p, S, D, _M, _F, t) => { const k = t.sents[1] ? t.sents[1].start : S + D - 1.5; let o = blurIn(`#${p}hd .tw`, S + 0.35);
         o += `tl.fromTo('#${p}fl',{scale:0,opacity:0},{scale:1,opacity:1,duration:.6,ease:'back.out(1.7)'},${f2(S + 0.8)});` +
           `tl.to('#${p}fl',{scaleY:1.06,scaleX:.97,transformOrigin:'50% 90%',duration:.22,yoyo:true,repeat:5,ease:'sine.inOut'},${f2(S + 1.4)});`; pushSfx(S + 0.8, 'whoosh', 0.3);
-        const hot = has(t, '뜨겁게') ? cueAt(t, '뜨겁게') : S + 1.6;
+        const hw = s.props.hotCue || '뜨겁게', hot = has(t, hw) ? cueAt(t, hw) : S + 1.6;
         o += blurIn(`#${p}r .tw`, hot - 0.4) + inkIn(`#${p}r .tw`, hot - 0.1, S0.orange);
         o += `tl.fromTo('#${p}dd',{opacity:0},{opacity:1,duration:.2},${f2(k + 0.6)});tl.fromTo('#${p}dd i',{y:0,opacity:.35},{y:-14,opacity:1,duration:.22,yoyo:true,repeat:5,stagger:.12,ease:'sine.inOut'},${f2(k + 0.7)});`;
         o += pop(`#${p}k`, k - 0.05) + `tl.fromTo('#${p}e',{opacity:0,y:20},{opacity:1,y:0,duration:.5,ease:'expo.out'},${f2(S + D - 1.3)});`;
-        return o; } }),
+        return o; } }; },
   };
+
+  Object.assign(T, moreTemplates({ f2, esc, pushSfx, S0, cueAt, has, words, blurIn, blurOut, inkIn, pop, land, draw, punch, shake, count, stream, flash, tagHtml }));
 
   const scenes = plan.scenes.map(sc => {
     const make = T[sc.template]; if (!make) throw new Error('unknown template ' + sc.template + ' in ' + sc.id);
     const base = make(sc);
     if (sc.trans) base.trans = sc.trans;
+    if (sc.props?.irisAt) base.irisAt = sc.props.irisAt;
+    if (sc.props?.floodAt) base.floodAt = sc.props.floodAt;
     return Object.assign({ say: sc.lines.map(l => l.say), ko: sc.lines.map(l => l.say), tts: sc.lines.map(l => l.tts || l.say), sceneId: sc.id }, base);
   });
 
@@ -279,8 +294,9 @@ export function scienceFilm(H, plan) {
 .sx-ask{position:absolute;left:70px;right:70px;top:800px;text-align:center;font-size:58px;font-weight:900;opacity:0}.sx-series{position:absolute;left:70px;right:130px;top:1010px;text-align:center;font-size:38px;font-weight:800;color:${S0.mute};letter-spacing:2px;opacity:0}
 .sx-dots{position:absolute;left:0;right:0;top:900px;text-align:center;opacity:0}.sx-dots i{display:inline-block;width:20px;height:20px;margin:0 9px;border-radius:50%;background:#f4f1ea}
 .sx-tag{position:absolute;right:80px;top:240px;font-size:30px;font-weight:800;color:${S0.mute};border:3px solid ${S0.line};border-radius:30px;padding:4px 18px}`;
+  const cssAll = css + MORE_CSS(S0);
   const bgHtml = `<div style="position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 30%,${S0.navy} 0%,${S0.deep} 70%)"></div>` +
     `<div class="bggrid" style="position:absolute;left:0;top:-90px;width:1080px;height:2010px;opacity:.07;background-image:linear-gradient(#fff 2px,transparent 2px),linear-gradient(90deg,#fff 2px,transparent 2px);background-size:90px 90px"></div>`;
   return { id: 'science-' + plan.episode + '-v' + plan.version, F, bgHtml, bgDrift: '.bggrid', sprites: null, noHost: true, lang: 'ko', title: plan.titles?.[0] || plan.episode,
-    keywords: plan.keywords || [], scenes, css, credits: plan.credits || '' };
+    keywords: plan.keywords || [], scenes, css: cssAll, credits: plan.credits || '' };
 }

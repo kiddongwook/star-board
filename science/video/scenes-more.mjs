@@ -227,7 +227,7 @@ export function moreTemplates(k) {
           o += `tl.fromTo('#${p}e${i}',{opacity:0,y:-200},{opacity:1,y:0,duration:.5,ease:'power2.in'},${f2(c)});` + `tl.to('#${p}bm',{rotation:${i === 0 ? -7 : 0},duration:.8,ease:'elastic.out(1,0.6)'},${f2(nc)});`;
           pushSfx(c + 0.5, 'thud', 0.4); pushSfx(nc, 'tick', 0.3);
           if (it.badge) o += pop(`#${p}bd${i}`, c + 0.7, 'pop', 0.3);
-          if (it.num != null) o += count(`${p}n${i}`, 0, it.num, 0, nc, 0.8, '', it.unit || ''); });
+          if (it.num != null) o += `tl.fromTo('#${p}n${i}',{opacity:0},{opacity:1,duration:.2},${f2(nc)});` + count(`${p}n${i}`, 0, it.num, 0, nc, 0.8, '', it.unit || ''); });
         o += pop(`#${p}vd`, S + D - 1.3, 'ding', 0.35);
         return o; } }),
   };

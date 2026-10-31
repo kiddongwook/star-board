@@ -223,7 +223,7 @@ export function scienceFilm(H, plan) {
         // 내레이션에 같은 단어가 있으면 그 단어를 말할 때 나타난다 (없으면 순서대로)
         const toks = []; { let em = false; for (const tok of s.props.text.split(/(<br>|<em>|<\/em>|\s+)/)) { if (!tok || /^\s+$/.test(tok) || tok === '<br>') continue; if (tok === '<em>') { em = true; continue; } if (tok === '</em>') { em = false; continue; } toks.push({ w: tok, em }); } }
         let prev = S + 0.25, perWord = '';
-        toks.forEach((tk, i) => { const key = tk.w.replace(/[=,.!?]/g, '').slice(0, 3); let at = key && has(t, key) ? cueAt(t, key) - 0.1 : prev + (tk.em ? 0.12 : st); at = Math.max(at, prev + 0.06); prev = at;
+        toks.forEach((tk, i) => { const key = tk.w.replace(/[=,.!?]/g, '').slice(0, 3); let at = key && has(t, key) ? cueAt(t, key) - 0.1 : prev + (tk.em ? 0.12 : st); at = Math.max(at, prev + 0.06); if (i === 0) at = Math.min(at, S + 0.45); prev = at; // 첫 단어는 늦어도 장면 시작 0.45초 안에 (빈 화면 방지)
           perWord += `tl.fromTo('#${p}a .tw:nth-of-type(${i + 1})',{opacity:0,filter:'blur(6px)'},{opacity:1,filter:'blur(0px)',duration:.18,ease:'power2.out'},${f2(at)});`; });
         if (toks.length) return perWord + inkIn(`#${p}a .em`, Math.max(emAt, prev) + 0.2, S0.orange, 0.1) +
           `tl.fromTo('#${p}s i',{opacity:0,y:24},{opacity:1,y:0,duration:.45,stagger:.07,ease:'expo.out'},${f2(Math.max(chipAt, prev + 0.4))});`;

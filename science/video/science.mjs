@@ -38,6 +38,8 @@ export function scienceFilm(H, plan) {
   const inkIn = (sel, at, col, st = 0.09) => `tl.fromTo('${sel}',{color:'#56627c'},{color:'${col}',duration:.22,stagger:${st},ease:'power1.out'},${f2(at)});`;
   const pop = (sel, at, snd = 'pop', vol = 0.45) => { if (snd) pushSfx(at, snd, vol); return `tl.fromTo('${sel}',{opacity:0,scale:.6},{opacity:1,scale:1,duration:.45,ease:'back.out(1.6)'},${f2(at)});`; };
   const land = (sel, at, dy = -60) => `tl.fromTo('${sel}',{opacity:0,y:${dy},filter:'blur(6px)'},{opacity:1,y:0,filter:'blur(0px)',duration:.55,ease:'expo.out'},${f2(at)});`;
+  // 번쩍이는 링: to+keyframes라서 같은 요소에 여러 번 써도 시작 전 상태(투명)가 유지된다 (fromTo 반복은 lint 경고)
+  const flash = (sel, at, peak = 0.85, s0 = 0.45, s1 = 1.7, dur = 1) => `tl.to('${sel}',{keyframes:[{opacity:${peak},scale:${s0},duration:.02},{opacity:0,scale:${s1},duration:${dur},ease:'expo.out'}]},${f2(at)});`;
   const draw = (sel, at, dur = 0.6, ease = 'power2.inOut') => `tl.fromTo('${sel}',{strokeDasharray:2400,strokeDashoffset:2400},{strokeDashoffset:0,duration:${f2(dur)},ease:'${ease}'},${f2(at)});`;
   // 카메라: 장면 전체를 감싼 #pcam의 scale/x/y. 원점은 (540,700)
   const punch = (p, at, s, x = 0, y = 0, d = 0.6) => `tl.to('#${p}cam',{scale:${s},x:${x},y:${y},duration:${f2(d)},ease:'power2.inOut'},${f2(at)});`;
@@ -117,9 +119,9 @@ export function scienceFilm(H, plan) {
           const c34 = has(t, '34') ? cueAt(t, '34') : S + 1;
           // 카메라가 손에서 시작해 "34도"에서 물체까지 보이도록 물러난다
           if (c34 - S > 1.2) o += punch(p, S + 0.45, 1.12, 0, 60, 0.7) + punch(p, c34 - 0.2, 1, 0, 0, 0.6);
-          if (has(t, '손에서')) { const cs = cueAt(t, '손에서'); o += `tl.fromTo('#${p}g',{opacity:.8,scale:.5},{opacity:0,scale:1.6,duration:1.1,ease:'expo.out'},${f2(cs)});`; }
+          if (has(t, '손에서')) { const cs = cueAt(t, '손에서'); o += flash(`#${p}g`, cs, 0.8, 0.5, 1.6, 1.1); }
           o += `tl.fromTo('#${p}t',{scale:1,color:'${S0.orange}'},{scale:1.3,duration:.2,yoyo:true,repeat:1,ease:'power2.out'},${f2(c34)});`;
-          o += `tl.fromTo('#${p}g',{opacity:.9,scale:.4},{opacity:0,scale:1.8,duration:1,ease:'expo.out'},${f2(c34)});`; pushSfx(c34, 'pop', 0.35);
+          o += flash(`#${p}g`, c34, 0.9, 0.4, 1.8, 1); pushSfx(c34, 'pop', 0.35);
           const a = Math.max(S + 0.6, cueAt(t, s.props.cue, 1));
           o += draw(`#${p}l0`, a - 0.35, 0.35, 'power2.out') + draw(`#${p}l1`, a - 0.25, 0.35, 'power2.out'); pushSfx(a - 0.3, 'whoosh', 0.25);
           o += (cache || mk(p, t)).map(c => c.a).join('');
@@ -199,9 +201,9 @@ export function scienceFilm(H, plan) {
           o += `tl.fromTo('#${p}cam .sx-clock',{opacity:0,scale:.5},{opacity:1,scale:1,duration:.4,ease:'back.out(1.6)'},${f2(a - 0.3)});`;
           s.props.plates.forEach((pl, i) => { const fast = pl.melt === 'fast', at = a + i * 0.14;
             o += `tl.fromTo('#${p}i${i}',{y:-420,opacity:0},{y:0,opacity:1,duration:.38,ease:'power2.in'},${f2(at)});` +
-              `tl.to('#${p}i${i}',{keyframes:[{scaleY:.78,scaleX:1.14,duration:.08,ease:'power2.out'},{scaleY:1,scaleX:1,duration:.35,ease:'elastic.out(1,0.5)'}],transformOrigin:'50% 100%'},${f2(at + 0.38)});`;
+              `tl.to('#${p}i${i}',{keyframes:[{scaleY:.78,scaleX:1.14,duration:.08,ease:'power2.out'},{scaleY:1,scaleX:1,duration:.35,ease:'elastic.out(1,0.5)'}]},${f2(at + 0.38)});`;
             pushSfx(at + 0.38, 'thud', 0.5);
-            o += `tl.to('#${p}i${i}',{scaleY:${fast ? 0.16 : 0.86},scaleX:${fast ? 1.3 : 1},y:20,transformOrigin:'50% 100%',duration:${f2(Math.max(0.8, T1 - (a + 0.9)))},ease:'power1.in'},${f2(a + 0.9)});` +
+            o += `tl.to('#${p}i${i}',{scaleY:${fast ? 0.16 : 0.86},scaleX:${fast ? 1.3 : 1},y:20,duration:${f2(Math.max(0.8, T1 - (a + 0.9)))},ease:'power1.in'},${f2(a + 0.9)});` +
               `tl.fromTo('#${p}w${i}',{scaleX:0,opacity:0},{scaleX:${fast ? 1.15 : 0.3},opacity:1,duration:${f2(Math.max(0.8, T1 - (a + 1)))},ease:'power1.in'},${f2(a + 1)});`; });
           o += `tl.fromTo('#${p}hand',{rotation:0},{rotation:${Math.round((T1 - a) * 120)},svgOrigin:'60 64',duration:${f2(T1 - a)},ease:'none'},${f2(a)});`; pushSfx(a + 0.1, 'tick', 0.3);
           o += (cache || mk(p, t)).map(c => c.a).join('');
@@ -268,7 +270,7 @@ export function scienceFilm(H, plan) {
 .sx-chart{position:absolute;left:40px;width:1000px;height:700px;overflow:visible;opacity:0}.sx-chart .ax{stroke:#ffffff55;stroke-width:5}.sx-chart .yl{fill:${S0.mute};font-size:36px;text-anchor:end;font-weight:700}.sx-chart .yl2{fill:${S0.mute};font-size:32px;font-weight:700}.sx-chart .xl{fill:${S0.mute};font-size:34px;text-anchor:end}
 .sx-chart .cv{fill:none;stroke-width:14;stroke-linecap:round}.sx-chart .cv.steel{stroke:#c9d4e2}.sx-chart .cv.wood{stroke:#d9935a}.sx-chart .dt.steel{fill:#ffffff}.sx-chart .dt.wood{fill:#ffb27a}.sx-chart .el{fill:${S0.ink};font-size:42px;font-weight:900}
 .sx-pl{position:absolute;width:380px;height:70px;border-radius:16px;box-shadow:0 30px 50px #0009}
-.sx-ice{position:absolute;width:160px;height:160px;border-radius:26px;background:linear-gradient(135deg,#ffffffee,#bfe9ffb0 50%,#8fd3ff90);border:4px solid #ffffffcc;box-shadow:inset 0 0 30px #ffffff,0 10px 30px #8fd3ff55;opacity:0}
+.sx-ice{position:absolute;transform-origin:50% 100%;width:160px;height:160px;border-radius:26px;background:linear-gradient(135deg,#ffffffee,#bfe9ffb0 50%,#8fd3ff90);border:4px solid #ffffffcc;box-shadow:inset 0 0 30px #ffffff,0 10px 30px #8fd3ff55;opacity:0}
 .sx-pud{position:absolute;width:300px;height:30px;border-radius:50%;background:radial-gradient(closest-side,#8fd3ffcc,#8fd3ff33);transform-origin:50% 50%;opacity:0}
 .sx-clock{position:absolute;left:480px;top:400px;width:120px;height:120px;overflow:visible}.sx-clock circle{fill:none;stroke:${S0.ink};stroke-width:7}.sx-clock rect{fill:${S0.ink}}.sx-clock line{stroke:${S0.orange};stroke-width:8;stroke-linecap:round}
 .sx-ans{position:absolute;left:60px;right:60px;top:470px;text-align:center;font-size:110px;font-weight:900;line-height:1.15;letter-spacing:-2px}

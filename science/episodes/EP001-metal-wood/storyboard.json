@@ -1,6 +1,6 @@
 {
   "episode": "EP001",
-  "version": 2,
+  "version": 3,
   "based_on": { "brief_version": 1, "claims_version": 1 },
   "status": "APPROVED",
   "titles": [
@@ -9,6 +9,8 @@
     "차가운 쪽 얼음이 더 빨리 녹는다고?"
   ],
   "description_sources": ["C1", "C3", "C4", "C6", "C7"],
+  "keywords": ["차갑", "열", "빼앗아", "피부", "뜨겁게", "녹아요"],
+  "motionBlur": true,
   "voice": { "engine": "edge-tts", "voice": "ko-KR-HyunsuMultilingualNeural", "rate": "+12%", "note": "임시 음성. 30초 샘플 비교 후 교체. +0%는 60초로 목표 초과(v1 렌더)" },
   "scenes": [
     {
@@ -26,7 +28,7 @@
     },
     {
       "id": "S3", "template": "heatFlow",
-      "props": { "source": { "label": "손", "temp": "약 34°C" }, "targets": [{ "kind": "steel", "label": "철", "rate": "fast" }, { "kind": "wood", "label": "나무", "rate": "slow" }], "cue": "흘러가요" },
+      "props": { "source": { "label": "손", "temp": "약 34°C" }, "targets": [{ "kind": "steel", "label": "철", "rate": "fast" }, { "kind": "wood", "label": "나무", "rate": "slow" }], "cue": "닿으면" },
       "lines": [
         { "say": "차이는 내 손에서 시작돼요.", "claims": [] },
         { "say": "손은 34도쯤이라, 닿으면 열이 물체로 흘러가요.", "tts": "손은 삼십사 도쯤이라, 닿으면 열이 물체로 흘러가요.", "claims": ["C2"] }
@@ -39,7 +41,7 @@
     },
     {
       "id": "S5", "template": "skinCurves",
-      "props": { "title": "닿는 순간 내 피부 온도", "start": 33, "series": [{ "kind": "steel", "label": "철", "end": 23.5 }, { "kind": "wood", "label": "나무", "end": 29.6 }], "tag": "계산 예시", "cue": "떨어지느냐" },
+      "props": { "title": "닿는 순간 내 피부 온도", "lead": "피부가 느끼는 건", "myth": "물체의 온도", "truth": "내 피부 온도가<br><em>떨어지는 속도</em>", "start": 33, "series": [{ "kind": "steel", "label": "철", "end": 23.5 }, { "kind": "wood", "label": "나무", "end": 29.6 }], "tag": "계산 예시", "cue": "떨어지느냐" },
       "lines": [
         { "say": "피부가 느끼는 건 물체의 온도가 아니에요.", "claims": ["C4"] },
         { "say": "내 피부 온도가 얼마나 빨리 떨어지느냐예요.", "claims": ["C4", "C5", "C8"] }
@@ -55,7 +57,7 @@
     },
     {
       "id": "S7", "template": "answer",
-      "props": { "text": "차갑다 = 열을<br><em>잘 빼앗아 간다</em>", "chips": ["미국물리학회", "UC 산타크루즈 물리 시연실", "Ho (2018) 피부 열감각 리뷰"] },
+      "props": { "text": "차갑다 = 열을<br><em>잘 빼앗아 간다</em>", "emCue": "열을", "chipCue": "신호", "chips": ["미국물리학회", "UC 산타크루즈 물리 시연실", "Ho (2018) 피부 열감각 리뷰"] },
       "lines": [{ "say": "차갑다는 느낌은, 열을 잘 빼앗아 간다는 신호예요.", "claims": ["C5"] }]
     },
     {

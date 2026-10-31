@@ -1,0 +1,241 @@
+{
+  "episode": "EP004",
+  "version": 1,
+  "based_on": {
+    "brief_version": 1,
+    "claims_version": 1
+  },
+  "status": "REVIEW",
+  "titles": [
+    "목욕하면 손가락이 쭈글쭈글해지는 진짜 이유",
+    "손가락 주름, 물에 불어서가 아니다",
+    "과학자들도 결론 못 낸 손가락 주름의 비밀"
+  ],
+  "description_sources": [
+    "C1",
+    "C2",
+    "C3",
+    "C4"
+  ],
+  "keywords": [
+    "신경",
+    "혈관",
+    "주름",
+    "가설",
+    "12%",
+    "차이",
+    "논쟁"
+  ],
+  "motionBlur": true,
+  "voice": {
+    "engine": "edge-tts",
+    "voice": "ko-KR-HyunsuMultilingualNeural",
+    "rate": "+12%",
+    "note": "임시 음성. 30초 샘플 비교 후 교체"
+  },
+  "scenes": [
+    {
+      "id": "S1",
+      "template": "hook",
+      "props": {
+        "question": "목욕하면 손가락은<br>왜 쭈글쭈글해질까?",
+        "icons": [
+          {
+            "emoji": "🛁",
+            "label": "목욕",
+            "cue": "목욕"
+          },
+          {
+            "emoji": "🖐️",
+            "label": "쭈글쭈글",
+            "cue": "쭈글쭈글"
+          }
+        ],
+        "fx": "drops"
+      },
+      "lines": [
+        {
+          "say": "목욕하면 손가락이 왜 쭈글쭈글해질까요?",
+          "claims": []
+        },
+        {
+          "say": "과학자들도 아직 답을 다 못 정한 질문이에요.",
+          "claims": [
+            "C6"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "template": "fingerCompare",
+      "props": {
+        "myth": "물에 불어서?",
+        "items": [
+          {
+            "label": "보통 손가락",
+            "wrinkle": true,
+            "nerve": true
+          },
+          {
+            "label": "신경이 끊긴 손가락",
+            "nerve": true,
+            "cut": true
+          }
+        ],
+        "cue": "신경이",
+        "swellCue": "불어서",
+        "wrinkleCue": "주름이"
+      },
+      "lines": [
+        {
+          "say": "피부가 물에 불어서라고 생각하기 쉽죠.",
+          "claims": []
+        },
+        {
+          "say": "그런데 신경이 끊긴 손가락은 주름이 안 생겨요.",
+          "claims": [
+            "C2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "template": "finger",
+      "props": {
+        "title": "손끝 속을 들여다보면",
+        "nerve": "신경 신호",
+        "vessel": "혈관이 조여요",
+        "nerveCue": "신경이",
+        "squeezeCue": "조여서",
+        "foldCue": "겉이"
+      },
+      "lines": [
+        {
+          "say": "주름은 신경이 피부 밑 혈관을 조여서 생겨요.",
+          "claims": [
+            "C1"
+          ]
+        },
+        {
+          "say": "속 부피가 줄면서 겉이 접히는 거예요.",
+          "claims": [
+            "C1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "template": "tread",
+      "props": {
+        "label": "홈으로 물이 빠져서 덜 미끄럽다?",
+        "cue": "타이어",
+        "qCue": "이유",
+        "tag": "가설"
+      },
+      "lines": [
+        {
+          "say": "몸이 일부러 만든다면, 이유가 있겠죠?",
+          "claims": []
+        },
+        {
+          "say": "빗길 타이어 홈처럼 젖은 물건을 잘 잡게 한다는 가설이 있어요.",
+          "claims": [
+            "C5"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "template": "evidence",
+      "props": {
+        "items": [
+          {
+            "side": "for",
+            "year": "2013",
+            "text": "물속 구슬 옮기기",
+            "num": 12,
+            "unit": "% 빨라짐",
+            "cue": "2013",
+            "numCue": "12%"
+          },
+          {
+            "side": "against",
+            "year": "2014 · 40명",
+            "text": "젖은 물건 다루기: 차이 없음",
+            "cue": "2014",
+            "numCue": "차이",
+            "badge": "👥 40명"
+          }
+        ],
+        "verdict": "⚖ 아직 결론 없음"
+      },
+      "lines": [
+        {
+          "say": "2013년 실험에선 젖은 구슬을 12% 더 빨리 옮겼어요.",
+          "tts": "이천십삼 년 실험에선 젖은 구슬을 십이 퍼센트 더 빨리 옮겼어요.",
+          "claims": [
+            "C3"
+          ]
+        },
+        {
+          "say": "그런데 2014년 40명 실험에선 차이가 없었어요.",
+          "tts": "그런데 이천십사 년 사십 명 실험에선 차이가 없었어요.",
+          "claims": [
+            "C4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "template": "answer",
+      "props": {
+        "text": "몸이 만든 주름<br><em>이유는 아직 논쟁 중</em>",
+        "emCue": "이유는",
+        "chipCue": "논쟁",
+        "chips": [
+          "Muscle & Nerve (2003)",
+          "Biol Lett (2013)",
+          "PLOS ONE (2014)"
+        ],
+        "irisAt": [
+          540,
+          1110
+        ]
+      },
+      "lines": [
+        {
+          "say": "주름은 몸이 만드는 게 맞지만, 이유는 아직 논쟁 중이에요.",
+          "claims": [
+            "C1",
+            "C6"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S7",
+      "template": "end",
+      "props": {
+        "head": "여러분 생각은?",
+        "icon": "🤔",
+        "reverse": {
+          "label": "잡기용일까, 다른 이유일까?"
+        },
+        "hotCue": "어느",
+        "ask": "댓글로 알려 주세요",
+        "series": "과학 호기심 (채널명 가칭)"
+      },
+      "lines": [
+        {
+          "say": "여러분은 어느 쪽 같아요? 댓글로 알려 주세요.",
+          "claims": []
+        }
+      ]
+    }
+  ]
+}

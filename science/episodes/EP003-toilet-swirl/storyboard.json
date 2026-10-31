@@ -1,0 +1,245 @@
+{
+  "episode": "EP003",
+  "version": 1,
+  "based_on": {
+    "brief_version": 1,
+    "claims_version": 1
+  },
+  "status": "REVIEW",
+  "titles": [
+    "남반구 변기는 반대로 돈다? 진짜 실험해 봤더니",
+    "변기 물이 도는 방향, 지구 때문이 아니다",
+    "하루를 기다려야 보이는 지구의 힘"
+  ],
+  "description_sources": [
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "keywords": [
+    "변기",
+    "태풍",
+    "반대",
+    "각도",
+    "1천만",
+    "하루",
+    "시드니"
+  ],
+  "motionBlur": true,
+  "voice": {
+    "engine": "edge-tts",
+    "voice": "ko-KR-HyunsuMultilingualNeural",
+    "rate": "+12%",
+    "note": "임시 음성. 30초 샘플 비교 후 교체"
+  },
+  "scenes": [
+    {
+      "id": "S1",
+      "template": "hook",
+      "props": {
+        "question": "남반구 변기는<br>반대로 돌까?",
+        "icons": [
+          {
+            "emoji": "🚽",
+            "label": "북반구",
+            "cue": "변기",
+            "spin": -1
+          },
+          {
+            "emoji": "🚽",
+            "label": "남반구",
+            "cue": "반대로",
+            "spin": 1
+          }
+        ],
+        "fx": "swirl"
+      },
+      "lines": [
+        {
+          "say": "남반구에선 변기 물이 반대로 돈다고 알고 있죠?",
+          "claims": []
+        },
+        {
+          "say": "사실이 아니에요.",
+          "claims": [
+            "C2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "template": "globeSpin",
+      "props": {
+        "north": "북반구 ↺ 시계 반대",
+        "south": "남반구 ↻ 시계 방향"
+      },
+      "lines": [
+        {
+          "say": "태풍은 정말 그래요.",
+          "claims": [
+            "C1"
+          ]
+        },
+        {
+          "say": "북반구는 시계 반대, 남반구는 시계 방향으로 돌아요.",
+          "claims": [
+            "C1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "template": "drainJets",
+      "props": {
+        "title": "변기를 위에서 보면",
+        "label": "물 나오는 구멍의 각도 → 도는 방향",
+        "smallCue": "작아요",
+        "cue": "각도"
+      },
+      "lines": [
+        {
+          "say": "하지만 변기는 너무 작아요.",
+          "claims": []
+        },
+        {
+          "say": "물이 나오는 구멍의 각도가 방향을 정해요.",
+          "claims": [
+            "C2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "template": "scaleZoom",
+      "props": {
+        "title": "변기 크기에서 두 힘",
+        "big": "중력",
+        "small": "지구 자전의 힘",
+        "ratio": "약 10,000,000배",
+        "ratioCue": "1천만",
+        "smallCue": "자전",
+        "tag": "어림값"
+      },
+      "lines": [
+        {
+          "say": "변기 크기에선 지구 자전의 힘이,",
+          "claims": [
+            "C3"
+          ]
+        },
+        {
+          "say": "중력보다 약 1천만 배나 약하거든요.",
+          "tts": "중력보다 약 천만 배나 약하거든요.",
+          "claims": [
+            "C3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "template": "basin",
+      "props": {
+        "size": "지름 2m",
+        "first": {
+          "label": "1962 MIT ↺"
+        },
+        "second": {
+          "label": "시드니 ↻"
+        },
+        "waitCue": "하루",
+        "yearCue": "1962",
+        "dimCue": "2m",
+        "fillCue": "물을",
+        "turnCue": "시계 반대",
+        "secondCue": "시드니",
+        "tag": "재현"
+      },
+      "lines": [
+        {
+          "say": "그런데 1962년 MIT에서,",
+          "tts": "그런데 천구백육십이 년 엠아이티에서,",
+          "claims": [
+            "C4"
+          ]
+        },
+        {
+          "say": "지름 2m 대야에 물을 담고 하루를 기다리자,",
+          "tts": "지름 이 미터 대야에 물을 담고 하루를 기다리자,",
+          "claims": [
+            "C4"
+          ]
+        },
+        {
+          "say": "물이 시계 반대 방향으로 돌았어요.",
+          "claims": [
+            "C4"
+          ]
+        },
+        {
+          "say": "호주 시드니에선 시계 방향이었고요.",
+          "claims": [
+            "C5"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "template": "answer",
+      "props": {
+        "text": "지구가 아니라<br><em>변기 모양</em>이 정해요",
+        "emCue": "변기 모양",
+        "chipCue": "정해요",
+        "chips": [
+          "브리태니커",
+          "미 의회도서관",
+          "Nature (1965)"
+        ],
+        "irisAt": [
+          790,
+          690
+        ]
+      },
+      "lines": [
+        {
+          "say": "변기 물의 방향은 지구가 아니라, 변기 모양이 정해요.",
+          "claims": [
+            "C2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S7",
+      "template": "end",
+      "props": {
+        "head": "진짜 지구의 힘을 보려면?",
+        "icon": "⏳",
+        "reverse": {
+          "label": "하루를 기다려야 해요"
+        },
+        "hotCue": "하루",
+        "ask": "우리 집 변기는 어느 쪽?",
+        "series": "과학 호기심 (채널명 가칭)"
+      },
+      "lines": [
+        {
+          "say": "지구의 힘을 보려면, 하루를 기다려야 해요.",
+          "claims": [
+            "C4"
+          ]
+        },
+        {
+          "say": "우리 집 변기는 어느 쪽으로 도나요?",
+          "claims": []
+        }
+      ]
+    }
+  ]
+}

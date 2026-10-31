@@ -1,6 +1,6 @@
 {
   "episode": "EP001",
-  "version": 1,
+  "version": 2,
   "based_on": { "brief_version": 1, "claims_version": 1 },
   "status": "APPROVED",
   "titles": [
@@ -9,7 +9,7 @@
     "차가운 쪽 얼음이 더 빨리 녹는다고?"
   ],
   "description_sources": ["C1", "C3", "C4", "C6", "C7"],
-  "voice": { "engine": "edge-tts", "voice": "ko-KR-HyunsuMultilingualNeural", "rate": "+0%", "note": "임시 음성. 30초 샘플 비교 후 교체" },
+  "voice": { "engine": "edge-tts", "voice": "ko-KR-HyunsuMultilingualNeural", "rate": "+12%", "note": "임시 음성. 30초 샘플 비교 후 교체. +0%는 60초로 목표 초과(v1 렌더)" },
   "scenes": [
     {
       "id": "S1", "template": "questionCard",

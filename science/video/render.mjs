@@ -13,6 +13,7 @@ export async function renderEpisode(dir, out = 'out') {
   if (sb.status !== 'APPROVED' && !force) throw new Error(`${sb.episode}: storyboard 상태 ${sb.status}. 승인 A 전에는 렌더하지 않음 (시험 렌더는 FORCE=1)`);
   const spec = scienceFilm(H, sb);
   spec.voice = sb.voice;
+  spec.motionBlur = sb.motionBlur !== false;
   if (sb.status !== 'APPROVED') spec.id += '-draft';
   return produceFilm(spec, { OUT: out });
 }

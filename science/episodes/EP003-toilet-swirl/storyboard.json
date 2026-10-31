@@ -31,7 +31,7 @@
   "voice": {
     "engine": "edge-tts",
     "voice": "ko-KR-HyunsuMultilingualNeural",
-    "rate": "+12%",
+    "rate": "+14%",
     "note": "임시 음성. 30초 샘플 비교 후 교체"
   },
   "scenes": [

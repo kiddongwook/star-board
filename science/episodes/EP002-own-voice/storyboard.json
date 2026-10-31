@@ -1,0 +1,239 @@
+{
+  "episode": "EP002",
+  "version": 1,
+  "based_on": {
+    "brief_version": 1,
+    "claims_version": 1
+  },
+  "status": "REVIEW",
+  "titles": [
+    "녹음된 내 목소리가 어색한 진짜 이유",
+    "내 목소리, 녹음하면 왜 이상할까?",
+    "모르고 들으면 내 목소리에 더 높은 점수를 준다"
+  ],
+  "description_sources": [
+    "C1",
+    "C2",
+    "C4",
+    "C5"
+  ],
+  "keywords": [
+    "뼈",
+    "공기",
+    "낮",
+    "남들",
+    "녹음",
+    "예상과"
+  ],
+  "motionBlur": true,
+  "voice": {
+    "engine": "edge-tts",
+    "voice": "ko-KR-HyunsuMultilingualNeural",
+    "rate": "+12%",
+    "note": "임시 음성. 30초 샘플 비교 후 교체"
+  },
+  "scenes": [
+    {
+      "id": "S1",
+      "template": "hook",
+      "props": {
+        "question": "녹음된 내 목소리<br>왜 이렇게 어색할까?",
+        "icons": [
+          {
+            "emoji": "🗣️",
+            "label": "말할 때",
+            "cue": "내 목소리"
+          },
+          {
+            "emoji": "📱",
+            "label": "녹음 들을 때",
+            "cue": "어색"
+          }
+        ],
+        "mid": "≠",
+        "fx": "wave"
+      },
+      "lines": [
+        {
+          "say": "녹음된 내 목소리, 왜 이렇게 어색할까요?",
+          "claims": []
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "template": "routes",
+      "props": {
+        "title": "목소리가 귀로 가는 두 길",
+        "airCue": "공기",
+        "boneCue": "머리뼈",
+        "airLabel": "공기 길",
+        "boneLabel": "뼈 길"
+      },
+      "lines": [
+        {
+          "say": "말할 때 내 목소리는 두 길로 들어와요.",
+          "claims": [
+            "C1"
+          ]
+        },
+        {
+          "say": "공기를 타고 오는 소리와, 머리뼈를 울리고 오는 소리.",
+          "claims": [
+            "C1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "template": "waves",
+      "props": {
+        "title": "같은 목소리, 다른 소리",
+        "items": [
+          {
+            "label": "말할 때 내가 듣는 소리",
+            "badge": "저음 ↑",
+            "freq": 1.6,
+            "amp": 70,
+            "color": "#fca311",
+            "width": 14,
+            "cue": "낮은"
+          },
+          {
+            "label": "녹음된 소리",
+            "freq": 3.2,
+            "amp": 40,
+            "color": "#7fd3ff",
+            "width": 8,
+            "cue": "그래서"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "say": "뼈를 타고 오는 길은 낮은 소리를 키워 주는 것으로 보여요.",
+          "claims": [
+            "C6"
+          ]
+        },
+        {
+          "say": "그래서 말할 때 내 목소리는 더 낮고 풍성하게 들려요.",
+          "claims": [
+            "C2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "template": "routes",
+      "props": {
+        "recorder": true,
+        "title": "녹음기가 듣는 길",
+        "airCue": "녹음기",
+        "boneCue": "",
+        "airLabel": "녹음기: 공기 길만",
+        "boneLabel": "뼈 길 ✕"
+      },
+      "lines": [
+        {
+          "say": "그런데 녹음기에는 공기로 온 소리만 담겨요.",
+          "claims": [
+            "C1"
+          ]
+        },
+        {
+          "say": "그게 바로 남들이 듣는 내 목소리예요.",
+          "claims": [
+            "C3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "template": "blindTest",
+      "props": {
+        "title": "몰래 섞어 들려주면?",
+        "own": 4,
+        "ownLabel": "내 목소리",
+        "cue": "모르고",
+        "resCue": "더 좋게",
+        "result": "남들 목소리보다 더 좋게 평가",
+        "tag": "80명 실험"
+      },
+      "lines": [
+        {
+          "say": "재밌는 실험이 있어요.",
+          "claims": []
+        },
+        {
+          "say": "내 목소리인 줄 모르고 들은 사람들은,",
+          "claims": [
+            "C4"
+          ]
+        },
+        {
+          "say": "오히려 남들 목소리보다 더 좋게 평가했어요.",
+          "claims": [
+            "C4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "template": "answer",
+      "props": {
+        "text": "나빠서가 아니라<br><em>예상과 달라서</em>",
+        "emCue": "예상과",
+        "chipCue": "달라서",
+        "chips": [
+          "도쿄대",
+          "Perception (2013)",
+          "JPSP (1966)"
+        ],
+        "irisAt": [
+          530,
+          855
+        ]
+      },
+      "lines": [
+        {
+          "say": "어색한 건 소리가 나빠서가 아니라, 예상과 달라서예요.",
+          "claims": [
+            "C5",
+            "C4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S7",
+      "template": "end",
+      "props": {
+        "head": "남들이 듣는 진짜 내 목소리",
+        "icon": "🎙️",
+        "reverse": {
+          "label": "매일 듣고 있었어요"
+        },
+        "hotCue": "듣고",
+        "ask": "내 녹음 목소리, 몇 점?",
+        "series": "과학 호기심 (채널명 가칭)"
+      },
+      "lines": [
+        {
+          "say": "남들은 매일 그 목소리를 듣고 있었던 거죠.",
+          "claims": [
+            "C3"
+          ]
+        },
+        {
+          "say": "내 녹음 목소리, 몇 점 주시겠어요?",
+          "claims": []
+        }
+      ]
+    }
+  ]
+}

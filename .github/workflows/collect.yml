@@ -1,0 +1,73 @@
+name: Collect & Deploy Star Board
+
+on:
+  schedule:
+    - cron: '0 18 * * *'   # 매일 03:00 KST (GitHub 예약 실행이 몇 시간 늦을 수 있어 07:30 쇼츠 전에 끝나도록 일찍 잡음)
+  workflow_dispatch:        # Actions 탭에서 수동 실행 가능
+    inputs:
+      deploy_only:
+        description: '수집 없이 지금 data로 사이트만 다시 배포'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: star-board
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Collect GitHub data
+        if: ${{ !inputs.deploy_only }}
+        run: node collect.mjs
+        env:
+          # 개인 토큰(STAR_BOARD_TOKEN 시크릿)이 있으면 우선 사용, 없으면 Actions 기본 토큰
+          GITHUB_TOKEN: ${{ secrets.STAR_BOARD_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Commit snapshots
+        if: ${{ !inputs.deploy_only }}
+        run: |
+          git config user.name "star-board-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git commit -m "data: $(date -u +%F)" || echo "no changes"
+          git pull --rebase -X theirs origin main || true
+          git push
+
+      - name: Publish changes as a release (Watch > Releases 알림용)
+        if: ${{ !inputs.deploy_only && hashFiles('data/changes.md') != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="board-$(date -u +%F)"
+          # 같은 날 재실행 시 릴리스를 지우지 않고 노트만 갱신 (첫부된 영상 보존)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file data/changes.md || echo "release edit skipped"
+          else
+            gh release create "$TAG" --title "Star Board $(date -u +%F)" --notes-file data/changes.md --latest=false || echo "release skipped"
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

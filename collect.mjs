@@ -1,0 +1,851 @@
+#!/usr/bin/env node
+// GitHub Star Board - 데이터 수집기 (Node 20+, 외부 의존성 없음)
+// 사용: GITHUB_TOKEN=ghp_xxx node collect.mjs
+// 결과: data/data.js (대시보드용), data/latest.json, data/history/YYYY-MM-DD.json (스타 스냅샷)
+
+const DEFAULT_CONFIG = {
+  // github.com/trending 스크래핑 (공식 API 없음)
+  trending: { periods: ['daily', 'weekly', 'monthly'], languages: ['', 'python', 'typescript', 'javascript', 'rust', 'go', 'c++', 'java'] },
+  // 누적 스타 순위
+  top: { allPages: 2, languages: ['Python', 'TypeScript', 'JavaScript', 'Rust', 'Go', 'C++', 'Java', 'C', 'C#', 'Kotlin', 'Swift'], perLanguage: 50 },
+  // 최근 생성된 신규 저장소
+  rookies: { days: [7, 30], minStars: 30 },
+  // 분야별 (GitHub topic 기준, 최근 1년 내 push된 것만)
+  categoryPerTopic: 30,
+  categories: [
+    { id: 'coding-agent', name: 'AI 코딩 에이전트', topics: ['claude-code', 'coding-agent', 'ai-coding'] },
+    { id: 'ai-agent', name: 'AI 에이전트 프레임워크', topics: ['ai-agents', 'llm-agent', 'multi-agent'] },
+    { id: 'mcp', name: 'MCP 서버/도구', topics: ['mcp', 'model-context-protocol'] },
+    { id: 'llm', name: 'LLM / 추론 엔진', topics: ['llm', 'llm-inference', 'local-llm'] },
+    { id: 'rag', name: 'RAG / 벡터 DB', topics: ['rag', 'vector-database'] },
+    { id: 'devtools', name: '개발 도구 / CLI', topics: ['developer-tools', 'cli'] },
+    { id: 'selfhosted', name: '셀프호스팅', topics: ['self-hosted'] },
+    { id: 'security', name: '보안', topics: ['security', 'security-tools'] },
+    { id: 'biometrics', name: '생체인증 (얼굴·지문·정맥)', minStars: 10, topics: ['biometrics', 'face-recognition', 'fingerprint-recognition', 'finger-vein', 'vein-recognition', 'liveness-detection'] },
+    { id: 'vision', name: '컴퓨터 비전', topics: ['computer-vision', 'image-processing'] },
+    { id: 'embedded', name: '임베디드 / IoT', topics: ['embedded', 'iot', 'firmware'] },
+  ],
+  // 심층 분석 (GraphQL, 토큰 필요): 커밋/참여자/이슈/릴리스/스타 계정 표본
+  enrich: { max: 2500, batch: 12, stargazerSample: 30 },
+  // npm / PyPI / crates.io 다운로드 조회 대상 수
+  downloads: { max: 2500 },
+  // GitHub "Used by" (의존 저장소/패키지 수) HTML 파싱 대상 수 (스타순)
+  dependents: { max: 400 },
+  historyKeepDays: 400,
+};
+
+const DAY = 864e5;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const isoDaysAgo = d => new Date(Date.now() - d * DAY).toISOString().slice(0, 10);
+const clamp = (x, a = 0, b = 100) => Math.max(a, Math.min(b, x));
+const logS = (v, full) => (v == null ? null : clamp((Math.log10(1 + Math.max(0, v)) / Math.log10(1 + full)) * 100));
+const num = s => (s == null ? null : +String(s).replace(/,/g, ''));
+const UA = 'github-star-board (+https://github.com)';
+const normLic = s => (!s ? null : s === 'NOASSERTION' ? 'Other' : s);
+// 라이선스 위험도: perm(허용형) / weak(약한 카피레프트) / copyleft / none / other(비표준·소스공개형 등, 확인 필요)
+function licKind(spdx) {
+  if (!spdx) return 'none';
+  if (/^(MIT|MIT-0|Apache-2\.0|BSD-[0-4]-Clause.*|ISC|0BSD|Unlicense|Zlib|BSL-1\.0|CC0-1\.0|WTFPL|PostgreSQL|BlueOak-1\.0\.0|NCSA|X11|PSF-2\.0|Python-2\.0)$/i.test(spdx)) return 'perm';
+  if (/^(LGPL|MPL|EPL|CDDL|EUPL|OSL|CPL)/i.test(spdx)) return 'weak';
+  if (/^(GPL|AGPL)/i.test(spdx)) return 'copyleft';
+  return 'other';
+}
+const starsOf = v => (Array.isArray(v) ? v[0] : v);
+
+function makeCtx({ token = null, config = DEFAULT_CONFIG, log = console.log, snapshots = {} } = {}) {
+  return { token, config, log, snapshots, repos: {}, trending: {}, lists: {}, searchDelay: token ? 2300 : 6500, lastSearch: 0, errors: [] };
+}
+
+function upsert(ctx, name, fields, authoritative) {
+  const cur = ctx.repos[name] || { n: name };
+  for (const [k, v] of Object.entries(fields)) if (v !== undefined && (authoritative || cur[k] == null)) cur[k] = v;
+  ctx.repos[name] = cur;
+}
+
+// ---------------- GitHub REST ----------------
+async function gh(ctx, url) {
+  const headers = { Accept: 'application/vnd.github+json', 'User-Agent': UA };
+  if (ctx.token) headers.Authorization = `Bearer ${ctx.token}`;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const r = await fetch(url, { headers });
+    if (r.status === 403 || r.status === 429) {
+      const ra = +r.headers.get('retry-after'), reset = +r.headers.get('x-ratelimit-reset');
+      const ms = ra ? ra * 1000 : reset ? reset * 1000 - Date.now() + 1500 : 30000;
+      if (ms > 150000) throw new Error(`rate limited for ${Math.round(ms / 1000)}s`);
+      ctx.log(`  rate limit, ${Math.round(ms / 1000)}s 대기`);
+      await wait(Math.max(1000, ms));
+      continue;
+    }
+    if (!r.ok) throw new Error(`${r.status} ${url}`);
+    return r.json();
+  }
+  throw new Error('retries exhausted: ' + url);
+}
+
+async function search(ctx, q, per = 100, page = 1) {
+  const gap = ctx.searchDelay - (Date.now() - ctx.lastSearch);
+  if (gap > 0) await wait(gap);
+  ctx.lastSearch = Date.now();
+  const j = await gh(ctx, `https://api.github.com/search/repositories?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=${per}&page=${page}`);
+  const names = [];
+  for (const it of j.items || []) {
+    if (it.fork) continue;
+    upsert(ctx, it.full_name, {
+      d: it.description || '', l: it.language || null, s: it.stargazers_count, f: it.forks_count, c: it.created_at, p: it.pushed_at,
+      a: it.archived || undefined, lic: normLic(it.license?.spdx_id),
+      t: (it.topics || []).slice(0, 8), hp: it.homepage || null, oi: it.open_issues_count,
+    }, true);
+    names.push(it.full_name);
+  }
+  return names;
+}
+
+// ---------------- Trending (HTML) ----------------
+function parseTrending(html) {
+  return html.split('<article class="Box-row"').slice(1).map(a => {
+    const name = (a.match(/<h2[^>]*>\s*<a[^>]*href="\/([^"]+)"/) || [])[1];
+    const desc = ((a.match(/<p class="[^"]*col-9[^"]*">([\s\S]*?)<\/p>/) || [])[1] || '')
+      .replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
+    const lang = (a.match(/itemprop="programmingLanguage">([^<]+)</) || [])[1];
+    const stars = (a.match(/href="\/[^"]+\/stargazers"[^>]*>[\s\S]*?<\/svg>\s*([\d,]+)/) || [])[1];
+    const forks = (a.match(/href="\/[^"]+\/forks"[^>]*>[\s\S]*?<\/svg>\s*([\d,]+)/) || [])[1];
+    const gained = (a.match(/([\d,]+)\s+stars?\s+(today|this week|this month)/) || [])[1];
+    return { name, desc, lang: lang || null, stars: num(stars), forks: num(forks), gained: num(gained) };
+  }).filter(x => x.name);
+}
+
+async function trending(ctx, period, lang) {
+  const url = `https://github.com/trending${lang ? '/' + encodeURIComponent(lang) : ''}?since=${period}`;
+  const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 ' + UA, Accept: 'text/html' } });
+  if (!r.ok) throw new Error(`trending ${r.status}`);
+  const items = parseTrending(await r.text());
+  for (const t of items) upsert(ctx, t.name, { d: t.desc, l: t.lang, s: t.stars, f: t.forks }, false);
+  return items.map(t => ({ n: t.name, g: t.gained }));
+}
+
+// ---------------- 작업 목록 ----------------
+function buildTasks(cfg) {
+  const T = [];
+  for (const lang of cfg.trending.languages) for (const period of cfg.trending.periods) T.push({ type: 'trending', period, lang });
+  T.push({ type: 'search', key: 'top:all', q: 'stars:>10000', pages: cfg.top.allPages, per: 100 });
+  for (const lang of cfg.top.languages) T.push({ type: 'search', key: `top:${lang}`, q: `language:"${lang}" stars:>500`, per: cfg.top.perLanguage });
+  for (const d of cfg.rookies.days) T.push({ type: 'search', key: `new:${d}`, q: `created:>=${isoDaysAgo(d)} stars:>=${cfg.rookies.minStars}`, per: 100 });
+  for (const c of cfg.categories) for (const t of c.topics)
+    T.push({ type: 'search', key: `cat:${c.id}:${t}`, q: `topic:${t} stars:>=${c.minStars ?? 50} pushed:>=${isoDaysAgo(365)}`, per: cfg.categoryPerTopic });
+  return T;
+}
+
+async function runTask(ctx, t) {
+  if (t.type === 'trending') {
+    ctx.trending[`${t.period}:${t.lang || 'all'}`] = await trending(ctx, t.period, t.lang);
+    await wait(700);
+  } else {
+    let names = [];
+    for (let p = 1; p <= (t.pages || 1); p++) names = names.concat(await search(ctx, t.q, t.per || 100, p));
+    ctx.lists[t.key] = names;
+  }
+}
+
+// ---------------- 심층 분석 (GraphQL) ----------------
+const GQL_FIELDS = `nameWithOwner description homepageUrl stargazerCount forkCount isArchived createdAt pushedAt
+ primaryLanguage{name} licenseInfo{spdxId} repositoryTopics(first:8){nodes{topic{name}}}
+ watchers{totalCount} openIssues:issues(states:OPEN){totalCount} closedIssues:issues(states:CLOSED){totalCount}
+ mergedPRs:pullRequests(states:MERGED){totalCount} mentionableUsers{totalCount}
+ releases(first:10,orderBy:{field:CREATED_AT,direction:DESC}){totalCount nodes{publishedAt tagName isPrerelease isDraft}}
+ defaultBranchRef{target{...on Commit{h90:history(since:$s90){totalCount} h365:history(since:$s365){totalCount}}}}`;
+// 스타 누른 계정 목록: 2026년 7월부터 GitHub 정책상 해당 저장소 관리자/협업자만 조회 가능 (타인 저장소는 FORBIDDEN).
+// 첫 요청에서 거부되면 자동으로 빼고 진행. 정책이 다시 풀리면 그대로 다시 동작.
+const GQL_SG = ` stargazers(last:$sg,orderBy:{field:STARRED_AT,direction:ASC}){edges{starredAt node{login createdAt bio company location websiteUrl followers{totalCount} following{totalCount} repositories{totalCount}}}}`;
+
+async function gql(ctx, query, variables) {
+  for (let a = 0; a < 4; a++) {
+    const r = await fetch('https://api.github.com/graphql', {
+      method: 'POST', headers: { Authorization: `Bearer ${ctx.token}`, 'Content-Type': 'application/json', 'User-Agent': UA }, body: JSON.stringify({ query, variables }),
+    });
+    if (r.status === 502 || r.status === 504) { await wait(2500); throw new Error('timeout'); }
+    if (r.status === 403 || r.status === 429) {
+      const ra = +r.headers.get('retry-after'), reset = +r.headers.get('x-ratelimit-reset');
+      const ms = ra ? ra * 1000 : reset ? reset * 1000 - Date.now() + 1500 : 60000;
+      if (ms > 600000) throw new Error('graphql rate limit');
+      ctx.log(`  GraphQL 한도, ${Math.round(ms / 1000)}s 대기`); await wait(ms); continue;
+    }
+    const j = await r.json();
+    if (!j.data && j.errors) throw new Error(j.errors[0].message);
+    return j;
+  }
+  throw new Error('graphql retries exhausted');
+}
+
+function suspScore(u) {
+  let s = 0;
+  if (u.followers === 0) s += 1;
+  if (u.following === 0) s += 1;
+  if (u.repos === 0) s += 1.5; else if (u.repos <= 2) s += 0.5;
+  if (!u.hasProfile) s += 1;
+  const age = (u.starredAt - u.createdAt) / DAY;
+  if (age < 30) s += 2; else if (age < 180) s += 0.5;
+  return s;
+}
+function maxIn24h(times) {
+  const s = [...times].sort((a, b) => a - b); let best = 0, j = 0;
+  for (let i = 0; i < s.length; i++) { while (s[i] - s[j] > DAY) j++; best = Math.max(best, i - j + 1); }
+  return best;
+}
+
+function applyGql(ctx, name, d) {
+  upsert(ctx, name, {
+    d: d.description || '', hp: d.homepageUrl || null, s: d.stargazerCount, f: d.forkCount, a: d.isArchived || undefined,
+    c: d.createdAt, p: d.pushedAt, l: d.primaryLanguage?.name || null, lic: normLic(d.licenseInfo?.spdxId),
+    t: d.repositoryTopics.nodes.map(x => x.topic.name),
+  }, true);
+  const users = (d.stargazers?.edges || []).filter(e => e.node).map(e => ({
+    login: e.node.login, starredAt: Date.parse(e.starredAt), createdAt: Date.parse(e.node.createdAt), followers: e.node.followers.totalCount,
+    following: e.node.following.totalCount, repos: e.node.repositories.totalCount, hasProfile: !!(e.node.bio || e.node.company || e.node.location || e.node.websiteUrl),
+  }));
+  const scored = users.map(u => ({ login: u.login, s: suspScore(u) }));
+  const rels = (d.releases?.nodes || []).filter(x => !x.isDraft && x.publishedAt);
+  // 안정 릴리스: 프리릴리스가 아니고 태그가 메이저 1 이상의 semver (best-of의 stable release 기준)
+  const stable = rels.some(x => { if (x.isPrerelease) return false; const m = x.tagName.match(/(\d+)\.(\d+)(?:\.(\d+))?$/); return m && +m[1] >= 1; });
+  const times = users.map(u => u.starredAt);
+  const span = times.length > 1 ? (Math.max(...times) - Math.min(...times)) / DAY : 0;
+  ctx.repos[name].deep = {
+    w: d.watchers.totalCount, oi: d.openIssues.totalCount, ci: d.closedIssues.totalCount, mp: d.mergedPRs.totalCount, ppl: d.mentionableUsers.totalCount,
+    rel: d.releases.totalCount, lr: rels[0]?.publishedAt || null, tag: rels[0]?.tagName || null, stable,
+    c90: d.defaultBranchRef?.target?.h90?.totalCount ?? null, c365: d.defaultBranchRef?.target?.h365?.totalCount ?? null,
+    sgN: users.length, sgSusp: scored.filter(x => x.s >= 5).length, sgLow: scored.filter(x => x.s >= 3.5).length,
+    sgBurst: times.length ? maxIn24h(times) : null, sgSpan: Math.round(span * 10) / 10,
+    sgFlag: scored.filter(x => x.s >= 5).slice(0, 5).map(x => x.login),
+  };
+}
+
+async function enrich(ctx, names) {
+  const s90 = new Date(Date.now() - 90 * DAY).toISOString(), s365 = new Date(Date.now() - 365 * DAY).toISOString();
+  let batch = ctx.config.enrich.batch, i = 0, done = 0;
+  while (i < names.length) {
+    const chunk = names.slice(i, i + batch);
+    const withSG = !ctx.noSG;
+    const body = chunk.map((n, j) => { const [o, r] = n.split('/'); return `r${j}:repository(owner:${JSON.stringify(o)},name:${JSON.stringify(r)}){${GQL_FIELDS}${withSG ? GQL_SG : ''}}`; }).join('\n');
+    const q = `query($s90:GitTimestamp!,$s365:GitTimestamp!${withSG ? ',$sg:Int!' : ''}){${body}\nrateLimit{remaining cost}}`;
+    try {
+      const j = await gql(ctx, q, withSG ? { s90, s365, sg: ctx.config.enrich.stargazerSample } : { s90, s365 });
+      if (withSG && (j.errors || []).some(er => (er.path || []).includes('stargazers') && /FORBIDDEN|not accessible/i.test(`${er.type} ${er.message}`))) {
+        ctx.noSG = true;
+        const sgErr = (j.errors || []).find(er => (er.path || []).includes('stargazers'));
+        ctx.log(`  스타 계정 목록 조회 불가 (${sgErr?.type || ''} ${sgErr?.message || ''}). GitHub 2026-07 정책상 타인 저장소의 stargazers는 관리자/협업자만 조회 가능하여 가짜 스타 검사를 건너뜁니다.`);
+        continue; // 같은 묶음을 stargazers 없이 다시 요청
+      }
+      chunk.forEach((n, k) => { const d = j.data?.[`r${k}`]; if (d) { applyGql(ctx, n, d); done++; } });
+      for (const er of j.errors || []) { const msg = `${(er.path || []).slice(1).join('.')}: ${er.type || ''} ${er.message}`.slice(0, 200); if (!ctx.gqlErr) ctx.gqlErr = new Set(); if (ctx.gqlErr.size < 8 && !ctx.gqlErr.has(msg)) { ctx.gqlErr.add(msg); ctx.log('  GraphQL 오류: ' + msg); } }
+      i += chunk.length;
+      if (batch < ctx.config.enrich.batch) batch++;
+      if (j.data?.rateLimit && i % 120 < batch) ctx.log(`  심층 분석 ${i}/${names.length} (GraphQL 잔여 ${j.data.rateLimit.remaining})`);
+    } catch (e) {
+      if (batch > 1) { batch = Math.max(1, Math.floor(batch / 2)); }
+      else { ctx.errors.push(`enrich ${chunk[0]}: ${e.message}`); i++; }
+      if (/rate limit/.test(e.message)) { ctx.log('  GraphQL 한도 소진, 심층 분석 중단'); break; }
+    }
+  }
+  ctx.log(`심층 분석 완료: ${done}개`);
+}
+
+// ---------------- 패키지 다운로드 ----------------
+async function fetchText(url) { try { const r = await fetch(url, { headers: { 'User-Agent': UA } }); return r.ok ? await r.text() : null; } catch { return null; } }
+async function pool(items, n, fn) { const q = [...items]; await Promise.all(Array.from({ length: n }, async () => { while (q.length) await fn(q.shift()); })); }
+
+async function downloads(ctx, names) {
+  const py = [];
+  await pool(names, 6, async name => {
+    const r = ctx.repos[name], l = r.l || '';
+    const raw = f => fetchText(`https://raw.githubusercontent.com/${name}/HEAD/${f}`);
+    try {
+      if (/^(JavaScript|TypeScript|Vue|Svelte|CoffeeScript)$/.test(l)) {
+        const t = await raw('package.json'); if (!t) return;
+        const p = JSON.parse(t); if (!p.name || p.private) return;
+        const d = JSON.parse((await fetchText(`https://api.npmjs.org/downloads/point/last-month/${p.name}`)) || '{}');
+        if (d.downloads > 0) r.dl = { e: 'npm', k: p.name, m: d.downloads, u: `https://www.npmjs.com/package/${p.name}` };
+      } else if (/^(Python|Jupyter Notebook)$/.test(l)) {
+        const t = await raw('pyproject.toml'); if (!t) return;
+        const m = t.match(/\[(?:project|tool\.poetry)\][^\[]*?\n\s*name\s*=\s*["']([^"']+)["']/);
+        if (m) { const k = m[1].toLowerCase().replace(/[_.]+/g, '-'); if (/^[a-z0-9-]+$/.test(k)) py.push([name, k]); }
+      } else if (l === 'Rust') {
+        const t = await raw('Cargo.toml'); if (!t) return;
+        const m = t.match(/\[package\][^\[]*?\n\s*name\s*=\s*["']([^"']+)["']/); if (!m) return;
+        const d = JSON.parse((await fetchText(`https://crates.io/api/v1/crates/${m[1]}`)) || '{}');
+        if (d.crate?.recent_downloads > 0) r.dl = { e: 'crates.io', k: m[1], m: Math.round(d.crate.recent_downloads / 3), u: `https://crates.io/crates/${m[1]}` };
+      }
+    } catch {}
+  });
+  // PyPI: pypistats.org 대신 ClickHouse 공개 PyPI 데이터셋(ClickPy)으로 한 번에 조회
+  for (let i = 0; i < py.length; i += 80) {
+    const part = py.slice(i, i + 80);
+    const sql = `SELECT project, sum(count) AS c FROM pypi.pypi_downloads_per_day WHERE project IN (${part.map(x => `'${x[1]}'`).join(',')}) AND date >= today()-30 GROUP BY project FORMAT JSON`;
+    try {
+      const r = await fetch('https://sql-clickhouse.clickhouse.com/?user=demo', { method: 'POST', body: sql });
+      if (!r.ok) continue;
+      const j = await r.json(); const m = Object.fromEntries(j.data.map(x => [x.project, +x.c]));
+      for (const [name, k] of part) if (m[k] > 0) ctx.repos[name].dl = { e: 'PyPI', k, m: m[k], u: `https://clickpy.clickhouse.com/dashboard/${k}` };
+    } catch {}
+  }
+  ctx.log(`다운로드 확인: ${names.filter(n => ctx.repos[n].dl).length}개`);
+}
+
+// ---------------- GitHub "Used by" (dependents) ----------------
+async function dependents(ctx, names) {
+  let ok = 0;
+  await pool(names, 4, async name => {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null; const tm = setTimeout(() => ctl?.abort(), 20000);
+      try {
+        const r = await fetch(`https://github.com/${name}/network/dependents`, { headers: { 'User-Agent': 'Mozilla/5.0 ' + UA, Accept: 'text/html' }, signal: ctl?.signal });
+        if (r.status === 429 || r.status >= 500) { await wait(8000); continue; }
+        if (!r.ok) return;
+        const t = (await r.text()).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+        const repos = num((t.match(/([\d,]+) Repositories/) || [])[1]), pkgs = num((t.match(/([\d,]+) Packages/) || [])[1]);
+        if (repos != null) { ctx.repos[name].ub = { r: repos, p: pkgs ?? 0 }; ok++; }
+        return;
+      } catch { await wait(3000); } finally { clearTimeout(tm); }
+    }
+  });
+  ctx.log(`Used by 확인: ${ok}개`);
+}
+
+// ---------------- 점수 / 판정 ----------------
+function growthFromHistory(ctx, name, stars) {
+  const g = {};
+  const dates = Object.keys(ctx.snapshots).sort();
+  for (const [k, back] of [['d1', 1], ['d7', 7], ['d30', 30]]) {
+    const target = isoDaysAgo(back);
+    const cand = dates.filter(d => Math.abs(Date.parse(d) - Date.parse(target)) <= 1.5 * DAY && ctx.snapshots[d][name] != null)
+      .sort((a, b) => Math.abs(Date.parse(a) - Date.parse(target)) - Math.abs(Date.parse(b) - Date.parse(target)));
+    if (cand.length) g[k] = stars - starsOf(ctx.snapshots[cand[0]][name]);
+  }
+  return Object.keys(g).length ? g : null;
+}
+
+function scoreRepo(r, tg) {
+  const now = Date.now();
+  const pushedDays = r.p ? (now - Date.parse(r.p)) / DAY : null;
+  const ageDays = r.c ? Math.max(1, (now - Date.parse(r.c)) / DAY) : null;
+  let g7 = null;
+  if (r.g?.d7 != null) g7 = r.g.d7;
+  else if (tg.weekly[r.n] != null) g7 = tg.weekly[r.n];
+  else if (tg.daily[r.n] != null) g7 = tg.daily[r.n] * 7;
+  else if (tg.monthly[r.n] != null) g7 = (tg.monthly[r.n] / 30) * 7;
+  else if (ageDays && ageDays <= 90) g7 = (r.s / ageDays) * 7;
+  const pop = Math.round(g7 == null ? logS(r.s, 1e5) : 0.6 * logS(r.s, 1e5) + 0.4 * logS(g7, 5000));
+
+  const D = r.deep;
+  const forkRatio = r.s ? (r.f ?? 0) / r.s : null;
+  const issTot = D ? D.oi + D.ci : 0;
+  const lrDays = D?.lr ? (now - Date.parse(D.lr)) / DAY : null;
+  const lk = licKind(r.lic);
+  // 실사용량: 패키지 다운로드와 GitHub "Used by" 중 큰 값 (의존 패키지는 저장소보다 가중)
+  const adDl = r.dl ? logS(r.dl.m, 1e7) : null;
+  // Used by 0은 모노레포(다른 하위 패키지가 기본 선택)나 앱형 저장소일 수 있어 '신호 없음'으로 취급
+  const adUb = r.ub && r.ub.r + r.ub.p > 0 ? logS(r.ub.r + r.ub.p * 20, 1e5) : null;
+  const adoption = adDl == null && adUb == null ? null : Math.max(adDl ?? 0, adUb ?? 0);
+  // 릴리스 품질 (best-of): 2개 이상 / 안정판 / 6개월 내 릴리스
+  const relQ = D ? (((D.rel >= 2 ? 1 : 0) + (D.stable ? 1 : 0) + (lrDays != null && lrDays <= 180 ? 1 : 0)) / 3) * 100 : null;
+  const comp = {
+    activity: [0.18, D && D.c90 != null ? logS(D.c90, 300) : null],
+    recency: [0.08, pushedDays == null ? null : pushedDays <= 14 ? 100 : pushedDays <= 60 ? 75 : pushedDays <= 180 ? 45 : pushedDays <= 365 ? 20 : 0],
+    community: [0.13, D ? logS(D.ppl, 500) : null],
+    issues: [0.10, D && issTot >= 10 ? (D.ci / issTot) * 100 : null],
+    closed: [0.04, D ? logS(D.ci, 5000) : null],
+    prs: [0.08, D ? logS(D.mp, 2000) : null],
+    forks: [0.08, forkRatio == null ? null : clamp((forkRatio / 0.15) * 100)],
+    adoption: [0.15, adoption],
+    releases: [0.10, relQ],
+    watchers: [0.03, D ? logS(D.w, 2000) : null],
+    age: [0.03, ageDays == null ? null : ageDays >= 180 ? 100 : 30],
+  };
+  let ws = 0, acc = 0;
+  for (const [w, v] of Object.values(comp)) if (v != null) { ws += w; acc += w * v; }
+  const util = ws ? Math.round(acc / ws) : null;
+
+  let trust = null, suspPct = null;
+  if (D && D.sgN >= 10) {
+    suspPct = D.sgSusp / D.sgN; const lowPct = D.sgLow / D.sgN;
+    const burst = D.sgSpan > 3 && D.sgBurst / D.sgN > 0.5;
+    trust = Math.round(clamp(100 - Math.max(0, suspPct * 100 - 5) * 2 - Math.max(0, lowPct * 100 - 35) * 0.8 - (burst && suspPct > 0.15 ? 15 : 0)));
+  }
+
+  // 활동 상태 (best-of 기본값): 6개월 무활동 = 비활성, 12개월 = 사실상 중단
+  const act = pushedDays == null ? null : pushedDays > 365 ? 'dead' : pushedDays > 180 ? 'inactive' : 'active';
+  const isNew = ageDays != null && ageDays < 180;
+  // 문서/학습형: 코드를 가져다 쓰는 게 아니라 읽는 저장소 (awesome 리스트, 튜토리얼, 면접 대비, 강의, 책, 로드맵)
+  const LEARN = /^(awesome.*|tutorials?|education|educational|learning|learn-to-code|interview|interview-questions|interview-preparation|coding-interviews|course|courses|book|books|ebook|roadmap|cheatsheet|guide|resources|study|lecture-notes|exercises|algorithms-and-data-structures|system-design|leetcode|leetcode-solutions|for-beginners|beginners|lessons|curriculum|tutorial-code|study-notes|papers|reading-list)$/;
+  const isDoc = !r.l || r.l === 'Markdown' || (r.t || []).some(x => LEARN.test(x)) || /^awesome[-_]/i.test(r.n.split('/')[1])
+    || /\b(tutorials?|interview (questions|preparation|handbook)|learn(ing)? (to|how)|course|curriculum|roadmap|cheat ?sheet|primer|best practices|style guide|guides?,|guides? (to|for)|for beginners|(how to|build(ing)?|implement(ing)?|create|creating|write|writing) [\w .-]{0,30}from scratch|handbook|lessons|teach (yourself|themselves|themself)|in the form of animation)\b/i.test(r.d || '')
+    || /(教程|面试|入门|从新手到大师|指南|笔记|题解|刷题|手册|学习路线|技术原理|实战经验|分享)/.test(r.d || '')
+    || /(^|[-_])(tutorials?|handbook|interview|leetcode|best-?practices|for-beginners|100-days|[a-z]+-?101|course|lessons|selfteaching|from-scratch|-guide)([-_]|$)/i.test(r.n.split('/')[1]);
+  const alive = !!D && ((D.c90 ?? 0) >= 10 || (lrDays != null && lrDays <= 90));
+  const established = (forkRatio != null && forkRatio >= 0.05) || (D?.ppl ?? 0) >= 30 || (adoption != null && adoption >= 40);
+  let v;
+  if (r.a) v = ['archived', '아카이브됨'];
+  else if (trust != null && trust < 50) v = ['bad', '스타 조작 의심'];
+  else if (isDoc) v = ['doc', '학습/문서형'];
+  else if (act === 'dead') v = ['dead', '사실상 중단'];
+  else if (!D) v = ['quick', '심층 분석 대기'];
+  else if (util == null) v = ['na', '데이터 부족'];
+  // '검증된 인기'는 지금도 움직이는 증거(90일 커밋, 최근 릴리스, 실사용량) 중 하나가 있어야 함
+  else if (pop >= 55 && util >= 55 && (alive || (adoption != null && adoption >= 60))) v = ['good', '검증된 인기'];
+  // 2년 넘게 쓰인 인기 저장소가 조용한 건 '완성된 도구'일 가능성이 커서 하이프로 보지 않음 (포크·참여자·사용처 중 하나는 있어야)
+  else if (pop >= 55 && ((adoption != null && adoption >= 80) || (ageDays != null && ageDays >= 730 && established))) v = ['mature', '성숙/유지보수'];
+  else if (pop >= 55 && util >= 55) v = ['good', '검증된 인기'];
+  else if (pop >= 55) v = ['hype', '하이프 주의'];
+  else if (util >= 55) v = ['gem', '숨은 보석'];
+  else v = ['early', '초기/정체'];
+
+  // best-of-lists 방식 프로젝트 품질 점수 (projectrank): 체크 항목 +1, 수치 항목 floor(ln(count/2))
+  const ln2 = x => (x == null || x <= 2 ? 0 : Math.floor(Math.log(x / 2)));
+  let bo = 0;
+  if (r.hp) bo++;
+  if (r.d) bo++;
+  if (r.lic) bo++;
+  if (['perm', 'weak', 'copyleft'].includes(lk)) bo++;
+  if (D?.rel >= 2) bo++;
+  if (D?.stable) bo++;
+  if (lrDays != null && lrDays <= 180) bo++;
+  if (pushedDays != null && pushedDays <= 90) bo++;
+  if (ageDays != null && ageDays >= 180) bo++;
+  bo += ln2(r.s) + ln2(D?.ppl) + ln2(D?.c365) + ln2(r.f) + ln2(r.dl?.m) + ln2(r.ub?.r) + ln2(D?.w) + ln2(D?.ci);
+
+  // 근거: why = [부호, 한국어 문장] (요약/API용), wc = [부호, 코드, 값] (대시보드 다국어 렌더링용)
+  const why = [], wc = [];
+  const W = (s, code, p, text) => { why.push([s, text]); wc.push([s, code, p]); };
+  const fmt = n => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(Math.round(n)));
+  if (g7 != null && g7 >= 500) W('+', 'g7', { n: Math.round(g7) }, `최근 7일 약 +${fmt(g7)} 스타`);
+  if (D?.c90 != null) { if (D.c90 >= 50) W('+', 'c90hi', { n: D.c90 }, `90일 커밋 ${fmt(D.c90)}개`); else if (D.c90 < 5) W('-', 'c90lo', { n: D.c90 }, `90일 커밋 ${D.c90}개 (개발 정체)`); }
+  if (D) { if (D.ppl >= 100) W('+', 'pplhi', { n: D.ppl }, `참여자 ${fmt(D.ppl)}명`); else if (D.ppl <= 3 && r.s > 2000) W('-', 'ppllo', { s: r.s, n: D.ppl }, `스타 ${fmt(r.s)}개에 참여자 ${D.ppl}명`); }
+  if (D && issTot >= 10) { const p = Math.round((D.ci / issTot) * 100); if (p >= 80) W('+', 'iss', { p }, `이슈 해결률 ${p}%`); else if (p < 40) W('-', 'iss', { p }, `이슈 해결률 ${p}%`); }
+  if (r.ub && r.ub.r + r.ub.p > 0) W(r.ub.r >= 1000 || r.ub.p >= 50 ? '+' : '·', 'ub', { r: r.ub.r, p: r.ub.p }, `Used by 저장소 ${fmt(r.ub.r)}개 · 패키지 ${fmt(r.ub.p)}개`);
+  if (r.dl) W(r.dl.m >= 1e5 ? '+' : '·', 'dl', { e: r.dl.e, n: r.dl.m }, `${r.dl.e} 월 ${fmt(r.dl.m)} 다운로드`);
+  if (D) {
+    if (D.stable && lrDays != null && lrDays <= 180) W('+', 'rel', { tag: D.tag || '', d: Math.round(lrDays) }, `안정 릴리스 ${D.tag || ''} (${Math.round(lrDays)}일 전)`);
+    else if (!D.rel && !isDoc && r.s > 2000) W('·', 'norel', {}, '릴리스 없음');
+  }
+  if (forkRatio != null && forkRatio < 0.03 && r.s > 2000 && !r.dl && !r.ub?.r && !isDoc) W('-', 'forklo', { p: +(forkRatio * 100).toFixed(1) }, `포크/스타 ${(forkRatio * 100).toFixed(1)}% (북마크성 스타 가능성)`);
+  if (act === 'dead') W('-', 'dead', {}, '1년 넘게 push 없음 (사실상 중단)'); else if (act === 'inactive') W('-', 'inactive', {}, '6개월 넘게 push 없음 (비활성)');
+  if (isNew) W('·', 'new', { d: Math.round(ageDays) }, `생성 ${Math.round(ageDays)}일차 신규 프로젝트 (검증 기간 짧음)`);
+  if (suspPct != null) { if (suspPct >= 0.25) W('-', 'susp', { p: Math.round(suspPct * 100) }, `최근 스타 계정 ${Math.round(suspPct * 100)}%가 가짜 의심 패턴`); else if (suspPct <= 0.08) W('+', 'suspok', {}, '최근 스타 계정 품질 양호'); }
+  if (D && D.sgN >= 10 && D.sgSpan > 3 && D.sgBurst / D.sgN > 0.5) W('-', 'burst', { b: D.sgBurst, n: D.sgN }, `최근 스타 ${D.sgBurst}/${D.sgN}개가 24시간 안에 몰림`);
+  if (!isDoc) {
+    if (lk === 'none') W('-', 'licnone', {}, '라이선스 없음 (원칙적으로 사용 권한 없음)');
+    else if (lk === 'copyleft') W('·', 'copyleft', { lic: r.lic }, `${r.lic}: 카피레프트 (배포 시 소스 공개 의무 검토)`);
+    else if (lk === 'other') W('·', 'licother', { lic: r.lic }, `라이선스 ${r.lic}: 비표준/제한형일 수 있어 원문 확인 필요`);
+  }
+
+  r.sc = { pop, util, trust, g7: g7 == null ? null : Math.round(g7), v: v[0], vt: v[1], quick: !D, bo, lk, act, isNew,
+    comp: Object.fromEntries(Object.entries(comp).map(([k, [, x]]) => [k, x == null ? null : Math.round(x)])) };
+  r.why = why.slice(0, 9);
+  r.wc = wc.slice(0, 9);
+}
+
+// ---------------- 스타 정합성 (간접 신호) ----------------
+// GitHub가 stargazer 목록을 막은 뒤의 대안. 계정을 직접 보지 않고, 스타 대비 참여 비율을 "비슷한 스타 규모"의 저장소들과 비교한다.
+// 비율: watchers/스타, 포크/스타, 이슈/스타, 참여자/1천 스타, 머지 PR/스타 -> 구간 내 백분위.
+// 하위 10% 신호가 3개 이상(watchers 또는 포크 포함)이고 성장 속도가 같은 구간 상위 20%일 때만 판정('bad' = 참여 대비 스타 과다)에 반영.
+const CONS_KINDS = {
+  watchers: { ko: '스타 대비 watchers', f: (r, D) => D.w / r.s, fmt: v => `${(v * 100).toFixed(2)}%` },
+  forks: { ko: '스타 대비 포크', f: (r, D) => (r.f || 0) / r.s, fmt: v => `${(v * 100).toFixed(1)}%` },
+  issues: { ko: '스타 대비 이슈', f: (r, D) => (D.oi + D.ci) / r.s, fmt: v => `${(v * 100).toFixed(2)}%` },
+  ppl: { ko: '스타 1천개당 참여자', f: (r, D) => (D.ppl / r.s) * 1000, fmt: v => `${v.toFixed(1)}명` },
+  prs: { ko: '스타 대비 머지 PR', f: (r, D) => D.mp / r.s, fmt: v => `${(v * 100).toFixed(2)}%` },
+};
+const BANDS = [[1e3, 5e3], [5e3, 2e4], [2e4, 1e5], [1e5, Infinity]];
+function starConsistency(repos) {
+  const now = Date.now();
+  const elig = Object.values(repos).filter(r => r.deep && r.s >= 1000 && r.sc && !['doc', 'archived'].includes(r.sc.v));
+  const speed = r => Math.max((r.sc.g7 ?? 0) / 7, r.c ? r.s / Math.max(1, (now - Date.parse(r.c)) / DAY) : 0);
+  const bandOf = s => BANDS.findIndex(([a, b]) => s >= a && s < b);
+  const groups = BANDS.map((_, i) => elig.filter(r => bandOf(r.s) === i));
+  // 표본이 적은 구간은 인접 구간과 합쳐서 비교 (최소 40개)
+  const peers = i => { let g = groups[i], lo = i, hi = i; while (g.length < 40 && (lo > 0 || hi < groups.length - 1)) { if (lo > 0) lo--; if (hi < groups.length - 1) hi++; g = groups.slice(lo, hi + 1).flat(); } return g; };
+  const pctRank = (arr, v) => arr.length ? arr.filter(x => x < v).length / arr.length : 0.5;
+  const cache = {};
+  let flagged = 0;
+  for (const r of elig) {
+    const bi = bandOf(r.s), D = r.deep;
+    if (!cache[bi]) { const pg = peers(bi); cache[bi] = { n: pg.length, speed: pg.map(speed), ...Object.fromEntries(Object.entries(CONS_KINDS).map(([k, c]) => [k, pg.map(x => c.f(x, x.deep))])) }; }
+    const P = cache[bi];
+    const sig = Object.entries(CONS_KINDS).map(([k, c]) => { const v = c.f(r, D); return { k, v, p: pctRank(P[k], v) }; });
+    const low = sig.filter(s => s.p < 0.10);
+    const sp = pctRank(P.speed, speed(r));
+    const highGrowth = sp >= 0.8;
+    const pen = sig.reduce((a, s) => a + (s.p < 0.10 ? 1 : s.p < 0.25 ? 0.5 : 0), 0);
+    const score = Math.round(clamp(100 - pen * 18 - (highGrowth && low.length >= 2 ? 10 : 0)));
+    r.sc.cons = { score, low: low.map(s => s.k), growthPct: Math.round(sp * 100), peers: P.n };
+    if (r.sc.trust == null) r.sc.trust = score; // stargazer 검사가 불가능하므로 정합성 점수로 대체
+    for (const s of low.sort((a, b) => a.p - b.p)) {
+      const pp = Math.max(1, Math.round(s.p * 100)), vtxt = CONS_KINDS[s.k].fmt(s.v);
+      r.why.push(['-', `${CONS_KINDS[s.k].ko} ${vtxt} (같은 규모 하위 ${pp}%)`]);
+      r.wc.push(['-', 'ratio', { k: s.k, v: vtxt, p: pp }]);
+    }
+    // 이슈/PR/참여자만 낮은 경우는 '기여를 받지 않는 공개 코드'가 흔해서, watchers나 포크 중 하나는 반드시 낮아야 판정에 반영
+    const audience = low.some(s => s.k === 'watchers' || s.k === 'forks');
+    const lrd = D.lr ? (now - Date.parse(D.lr)) / DAY : null;
+    const building = (D.c90 ?? 0) >= 300 && (D.ppl ?? 0) >= 15 && lrd != null && lrd <= 30; // 활발히 개발·배포 중이면 판정은 유지하고 근거만 경고로 표시
+    if (low.length >= 3 && audience && highGrowth && building) {
+      r.why.unshift(['-', `스타 증가 속도는 같은 규모 상위 ${100 - Math.round(sp * 100)}%인데 참여 지표 ${low.length}개가 하위 10% (개발은 활발해 판정에는 미반영)`]);
+      r.wc.unshift(['-', 'consflag', { g: 100 - Math.round(sp * 100), n: low.length }]);
+    } else if (low.length >= 3 && audience && highGrowth && ['good', 'hype', 'gem', 'mature', 'early'].includes(r.sc.v)) {
+      r.sc.v = 'bad'; r.sc.vt = VERDICTS_BAD; flagged++;
+      r.why.unshift(['-', `스타 증가 속도는 같은 규모 상위 ${100 - Math.round(sp * 100)}%인데 참여 지표 ${low.length}개가 하위 10%`]);
+      r.wc.unshift(['-', 'consflag', { g: 100 - Math.round(sp * 100), n: low.length }]);
+    }
+  }
+  return { eligible: elig.length, flagged };
+}
+const VERDICTS_BAD = '참여 대비 스타 과다';
+
+// ---------------- 결과 조립 ----------------
+function nearestSnap(ctx, back, before) {
+  const dates = Object.keys(ctx.snapshots).filter(d => !before || d < before).sort();
+  if (!dates.length) return null;
+  if (back == null) return dates.at(-1);
+  const target = Date.parse(isoDaysAgo(back));
+  const best = dates.reduce((a, d) => (Math.abs(Date.parse(d) - target) < Math.abs(Date.parse(a) - target) ? d : a), dates[0]);
+  return Math.abs(Date.parse(best) - target) <= 2 * DAY ? best : null;
+}
+
+function finalize(ctx) {
+  const cfg = ctx.config;
+  // 전체 + 언어별 트렌딩의 기간별 증가 스타
+  const tg = { daily: {}, weekly: {}, monthly: {} };
+  for (const [k, list] of Object.entries(ctx.trending)) { const p = k.split(':')[0]; for (const x of list) if (x.g != null) tg[p][x.n] = Math.max(tg[p][x.n] || 0, x.g); }
+  for (const r of Object.values(ctx.repos)) {
+    if (r.s != null) r.g = growthFromHistory(ctx, r.n, r.s);
+    scoreRepo(r, tg);
+  }
+  const consStat = starConsistency(ctx.repos);
+  ctx.log?.(`스타 정합성: 대상 ${consStat.eligible}개, 판정 반영 ${consStat.flagged}개`);
+  // 점수 변화 (best-of trending up/down): 직전 수집 대비, 7일 전 대비
+  const prevD = nearestSnap(ctx, null), wkD = nearestSnap(ctx, 7);
+  for (const r of Object.values(ctx.repos)) {
+    const sd = {};
+    for (const [key, d] of [['1', prevD], ['7', wkD]]) {
+      const old = d && ctx.snapshots[d][r.n];
+      if (Array.isArray(old)) { if (old[1] != null) sd['p' + key] = r.sc.pop - old[1]; if (old[2] != null && r.sc.util != null) sd['u' + key] = r.sc.util - old[2]; }
+    }
+    if (Object.keys(sd).length) r.sd = sd;
+  }
+  const categories = cfg.categories.map(c => {
+    const set = new Set(); for (const t of c.topics) for (const n of ctx.lists[`cat:${c.id}:${t}`] || []) set.add(n);
+    return { id: c.id, name: c.name, topics: c.topics, repos: [...set].sort((a, b) => (ctx.repos[b].s || 0) - (ctx.repos[a].s || 0)) };
+  });
+  const top = { all: ctx.lists['top:all'] || [] };
+  for (const l of cfg.top.languages) top[l] = ctx.lists[`top:${l}`] || [];
+  const rookies = {}; for (const d of cfg.rookies.days) rookies[d] = ctx.lists[`new:${d}`] || [];
+  const snapDates = Object.keys(ctx.snapshots).sort();
+  return {
+    generatedAt: new Date().toISOString(), mode: ctx.token ? 'deep' : 'quick', starCheck: !!ctx.token && !ctx.noSG, consCheck: consStat.eligible > 0,
+    deepCount: Object.values(ctx.repos).filter(r => r.deep).length,
+    history: { days: snapDates.length, first: snapDates[0] || null, prev: prevD, week: wkD },
+    trendingLanguages: cfg.trending.languages, topLanguages: cfg.top.languages, rookieDays: cfg.rookies.days,
+    trending: ctx.trending, top, rookies, categories, repos: ctx.repos, errors: ctx.errors.slice(0, 50),
+  };
+}
+
+// 실행마다 변경 사항 요약 (Release 노트로도 게시)
+function buildChanges(ctx, out, siteUrl) {
+  const R = out.repos, prevD = out.history.prev, prev = prevD ? ctx.snapshots[prevD] : null;
+  const fmt = n => (Math.abs(n) >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(Math.round(n)));
+  const link = n => `[${n}](https://github.com/${n})`;
+  const line = r => `${link(r.n)} ★${fmt(r.s)} · ${r.sc.vt} · 실효 ${r.sc.util ?? '-'}${r.d ? ` · ${r.d.slice(0, 80)}` : ''}`;
+  const L = [`# Star Board ${out.generatedAt.slice(0, 10)}`, '',
+    `저장소 ${Object.keys(R).length}개 · 심층 분석 ${out.deepCount}개 · ${prevD ? `비교 기준 ${prevD}` : '첫 수집 (다음 실행부터 변화 비교)'}${siteUrl ? ` · [대시보드](${siteUrl})` : ''}`, ''];
+  const sec = (title, rows) => { if (rows.length) L.push(`## ${title}`, '', ...rows.map(x => `- ${x}`), ''); };
+  const byG1 = Object.values(R).filter(r => r.g?.d1 > 0).sort((a, b) => b.g.d1 - a.g.d1).slice(0, 15);
+  if (byG1.length) sec('스타 급상승 (1일)', byG1.map(r => `+${fmt(r.g.d1)} ${line(r)}`));
+  else sec('오늘의 Trending', (ctx.trending['daily:all'] || []).slice(0, 15).map(x => `+${fmt(x.g || 0)} ${line(R[x.n])}`));
+  if (prev) sec('신규 진입', Object.values(R).filter(r => !(r.n in prev)).sort((a, b) => b.s - a.s).slice(0, 15).map(line));
+  const up = Object.values(R).filter(r => r.sd?.u1 >= 5).sort((a, b) => b.sd.u1 - a.sd.u1).slice(0, 10);
+  const down = Object.values(R).filter(r => r.sd?.u1 <= -5).sort((a, b) => a.sd.u1 - b.sd.u1).slice(0, 10);
+  sec('실효성 점수 상승', up.map(r => `+${r.sd.u1} ${line(r)}`));
+  sec('실효성 점수 하락', down.map(r => `${r.sd.u1} ${line(r)}`));
+  sec('새 루키 (7일 내 생성, 스타순)', (out.rookies[7] || []).slice(0, 10).map(n => line(R[n])));
+  const flagged = Object.values(R).filter(r => r.sc.v === 'bad').sort((a, b) => b.s - a.s).slice(0, 10);
+  sec('스타 조작 의심', flagged.map(line));
+  return L.join('\n');
+}
+
+function enrichOrder(ctx) {
+  const seen = new Set(), out = [];
+  const push = n => { if (n && ctx.repos[n] && !seen.has(n)) { seen.add(n); out.push(n); } };
+  for (const list of Object.values(ctx.trending)) list.forEach(x => push(x.n));
+  for (const [k, list] of Object.entries(ctx.lists)) if (k.startsWith('new:')) list.slice(0, 60).forEach(push);
+  for (const [k, list] of Object.entries(ctx.lists)) if (k.startsWith('cat:')) list.slice(0, 15).forEach(push);
+  (ctx.lists['top:all'] || []).forEach(push);
+  for (const [k, list] of Object.entries(ctx.lists)) if (k.startsWith('top:')) list.slice(0, 25).forEach(push);
+  for (const list of Object.values(ctx.lists)) list.forEach(push);
+  return out;
+}
+
+// ---------------- AI용 조회 파일 (api/, llms.txt) ----------------
+const VERDICTS = { good: '검증된 인기', mature: '성숙/유지보수', gem: '숨은 보석', hype: '하이프 주의', early: '초기/정체', bad: '참여 대비 스타 과다',
+  doc: '학습/문서형', dead: '사실상 중단', archived: '아카이브됨', quick: '심층 분석 대기', na: '데이터 부족' };
+const API_FIELDS = ['repo', 'stars', 'growth7d', 'popularity', 'utility', 'trust', 'bestOf', 'verdict', 'license', 'licenseKind', 'activity', 'language', 'isNew'];
+const apiRow = r => { const sc = r.sc || {}; return [r.n, r.s ?? null, sc.g7 ?? null, sc.pop ?? null, sc.util ?? null, sc.trust ?? null, sc.bo ?? null, sc.v ?? null, r.lic ?? null, sc.lk ?? null, sc.act ?? null, r.l ?? null, sc.isNew ? 1 : 0]; };
+const repoFile = n => n.replace('/', '__') + '.json';
+const brief = r => ({ repo: r.n, stars: r.s, growth7d: r.sc?.g7 ?? null, utility: r.sc?.util ?? null, bestOf: r.sc?.bo ?? null, verdict: r.sc?.v, licenseKind: r.sc?.lk, activity: r.sc?.act });
+
+function apiRepo(r, gen) {
+  const sc = r.sc || {}, D = r.deep;
+  return {
+    generatedAt: gen, repo: r.n, url: `https://github.com/${r.n}`, description: r.d || '', language: r.l, topics: r.t || [], homepage: r.hp || null,
+    stars: r.s, forks: r.f, createdAt: r.c || null, pushedAt: r.p || null, archived: !!r.a, license: r.lic || null, licenseKind: sc.lk,
+    starGrowth: { d1: r.g?.d1 ?? null, d7: r.g?.d7 ?? null, d30: r.g?.d30 ?? null, estimated7d: sc.g7 ?? null },
+    scores: { popularity: sc.pop, utility: sc.util, trust: sc.trust, bestOf: sc.bo, components: sc.comp, change: r.sd || null },
+    verdict: { key: sc.v, label: sc.vt }, activity: sc.act, isNew: !!sc.isNew,
+    starConsistency: sc.cons ? { score: sc.cons.score, lowSignals: sc.cons.low, growthPercentile: sc.cons.growthPct, comparedWith: sc.cons.peers, note: 'indirect signal: engagement ratios vs. similar-size repos, not an account-level check' } : null,
+    reasons: (r.why || []).map(([s, t]) => ({ sign: s === '+' ? 'positive' : s === '-' ? 'negative' : 'info', text: t })),
+    reasonsEn: (r.wc || []).map(([s, c, p]) => ({ sign: s === '+' ? 'positive' : s === '-' ? 'negative' : 'info', text: WHY_EN[c] ? WHY_EN[c](p || {}) : c })),
+    deep: D ? { commits90d: D.c90, commits365d: D.c365, contributorsApprox: D.ppl, openIssues: D.oi, closedIssues: D.ci, mergedPRs: D.mp, watchers: D.w,
+      releases: D.rel, latestRelease: D.lr, latestTag: D.tag, stableRelease: !!D.stable,
+      stargazerSample: D.sgN ? { sampled: D.sgN, suspicious: D.sgSusp, lowActivity: D.sgLow, max24h: D.sgBurst } : null } : null,
+    downloads: r.dl ? { ecosystem: r.dl.e, package: r.dl.k, monthly: r.dl.m, url: r.dl.u } : null,
+    usedBy: r.ub && r.ub.r + r.ub.p > 0 ? { repositories: r.ub.r, packages: r.ub.p } : null,
+  };
+}
+
+function buildSummary(out, siteUrl) {
+  const R = out.repos;
+  const fmt = n => (n == null ? '-' : Math.abs(n) >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(Math.round(n)));
+  const why = r => (r.why || []).filter(w => w[0] !== '·').slice(0, 2).map(w => w[1]).join('; ');
+  const line = (r, extra = '') => `${r.n} ★${fmt(r.s)}${extra} · ${r.sc.vt} · 실효 ${r.sc.util ?? '-'} · 품질 ${r.sc.bo ?? '-'}${r.sc.lk && r.sc.lk !== 'perm' ? ` · 라이선스:${r.lic || '없음'}` : ''}${why(r) ? ` · ${why(r)}` : ''}`;
+  const L = [`# GitHub Star Board 요약 (${out.generatedAt})`, '',
+    `출처: ${siteUrl || 'GitHub Star Board'} · 저장소 ${Object.keys(R).length}개 · 심층 분석 ${out.deepCount}개 · 가짜 스타 검사 ${out.starCheck ? '켜짐' : '불가(GitHub 2026-07 정책으로 스타 계정 목록 비공개, trust 값 없음)'}`,
+    '형식: 저장소 ★스타 (+증가) · 판정 · 실효성(0~100) · best-of 품질점수 · [비허용형 라이선스] · 핵심 근거. 상세는 api/repo/{owner}__{repo}.json', ''];
+  const sec = (t, rows) => { if (rows.length) L.push(`## ${t}`, '', ...rows.map((x, i) => `${i + 1}. ${x}`), ''); };
+  const tr = (k, n) => (out.trending[k] || []).slice(0, n).filter(x => R[x.n]).map(x => line(R[x.n], ` (+${fmt(x.g)})`));
+  sec('이번 주 Trending', tr('weekly:all', 30));
+  sec('오늘 Trending', tr('daily:all', 15));
+  sec('신규 루키 (7일 내 생성, 하루 평균 스타순)', (out.rookies[7] || []).map(n => R[n]).filter(Boolean)
+    .sort((a, b) => b.s / Math.max(1, (Date.now() - Date.parse(b.c)) / DAY) - a.s / Math.max(1, (Date.now() - Date.parse(a.c)) / DAY)).slice(0, 15).map(r => line(r)));
+  const all = Object.values(R);
+  sec('검증된 인기 Top 30 (실효성순)', all.filter(r => r.sc.v === 'good').sort((a, b) => b.sc.util - a.sc.util || b.s - a.s).slice(0, 30).map(r => line(r)));
+  sec('숨은 보석', all.filter(r => r.sc.v === 'gem').sort((a, b) => b.sc.util - a.sc.util).slice(0, 20).map(r => line(r)));
+  sec('하이프 주의 (스타순)', all.filter(r => r.sc.v === 'hype').sort((a, b) => b.s - a.s).slice(0, 20).map(r => line(r)));
+  sec('참여 대비 스타 과다 (간접 신호)', all.filter(r => r.sc.v === 'bad').sort((a, b) => b.s - a.s).slice(0, 15).map(r => line(r)));
+  for (const c of out.categories) sec(`분야: ${c.name} (스타순 Top 8)`, c.repos.slice(0, 8).map(n => line(R[n])));
+  return L.join('\n');
+}
+
+function buildLlmsTxt(out, siteUrl) {
+  const base = siteUrl || './';
+  return `# GitHub Star Board
+
+> 매일 06:00 KST에 자동 수집되는 GitHub 스타 순위표 + 실효성 검증 데이터. 마지막 갱신: ${out.generatedAt} (UTC). 저장소 ${Object.keys(out.repos).length}개, 심층 분석 ${out.deepCount}개.
+
+GitHub 저장소의 인기, 실제 사용 여부, 품질, 라이선스 위험, 추천 질문은 아래 파일을 먼저 보고, 여기에 없는 저장소만 GitHub에서 직접 확인하세요.
+
+## 어떤 질문에 어떤 파일
+
+- [요약본](${base}api/summary.md): 탭별 상위 목록과 판정, 핵심 근거 (몇십 KB). "요즘 뜨는 거", "분야별 추천" 같은 넓은 질문은 이것부터.
+- [전체 인덱스](${base}api/index.json): 모든 저장소 한 줄씩 (fields + rows 표 형식). 특정 저장소가 보드에 있는지, 점수 비교, 조건 필터링.
+- [저장소 상세](${base}api/repo/OWNER__REPO.json): 예) api/repo/anomalyco__opencode.json. 판정 근거, 세부 점수, 커밋/참여자/이슈/릴리스, 다운로드, Used by, 점수 변화. 404면 보드에 없는 저장소.
+- [Trending](${base}api/trending.json): 기간(daily/weekly/monthly) x 언어별 GitHub Trending과 기간 내 증가 스타.
+- [스타 순위](${base}api/top.json): 누적 스타 전체 Top 200, 언어별 Top 50.
+- [신규 루키](${base}api/rookies.json): 최근 7일/30일 내 생성.
+- [분야 목록](${base}api/category/index.json), 분야별: api/category/{id}.json (${out.categories.map(c => c.id).join(', ')}).
+- [변경 사항](${base}data/changes.md): 직전 수집 대비 급상승, 신규 진입, 점수 상승/하락.
+
+## 필드 뜻
+
+- popularity (0~100): 누적 스타(로그) 60% + 최근 7일 증가 40%
+- utility (0~100): 실제로 쓰이고 관리되는가. 90일 커밋, 실사용량(패키지 월 다운로드 또는 GitHub Used by), 참여자, 이슈 해결률, 릴리스 품질, 최근 push, PR, 포크비, watchers, 나이
+- trust (0~100): 스타 정합성. 스타 대비 watchers/포크/이슈/참여자/머지 PR 비율을 비슷한 스타 규모 저장소와 비교한 간접 신호 (계정을 직접 본 것이 아님. GitHub 2026-07 정책으로 stargazer 목록 비공개). 낮을수록 참여에 비해 스타가 많음. verdict=bad는 하위 10% 신호 3개 이상(watchers 또는 포크 포함) + 성장 속도 상위 20%일 때만. null은 스타 1천 미만이거나 학습형이라 비교 제외
+- bestOf: best-of-lists projectrank 방식 품질 점수 (높을수록 좋음, 보통 10~60)
+- growth7d: 최근 7일 스타 증가 (실측 또는 Trending 기반 추정)
+- verdict: ${Object.entries(VERDICTS).map(([k, v]) => `${k}=${v}`).join(', ')}
+- licenseKind: perm=허용형(MIT/Apache/BSD), weak=약한 카피레프트(LGPL/MPL), copyleft=GPL/AGPL, other=비표준·확인 필요, none=라이선스 없음
+- activity: active, inactive(6개월 무활동), dead(12개월 무활동). isNew=1이면 생성 6개월 미만
+
+## 주의
+
+- 수집 범위는 Trending, 누적 스타 상위, 신규, 지정 분야 topic뿐입니다. 작은 틈새 프로젝트는 없을 수 있습니다.
+- 판정과 라이선스 분류는 휴리스틱/참고용입니다.
+- 대시보드: ${base}
+`;
+}
+
+async function writeApi(fs, path, root, out, siteUrl) {
+  const api = path.join(root, 'api');
+  await fs.rm(api, { recursive: true, force: true });
+  await fs.mkdir(path.join(api, 'repo'), { recursive: true });
+  await fs.mkdir(path.join(api, 'category'), { recursive: true });
+  const gen = out.generatedAt, R = out.repos, J = (f, o) => fs.writeFile(path.join(api, f), JSON.stringify(o));
+  const list = Object.values(R).sort((a, b) => (b.s || 0) - (a.s || 0));
+  await J('index.json', { generatedAt: gen, site: siteUrl, verdicts: VERDICTS, fields: API_FIELDS, rows: list.map(apiRow) });
+  for (const r of list) await fs.writeFile(path.join(api, 'repo', repoFile(r.n)), JSON.stringify(apiRepo(r, gen)));
+  const trending = {};
+  for (const [k, items] of Object.entries(out.trending)) { const [p, lang] = k.split(':'); (trending[p] ||= {})[lang] = items.filter(x => R[x.n]).map(x => ({ ...brief(R[x.n]), gained: x.g })); }
+  await J('trending.json', { generatedAt: gen, note: 'gained = 해당 기간(daily/weekly/monthly) 동안 늘어난 스타', periods: trending });
+  await J('top.json', { generatedAt: gen, lists: Object.fromEntries(Object.entries(out.top).map(([k, ns]) => [k, ns.filter(n => R[n]).map(n => brief(R[n]))])) });
+  await J('rookies.json', { generatedAt: gen, lists: Object.fromEntries(Object.entries(out.rookies).map(([d, ns]) => [d, ns.filter(n => R[n]).map(n => ({ ...brief(R[n]), createdAt: R[n].c, starsPerDay: Math.round(R[n].s / Math.max(1, (Date.now() - Date.parse(R[n].c)) / DAY)) }))])) });
+  await J('category/index.json', { generatedAt: gen, categories: out.categories.map(c => ({ id: c.id, name: c.name, topics: c.topics, count: c.repos.length, file: `api/category/${c.id}.json` })) });
+  for (const c of out.categories) await J(`category/${c.id}.json`, { generatedAt: gen, id: c.id, name: c.name, topics: c.topics, repos: c.repos.filter(n => R[n]).map(n => brief(R[n])) });
+  await fs.writeFile(path.join(api, 'summary.md'), buildSummary(out, siteUrl));
+  await fs.writeFile(path.join(root, 'llms.txt'), buildLlmsTxt(out, siteUrl));
+}
+
+// ---------------- 저장소별 고정 페이지 (검색엔진/AI 크롤러가 읽는 정적 HTML) + 배지 + sitemap ----------------
+const VERDICT_EN = { good: 'Proven popular', mature: 'Mature / maintenance', gem: 'Hidden gem', hype: 'Hype warning', early: 'Early / stalled', bad: 'Stars outpace engagement',
+  doc: 'Learning / docs', dead: 'Abandoned', archived: 'Archived', quick: 'Awaiting deep analysis', na: 'Not enough data' };
+const LIC_EN = { perm: 'permissive', weak: 'weak copyleft', copyleft: 'copyleft', other: 'non-standard', none: 'no license' };
+const ACT_EN = { active: 'active', inactive: 'inactive (no push for 6+ months)', dead: 'abandoned (no push for 12+ months)' };
+const BADGE_COLOR = { good: 'brightgreen', mature: 'blueviolet', gem: 'blueviolet', hype: 'orange', bad: 'red', doc: 'informational', dead: 'lightgrey', archived: 'lightgrey', early: 'yellow', quick: 'lightgrey', na: 'lightgrey' };
+const nf = n => (n == null ? '-' : Number(n).toLocaleString('en-US'));
+const WHY_EN = {
+  g7: p => `~+${nf(p.n)} stars in the last 7 days`, c90hi: p => `${nf(p.n)} commits in 90 days`, c90lo: p => `Only ${p.n} commits in 90 days (stalled)`, pplhi: p => `${nf(p.n)} contributors`,
+  ppllo: p => `${nf(p.s)} stars but only ${p.n} contributors`, iss: p => `Issue resolution rate ${p.p}%`, ub: p => `Used by ${nf(p.r)} repositories and ${nf(p.p)} packages`,
+  dl: p => `${nf(p.n)} ${p.e} downloads per month`, rel: p => `Stable release ${p.tag} (${p.d} days ago)`, norel: () => 'No releases', forklo: p => `Fork/star ratio ${p.p}% (stars may be bookmarks)`,
+  dead: () => 'No push for over a year', inactive: () => 'No push for over 6 months', new: p => `New project, ${p.d} days old (short track record)`, susp: p => `${p.p}% of recent stargazers look fake`,
+  suspok: () => 'Recent stargazers look healthy', burst: p => `${p.b}/${p.n} recent stars landed within 24 hours`, licnone: () => 'No license (no usage rights by default)',
+  copyleft: p => `${p.lic} is copyleft (check source-disclosure duties when distributing)`, licother: p => `License ${p.lic} is non-standard or restrictive (read the text)`,
+  ratio: p => `${({ watchers: 'Watchers per star', forks: 'Forks per star', issues: 'Issues per star', ppl: 'Contributors per 1k stars', prs: 'Merged PRs per star' })[p.k]} ${p.v} (bottom ${p.p}% among similar-size repos)`,
+  consflag: p => `Star growth is in the top ${p.g}% for its size, but ${p.n} engagement ratios are in the bottom 10%`,
+};
+const pagePath = n => `r/${n}/`;
+const hesc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// AI에 붙여넣기용 요약 (영문, 출처/날짜 포함)
+function aiSnapshot(r, out, siteUrl) {
+  const sc = r.sc || {}, D = r.deep, day = out.generatedAt.slice(0, 10);
+  const iss = D ? D.oi + D.ci : 0;
+  const facts = [`Stars ${nf(r.s)}${sc.g7 != null ? ` (+${nf(sc.g7)} in 7 days)` : ''}`, `Forks ${nf(r.f)}`];
+  if (D) facts.push(`Commits ${nf(D.c90)} (90d) / ${nf(D.c365)} (1y)`, `Contributors ~${nf(D.ppl)}`, `Issues closed ${nf(D.ci)}/${nf(iss)}`, `Merged PRs ${nf(D.mp)}`,
+    D.lr ? `Latest release ${D.tag || ''} (${D.lr.slice(0, 10)}${D.stable ? ', stable' : ''})` : 'No releases');
+  if (r.dl) facts.push(`${r.dl.e} downloads ${nf(r.dl.m)}/month`);
+  if (r.ub && r.ub.r + r.ub.p > 0) facts.push(`Used by ${nf(r.ub.r)} repos / ${nf(r.ub.p)} packages`);
+  return [`# ${r.n}: GitHub Star Board snapshot (${day})`, `Source: ${siteUrl || ''}${pagePath(r.n)}`, '',
+    `Verdict: ${VERDICT_EN[sc.v] || sc.v} | Popularity ${sc.pop ?? '-'}/100 | Utility ${sc.util ?? '-'}/100 | best-of quality ${sc.bo ?? '-'} | Trust: ${sc.trust ?? 'not available (GitHub limits stargazer lists to repo admins since 2026-07)'}`,
+    facts.join(' | '), `License: ${r.lic || 'none'} (${LIC_EN[sc.lk] || '-'}) | Activity: ${ACT_EN[sc.act] || '-'} | Created ${r.c ? r.c.slice(0, 10) : '-'} | Last push ${r.p ? r.p.slice(0, 10) : '-'}`,
+    '', 'Evidence:', ...(r.wc || []).map(([s, c, p]) => `- ${s === '+' ? '(+)' : s === '-' ? '(-)' : '(i)'} ${WHY_EN[c] ? WHY_EN[c](p || {}) : c}`),
+    '', 'Scores are heuristics from public GitHub data; check the license text before commercial use.'].join('\n');
+}
+
+function repoPage(r, out, siteUrl, boardRepo) {
+  const sc = r.sc || {}, D = r.deep, day = out.generatedAt.slice(0, 10), url = `${siteUrl}${pagePath(r.n)}`, root = '../../../';
+  const ven = VERDICT_EN[sc.v] || sc.v, vko = VERDICTS[sc.v] || sc.vt;
+  const en = (r.wc || []).map(([s, c, p]) => [s, WHY_EN[c] ? WHY_EN[c](p || {}) : c]);
+  const metaDesc = `${r.n} (${nf(r.s)} stars): ${ven}. Utility ${sc.util ?? '-'}/100, popularity ${sc.pop ?? '-'}/100. ${en.slice(0, 2).map(x => x[1]).join('; ')}. Data as of ${day}.`;
+  const iss = D ? D.oi + D.ci : 0;
+  const row = (k, v) => `<tr><th>${k}</th><td>${v}</td></tr>`;
+  const li = list => list.map(([s, t]) => `<li class="${s === '+' ? 'p' : s === '-' ? 'm' : 'i'}">${hesc(t)}</li>`).join('');
+  const badgeUrl = `https://img.shields.io/endpoint?url=${encodeURIComponent(`${siteUrl}api/badge/${repoFile(r.n)}`)}`;
+  const badgeMd = `[![Star Board](${badgeUrl})](${url})`;
+  const ld = { '@context': 'https://schema.org', '@type': 'SoftwareSourceCode', name: r.n, codeRepository: `https://github.com/${r.n}`, description: r.d || '', programmingLanguage: r.l || undefined,
+    license: r.lic ? `https://spdx.org/licenses/${r.lic}.html` : undefined, dateModified: out.generatedAt, url };
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${hesc(r.n)}: ${hesc(ven)} | GitHub Star Board</title>
+<meta name="description" content="${hesc(metaDesc)}"><link rel="canonical" href="${hesc(url)}">
+<meta property="og:title" content="${hesc(r.n)}: ${hesc(ven)}"><meta property="og:description" content="${hesc(metaDesc)}"><meta property="og:url" content="${hesc(url)}">
+<link rel="alternate" type="application/json" href="${root}api/repo/${repoFile(r.n)}">
+<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
+<style>body{margin:0;background:#0d1117;color:#e6edf3;font:15px/1.6 -apple-system,"Segoe UI","Malgun Gothic",sans-serif}main{max-width:860px;margin:0 auto;padding:24px}a{color:#2f81f7}
+h1{margin:.2em 0;font-size:26px;word-break:break-all}h2{font-size:17px;margin:26px 0 8px;border-bottom:1px solid #30363d;padding-bottom:4px}.muted{color:#8b949e;font-size:13px}
+.v{display:inline-block;padding:3px 12px;border-radius:20px;border:1px solid #30363d;font-weight:600;margin:6px 0}.v-good{color:#3fb950}.v-hype{color:#d29922}.v-bad{color:#f85149}.v-gem,.v-mature{color:#a371f7}.v-doc{color:#39c5cf}
+.sc{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}.sc div{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px 14px}.sc b{display:block;font-size:22px}
+table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #30363d;vertical-align:top}th{color:#8b949e;font-weight:500;width:38%}
+li.p::marker{color:#3fb950}li.m::marker{color:#f85149}li.i::marker{color:#8b949e}textarea{width:100%;min-height:150px;background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:6px;font:12px/1.5 ui-monospace,Consolas,monospace;padding:8px}
+button{background:#238636;color:#fff;border:0;border-radius:6px;padding:7px 14px;font:inherit;cursor:pointer;margin-top:6px}header{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid #30363d;background:#161b22}</style></head><body>
+<header><a href="${root}"><b>GitHub Star Board</b></a><a href="${root}?lang=ko">한국어 대시보드</a>${boardRepo ? `<a href="https://github.com/${boardRepo}">★ Star this project</a>` : ''}</header>
+<main>
+<div class="muted">Repository verdict · data as of ${day} (updated daily)</div>
+<h1><a href="https://github.com/${hesc(r.n)}">${hesc(r.n)}</a></h1>
+<p>${hesc(r.d || '')}</p>
+<div class="v v-${sc.v}">${hesc(ven)} · ${hesc(vko)}</div>${boardRepo ? `<p class="muted">Wrong verdict? <a href="https://github.com/${boardRepo}/issues/new?template=verdict.yml&title=${encodeURIComponent('Verdict: ' + r.n)}&repository=${encodeURIComponent(r.n)}&current=${encodeURIComponent(ven)}">Report it</a> · 판정이 틀렸다면 알려주세요</p>` : ''}
+<div class="sc"><div>Utility<b>${sc.util ?? '-'}</b></div><div>Popularity<b>${sc.pop ?? '-'}</b></div><div>best-of quality<b>${sc.bo ?? '-'}</b></div><div>Stars<b>${nf(r.s)}</b></div><div>7-day gain<b>${sc.g7 != null ? '+' + nf(sc.g7) : '-'}</b></div></div>
+<h2>Evidence</h2><ul>${li(en)}</ul>
+<h2>근거 (한국어)</h2><ul>${li(r.why || [])}</ul>
+<h2>Key metrics</h2><table>
+${row('Stars / forks', `${nf(r.s)} / ${nf(r.f)}`)}${row('Language', hesc(r.l || '-'))}${row('License', `${hesc(r.lic || 'none')} (${LIC_EN[sc.lk] || '-'})`)}${row('Created / last push', `${r.c ? r.c.slice(0, 10) : '-'} / ${r.p ? r.p.slice(0, 10) : '-'} (${ACT_EN[sc.act] || '-'})`)}
+${D ? row('Commits (90 days / 1 year)', `${nf(D.c90)} / ${nf(D.c365)}`) + row('Contributors (approx.)', nf(D.ppl)) + row('Issues closed', `${nf(D.ci)} / ${nf(iss)}${iss ? ` (${Math.round((D.ci / iss) * 100)}%)` : ''}`) + row('Merged pull requests', nf(D.mp)) + row('Releases', D.lr ? `${nf(D.rel)} total, latest ${hesc(D.tag || '')} on ${D.lr.slice(0, 10)}${D.stable ? ' (stable)' : ''}` : 'none') + row('Watchers', nf(D.w)) : ''}
+${row('Package downloads / month', r.dl ? `<a href="${hesc(r.dl.u)}">${hesc(r.dl.e)} ${hesc(r.dl.k)}</a>: ${nf(r.dl.m)}` : '-')}${row('Used by (GitHub dependents)', r.ub && r.ub.r + r.ub.p > 0 ? `${nf(r.ub.r)} repositories, ${nf(r.ub.p)} packages` : '-')}
+${row('Topics', hesc((r.t || []).join(', ') || '-'))}${row('Trust (fake-star check)', sc.trust ?? 'not available: GitHub limits stargazer lists to repository admins since July 2026')}
+</table>
+<h2>Copy for AI</h2><p class="muted">Paste this into ChatGPT, Claude or Gemini to discuss this repository with sourced, dated facts.</p>
+<textarea id="ai" readonly>${hesc(aiSnapshot(r, out, siteUrl))}</textarea><button onclick="navigator.clipboard.writeText(document.getElementById('ai').value);this.textContent='Copied'">Copy</button>
+<h2>Badge</h2><p><img src="${hesc(badgeUrl)}" alt="Star Board badge"></p><textarea readonly style="min-height:60px">${hesc(badgeMd)}</textarea>
+<p class="muted">Machine-readable: <a href="${root}api/repo/${repoFile(r.n)}">api/repo/${hesc(repoFile(r.n))}</a> · <a href="${root}llms.txt">llms.txt</a> · Scores are heuristics from public GitHub data. Methodology: <a href="${root}?lang=en">how verdicts work (Guide tab)</a>.</p>
+</main></body></html>`;
+}
+
+async function writePages(fs, path, root, out, siteUrl, boardRepo) {
+  await fs.rm(path.join(root, 'r'), { recursive: true, force: true });
+  await fs.mkdir(path.join(root, 'api', 'badge'), { recursive: true });
+  const list = Object.values(out.repos).filter(r => r.sc);
+  for (const r of list) {
+    const dir = path.join(root, 'r', ...r.n.split('/'));
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, 'index.html'), repoPage(r, out, siteUrl, boardRepo));
+    await fs.writeFile(path.join(root, 'api', 'badge', repoFile(r.n)), JSON.stringify({ schemaVersion: 1, label: 'Star Board',
+      message: `${VERDICT_EN[r.sc.v] || r.sc.v}${r.sc.util != null ? ` · utility ${r.sc.util}` : ''}`, color: BADGE_COLOR[r.sc.v] || 'lightgrey', cacheSeconds: 21600 }));
+  }
+  const day = out.generatedAt.slice(0, 10);
+  const urls = [siteUrl, `${siteUrl}?lang=en`, `${siteUrl}?lang=ko`, `${siteUrl}?lang=ja`, `${siteUrl}?lang=zh`, ...list.map(r => `${siteUrl}${pagePath(r.n)}`)];
+  await fs.writeFile(path.join(root, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `<url><loc>${hesc(u)}</loc><lastmod>${day}</lastmod><changefreq>daily</changefreq></url>`).join('\n')}\n</urlset>\n`);
+}
+
+async function writeOutputs(fs, path, dir, out, changes) {
+  const day = out.generatedAt.slice(0, 10);
+  await fs.mkdir(path.join(dir, 'history'), { recursive: true });
+  // 스냅샷: [스타, 인기도, 실효성]
+  const snap = Object.fromEntries(Object.values(out.repos).filter(r => r.s != null).map(r => [r.n, [r.s, r.sc?.pop ?? null, r.sc?.util ?? null, r.sc?.trust ?? null]]));
+  await fs.writeFile(path.join(dir, 'history', `${day}.json`), JSON.stringify(snap));
+  await fs.writeFile(path.join(dir, 'latest.json'), JSON.stringify(out));
+  await fs.writeFile(path.join(dir, 'data.js'), 'window.STAR_BOARD = ' + JSON.stringify(out) + ';\n');
+  if (changes) await fs.writeFile(path.join(dir, 'changes.md'), changes);
+}
+
+async function loadSnapshots(fs, path, dir, keepDays) {
+  const snaps = {};
+  const hdir = path.join(dir, 'history');
+  let files = [];
+  try { files = (await fs.readdir(hdir)).filter(f => /^\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort(); } catch { return snaps; }
+  const cutoff = isoDaysAgo(keepDays);
+  for (const f of files) {
+    const d = f.slice(0, 10);
+    if (d < cutoff) { await fs.unlink(path.join(hdir, f)).catch(() => {}); continue; }
+    if (d >= isoDaysAgo(32)) { try { snaps[d] = JSON.parse(await fs.readFile(path.join(hdir, f), 'utf8')); } catch {} }
+  }
+  return snaps;
+}
+
+async function main() {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  let user = {};
+  try { user = JSON.parse(await fs.readFile('config.json', 'utf8')); } catch {}
+  const config = { ...DEFAULT_CONFIG, ...user, enrich: { ...DEFAULT_CONFIG.enrich, ...(user.enrich || {}) } };
+  const dir = path.resolve('data');
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || null;
+  const snapshots = await loadSnapshots(fs, path, dir, config.historyKeepDays);
+  delete snapshots[new Date().toISOString().slice(0, 10)];
+  const ctx = makeCtx({ token, config, snapshots });
+  ctx.log(`토큰: ${token ? '있음 (심층 분석)' : '없음 (간이 모드)'}, 과거 스냅샷 ${Object.keys(snapshots).length}일`);
+  const tasks = buildTasks(config);
+  for (const [i, t] of tasks.entries()) {
+    try { await runTask(ctx, t); } catch (e) { ctx.errors.push(`${t.type} ${t.key || t.period + ':' + t.lang}: ${e.message}`); ctx.log('  실패: ' + e.message); }
+    if (i % 10 === 0) ctx.log(`수집 ${i + 1}/${tasks.length}, 저장소 ${Object.keys(ctx.repos).length}개`);
+  }
+  const order = enrichOrder(ctx);
+  if (token) await enrich(ctx, order.slice(0, config.enrich.max));
+  await downloads(ctx, order.slice(0, config.downloads.max));
+  const ubTargets = Object.values(ctx.repos).filter(r => !r.a && r.l && r.l !== 'Markdown').sort((a, b) => (b.s || 0) - (a.s || 0)).slice(0, config.dependents.max).map(r => r.n);
+  await dependents(ctx, ubTargets);
+  const out = finalize(ctx);
+  const repoEnv = process.env.GITHUB_REPOSITORY;
+  out.repo = repoEnv || null;
+  const siteUrl = repoEnv ? `https://${repoEnv.split('/')[0]}.github.io/${repoEnv.split('/')[1]}/` : null;
+  await writeOutputs(fs, path, dir, out, buildChanges(ctx, out, siteUrl));
+  await writeApi(fs, path, process.cwd(), out, siteUrl);
+  if (siteUrl) await writePages(fs, path, process.cwd(), out, siteUrl, repoEnv);
+  ctx.log(`완료: 저장소 ${Object.keys(out.repos).length}개, 심층 ${out.deepCount}개, 오류 ${ctx.errors.length}건`);
+}
+
+if (typeof process !== 'undefined' && /collect\.mjs$/.test(process.argv?.[1] || '')) {
+  main().catch(e => { console.error(e); process.exit(1); });
+}

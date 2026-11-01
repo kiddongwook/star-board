@@ -1,0 +1,25 @@
+{
+  "name": "github-star-board",
+  "version": "1.0.0",
+  "description": "MCP server and skill for GitHub Star Board: daily GitHub rankings with real-usage verification",
+  "type": "module",
+  "bin": {
+    "github-star-board": "mcp/server.mjs"
+  },
+  "files": [
+    "mcp/",
+    "skills/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["mcp", "model-context-protocol", "github", "github-stars", "trending", "skills"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kiddongwook/star-board.git"
+  },
+  "homepage": "https://kiddongwook.github.io/star-board/",
+  "license": "MIT"
+}

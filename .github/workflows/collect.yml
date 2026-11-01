@@ -40,6 +40,12 @@ jobs:
           # 개인 토큰(STAR_BOARD_TOKEN 시크릿)이 있으면 우선 사용, 없으면 Actions 기본 토큰
           GITHUB_TOKEN: ${{ secrets.STAR_BOARD_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: Build site files from saved data (deploy only)
+        if: ${{ inputs.deploy_only }}
+        run: node collect.mjs
+        env:
+          BUILD_ONLY: '1'
+
       - name: Commit snapshots
         if: ${{ !inputs.deploy_only }}
         run: |

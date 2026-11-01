@@ -821,6 +821,15 @@ async function main() {
   try { user = JSON.parse(await fs.readFile('config.json', 'utf8')); } catch {}
   const config = { ...DEFAULT_CONFIG, ...user, enrich: { ...DEFAULT_CONFIG.enrich, ...(user.enrich || {}) } };
   const dir = path.resolve('data');
+  if (process.env.BUILD_ONLY) { // deploy-only runs: rebuild api/, llms.txt and repo pages from the committed data, no collection
+    const out = JSON.parse(await fs.readFile(path.join(dir, 'latest.json'), 'utf8'));
+    const repoEnv = process.env.GITHUB_REPOSITORY || out.repo || null; out.repo = repoEnv;
+    const siteUrl = repoEnv ? `https://${repoEnv.split('/')[0]}.github.io/${repoEnv.split('/')[1]}/` : null;
+    await writeApi(fs, path, process.cwd(), out, siteUrl);
+    if (siteUrl) await writePages(fs, path, process.cwd(), out, siteUrl, repoEnv);
+    console.log('build only: api/, llms.txt, repo pages from data/latest.json');
+    return;
+  }
   const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || null;
   const snapshots = await loadSnapshots(fs, path, dir, config.historyKeepDays);
   delete snapshots[new Date().toISOString().slice(0, 10)];

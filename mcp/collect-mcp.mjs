@@ -13,7 +13,7 @@ const REG = 'https://registry.modelcontextprotocol.io/v0.1/servers';
 const UA = 'github-star-board-mcp-collector';
 const TOKEN = process.env.GITHUB_TOKEN || '';
 const LIMIT = +process.env.MCP_LIMIT || 0;
-const NPM_MAX = +(process.env.NPM_MAX || 4000);
+const NPM_MAX = +(process.env.NPM_MAX || 2500);
 const DAY = 864e5, NOW = Date.now();
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
@@ -90,7 +90,7 @@ async function gql(query, variables) {
 
 async function fetchRepos(names) {
   const out = new Map(), s90 = new Date(NOW - 90 * DAY).toISOString();
-  let batch = 40, i = 0, lastRem = null;
+  let batch = 60, i = 0, lastRem = null;
   while (i < names.length) {
     const part = names.slice(i, i + batch);
     const body = part.map((n, k) => { const [o, r] = n.split('/'); return `r${k}:repository(owner:${JSON.stringify(o)},name:${JSON.stringify(r)}){${FIELDS}}`; }).join('\n');
@@ -119,7 +119,7 @@ async function fetchNpm(pkgs) {
   }
   let k = 0;
   const worker = async () => { while (k < scoped.length) { const p = scoped[k++]; const j = await getJson('https://api.npmjs.org/downloads/point/last-month/' + p.replace('/', '%2F')).catch(() => null); if (j && j.downloads != null) out.set(p, j.downloads); await wait(120); } };
-  await Promise.all(Array.from({ length: 6 }, worker));
+  await Promise.all(Array.from({ length: 8 }, worker));
   log('npm downloads', out.size, 'of', plain.length + scoped.length);
   return out;
 }
@@ -173,10 +173,26 @@ async function main() {
   const repos = await fetchRepos(names);
   for (const e of E) e.g = e.repo ? (repos.get(e.repo.toLowerCase()) ?? (repos.has(e.repo.toLowerCase()) ? null : undefined)) : undefined;
   // npm downloads only where the repo is real (keeps the scoped lookups bounded)
-  const npmIds = [...new Set(E.filter(e => e.g && !e.g.a).flatMap(e => e.pk.filter(p => p.t === 'npm').map(p => p.id)))];
+  // only packages whose repo shows some life (stars or recent commits); zero-star bulk packages are skipped\n  const npmIds = [...new Set(E.filter(e => e.g && !e.g.a && (e.g.s >= 3 || (e.g.h90 || 0) >= 5)).sort((a, b) => b.g.s - a.g.s).flatMap(e => e.pk.filter(p => p.t === 'npm').map(p => p.id)))];
   const npm = await fetchNpm(npmIds);
   for (const e of E) { const p = e.pk.find(q => q.t === 'npm' && npm.has(q.id)); if (p) e.dl = { e: 'npm', k: p.id, m: npm.get(p.id) }; }
-  for (const e of E) { if (e.g === undefined && e.repo && LIMIT) continue; Object.assign(e, score(e, nsCount[e.ns])); }
+  // well-known MCP servers that are on the Star Board but not (under that repo) in the official registry
+  const inReg = new Set(E.filter(e => e.repo).map(e => e.repo.toLowerCase()));
+  let board = null; try { board = JSON.parse(await fs.readFile('data/latest.json', 'utf8')); } catch { log('no data/latest.json, skipping board merge'); }
+  if (board) {
+    const MCPRE = /\bmcp\b|model context protocol|mcp-server/i; let added = 0;
+    for (const [name, r] of Object.entries(board.repos || {})) {
+      if (inReg.has(name.toLowerCase()) || !MCPRE.test(name + ' ' + (r.d || '') + ' ' + (r.t || []).join(' '))) continue;
+      const D = r.deep || {};
+      const e = { n: 'github:' + name, ti: name.split('/')[1], d: clip(r.d, 220), v: D.tag || '', ns: 'github', repo: name, st: 'active', pub: (r.c || '').slice(0, 10), up: (r.p || '').slice(0, 10), src: 'board',
+        pk: r.dl?.e === 'npm' && r.dl.k ? [{ t: 'npm', id: r.dl.k, tr: 'stdio', env: [], args: [] }] : r.dl?.e === 'pypi' && r.dl.k ? [{ t: 'pypi', id: r.dl.k, tr: 'stdio', env: [], args: [] }] : [], rm: [],
+        g: { s: r.s, f: r.f, a: r.a ? 1 : 0, fk: 0, c: (r.c || '').slice(0, 10), p: (r.p || '').slice(0, 10), lic: r.lic || null, tp: (r.t || []).slice(0, 6), oi: D.oi ?? r.oi ?? 0, ci: D.ci ?? 0, h90: D.c90 ?? null },
+        dl: r.dl?.m != null ? { e: r.dl.e, k: r.dl.k, m: r.dl.m } : undefined };
+      E.push(e); nsCount.github = 0; added++;
+    }
+    log('board MCP repos added (not in registry):', added);
+  }
+  for (const e of E) { if (e.g === undefined && e.repo && LIMIT) continue; Object.assign(e, score(e, nsCount[e.ns])); if (e.src === 'board') e.fl.push('not-in-registry'); }
   const scored = E.filter(e => e.sc != null).sort((a, b) => b.sc - a.sc);
 
   const generatedAt = new Date().toISOString();

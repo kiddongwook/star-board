@@ -170,11 +170,18 @@ async function main() {
   let names = [...new Set(E.filter(e => e.repo).map(e => e.repo))];
   if (LIMIT) names = names.slice(0, LIMIT);
   log('unique repos', names.length);
-  const repos = await fetchRepos(names);
+  // GitHub results are the slow part (about an hour): reuse a cache file if given, and always save one
+  let repos;
+  if (process.env.MCP_REPOS_CACHE) { try { repos = new Map(Object.entries(JSON.parse(zlib.gunzipSync(await fs.readFile(process.env.MCP_REPOS_CACHE)).toString()))); log('repos from cache', repos.size); } catch (e) { log('cache unreadable:', e.message); } }
+  if (!repos) repos = await fetchRepos(names);
+  await fs.mkdir('out', { recursive: true });
+  await fs.writeFile('out/repos-cache.json.gz', zlib.gzipSync(JSON.stringify(Object.fromEntries(repos))));
   for (const e of E) e.g = e.repo ? (repos.get(e.repo.toLowerCase()) ?? (repos.has(e.repo.toLowerCase()) ? null : undefined)) : undefined;
   // npm downloads only where the repo is real (keeps the scoped lookups bounded)
-  // only packages whose repo shows some life (stars or recent commits); zero-star bulk packages are skipped\n  const npmIds = [...new Set(E.filter(e => e.g && !e.g.a && (e.g.s >= 3 || (e.g.h90 || 0) >= 5)).sort((a, b) => b.g.s - a.g.s).flatMap(e => e.pk.filter(p => p.t === 'npm').map(p => p.id)))];
-  const npm = await fetchNpm(npmIds);
+  // only packages whose repo shows some life (stars or recent commits); zero-star bulk packages are skipped
+  const npmIds = [...new Set(E.filter(e => e.g && !e.g.a && (e.g.s >= 3 || (e.g.h90 || 0) >= 5)).sort((a, b) => b.g.s - a.g.s).flatMap(e => e.pk.filter(p => p.t === 'npm').map(p => p.id)))];
+  let npm = new Map();
+  try { npm = await fetchNpm(npmIds); } catch (e) { log('npm step failed, continuing without downloads:', e.message); }
   for (const e of E) { const p = e.pk.find(q => q.t === 'npm' && npm.has(q.id)); if (p) e.dl = { e: 'npm', k: p.id, m: npm.get(p.id) }; }
   // well-known MCP servers that are on the Star Board but not (under that repo) in the official registry
   const inReg = new Set(E.filter(e => e.repo).map(e => e.repo.toLowerCase()));

@@ -4,12 +4,12 @@
 
 ## 스타 급상승 (1일)
 
-- +4.3k [storytold/craft-anything](https://github.com/storytold/craft-anything) ★8.1k · 검증된 인기 · 실효 77 · Craft Anything: understand how any software works, and craft your own.
-- +4.2k [morluto/rea](https://github.com/morluto/rea) ★426.8k · 검증된 인기 · 실효 95 · Reverse engineer anything with agents, from app behavior down to native binaries
-- +3.6k [deepseek-ai/dsh-superagent-prototype](https://github.com/deepseek-ai/dsh-superagent-prototype) ★16.6k · 하이프 주의 · 실효 31 · Towards a More Autonomous Agent System
-- +3.1k [vercel-labs/agent-desktop](https://github.com/vercel-labs/agent-desktop) ★12.6k · 검증된 인기 · 실효 70 · Computer use CLI for AI agents
-- +2.5k [pingdotgg/t3code](https://github.com/pingdotgg/t3code) ★44.2k · 검증된 인기 · 실효 84
-- +1.9k [D4Vinci/Scrapling](https://github.com/D4Vinci/Scrapling) ★94.7k · 검증된 인기 · 실효 81 · 🕷️ The BEST Web Scraping framework that handles everything from a single reques
+- +4.3k [storytold/craft-anything](https://github.com/storytold/craft-anything) ★8.2k · 검증된 인기 · 실효 77 · Craft Anything: understand how any software works, and craft your own.
+- +4.2k [morluto/rea](https://github.com/morluto/rea) ★426.9k · 검증된 인기 · 실효 95 · Reverse engineer anything with agents, from app behavior down to native binaries
+- +3.7k [deepseek-ai/dsh-superagent-prototype](https://github.com/deepseek-ai/dsh-superagent-prototype) ★16.6k · 하이프 주의 · 실효 31 · Towards a More Autonomous Agent System
+- +3.2k [vercel-labs/agent-desktop](https://github.com/vercel-labs/agent-desktop) ★12.6k · 검증된 인기 · 실효 70 · Computer use CLI for AI agents
+- +2.6k [pingdotgg/t3code](https://github.com/pingdotgg/t3code) ★44.2k · 검증된 인기 · 실효 84
+- +2.0k [D4Vinci/Scrapling](https://github.com/D4Vinci/Scrapling) ★94.7k · 검증된 인기 · 실효 81 · 🕷️ The BEST Web Scraping framework that handles everything from a single reques
 - +1.9k [Renhuai123/ziwei-doushu](https://github.com/Renhuai123/ziwei-doushu) ★15.0k · 검증된 인기 · 실효 74 · 紫微斗数开源排盘引擎 — 基于倪海厦《天纪》体系，含完整排盘算法、四化系统、格局知识库、古籍原文数据
 - +1.7k [Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model) ★59.0k · 검증된 인기 · 실효 74 · 在 dsh 里装上这个插件即可，无需登录、注册或填 API Key，就能使用包括 DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型——完全
 - +1.6k [ccch1mneyyy/dsh-Go](https://github.com/ccch1mneyyy/dsh-Go) ★7.4k · 참여 대비 스타 과다 · 실효 64 · dsh-go — DeepSeek Harness 装进口袋：手机本机运行，也能遥控你的电脑。
@@ -18,7 +18,7 @@
 - +1.3k [heydamir/unslop](https://github.com/heydamir/unslop) ★7.5k · 참여 대비 스타 과다 · 실효 35 · A Claude skill that turns vibecoded, AI-looking UI into a designed interface
 - +1.3k [Orkas-AI/Orkas](https://github.com/Orkas-AI/Orkas) ★9.0k · 검증된 인기 · 실효 71 · Orkas is an open-source (MIT), local-first AI team for your desktop: a Commander
 - +1.2k [mattpocock/skills](https://github.com/mattpocock/skills) ★311.4k · 검증된 인기 · 실효 75 · Skills for Real Engineers. Straight from my .agents directory.
-- +1.1k [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) ★111.8k · 검증된 인기 · 실효 90 · Persistent Context Across Sessions for Every Agent –  Captures everything your a
+- +1.2k [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) ★111.8k · 검증된 인기 · 실효 90 · Persistent Context Across Sessions for Every Agent –  Captures everything your a
 
 ## 신규 진입
 
@@ -53,7 +53,7 @@
 ## 새 루키 (7일 내 생성, 스타순)
 
 - [deepseek-ai/dsh-superagent-prototype](https://github.com/deepseek-ai/dsh-superagent-prototype) ★16.6k · 하이프 주의 · 실효 31 · Towards a More Autonomous Agent System
-- [storytold/craft-anything](https://github.com/storytold/craft-anything) ★8.1k · 검증된 인기 · 실효 77 · Craft Anything: understand how any software works, and craft your own.
+- [storytold/craft-anything](https://github.com/storytold/craft-anything) ★8.2k · 검증된 인기 · 실효 77 · Craft Anything: understand how any software works, and craft your own.
 - [heydamir/unslop](https://github.com/heydamir/unslop) ★7.5k · 참여 대비 스타 과다 · 실효 35 · A Claude skill that turns vibecoded, AI-looking UI into a designed interface
 - [wangzan101/Mika](https://github.com/wangzan101/Mika) ★6.0k · 검증된 인기 · 실효 71 · An on-device AI agent for Android that operates apps and the web to get things d
 - [anhao/ai-pose-gallery-zh](https://github.com/anhao/ai-pose-gallery-zh) ★5.8k · 하이프 주의 · 실효 49 · 中文版 AI 姿势参考图库 · 1439 组 / 2878 张图片 / 完整汉化 · 零依赖静态画廊

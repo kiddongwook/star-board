@@ -1,0 +1,54 @@
+name: MCP Index (official registry + GitHub check)
+
+on:
+  schedule:
+    - cron: '0 20 * * 0'   # every Monday 05:00 KST
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'only check the first N repos (0 = all, for testing)'
+        default: '0'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: star-board
+  cancel-in-progress: false
+
+jobs:
+  mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build MCP index
+        run: node mcp/collect-mcp.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.STAR_BOARD_TOKEN || secrets.GITHUB_TOKEN }}
+          MCP_LIMIT: ${{ inputs.limit || '0' }}
+      - name: Publish full index as release asset
+        if: ${{ (inputs.limit || '0') == '0' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view mcp-index >/dev/null 2>&1 || gh release create mcp-index --title "MCP index (weekly)" --notes "Every server in the official MCP Registry, checked against its GitHub repo. Updated weekly. Used by the Star Board MCP tools find_mcp / check_mcp / install_config." --latest=false
+          gh release upload mcp-index out/mcp-index.json.gz --clobber
+      - name: Commit top list and summary
+        if: ${{ (inputs.limit || '0') == '0' }}
+        run: |
+          git config user.name "star-board-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/mcp
+          git commit -m "mcp index: $(date -u +%F)" || echo "no changes"
+          git pull --rebase -X theirs origin main || true
+          git push
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcp-index
+          path: |
+            out/mcp-index.json.gz
+            data/mcp

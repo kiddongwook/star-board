@@ -1,6 +1,6 @@
 ---
 name: "github-star-board"
-description: "Check whether a GitHub repository is actually used and maintained, not just starred: trending and top-starred repos, real-usage evidence (commits, contributors, issue resolution, downloads, Used by), license risk, and picks by category. Use for questions like 'is X worth using?', 'what's trending in MCP/LLM/RAG?', 'compare X and Y', or 'find a maintained MIT library for Z'."
+description: "Check whether a GitHub repository or MCP server is actually used and maintained, not just starred: trending and top-starred repos, real-usage evidence (commits, contributors, issue resolution, downloads, Used by), license risk, picks by category, and every server in the official MCP Registry ranked by that evidence. Use for questions like 'is X worth using?', 'which MCP server should I use for Y?', 'is this MCP server safe to install?', 'what's trending in MCP/LLM/RAG?', 'compare X and Y', or 'find a maintained MIT library for Z'."
 ---
 
 # GitHub Star Board
@@ -22,6 +22,9 @@ Base URL: `https://kiddongwook.github.io/star-board/`
 | Field rankings | `api/category/index.json`, then `api/category/{id}.json` |
 | What changed since yesterday | `data/changes.md` |
 | Human-readable page to cite | `r/{owner}/{repo}/` |
+| Which MCP server for a task (top trusted ones) | `data/mcp/top.json` -> `servers[]` (`n` registry name, `d` description, `repo`, `g` GitHub stats, `dl` npm downloads, `sc` trust 0-100, `v` verdict, `fl` flags, `pk` packages with env vars, `rm` remote URLs) |
+| Every MCP server in the official registry (55k+, gzip JSON, weekly) | `https://github.com/kiddongwook/star-board/releases/download/mcp-index/mcp-index.json.gz` (same fields) |
+| MCP registry overview: counts, growth, bulk publishers | `data/mcp/summary.json` |
 
 File names use the exact GitHub `owner/repo` casing with `/` replaced by `__`. On a 404, search `api/index.json` case-insensitively; if the repository is still missing, say it is not on the board and check GitHub directly.
 
@@ -42,4 +45,9 @@ File names use the exact GitHub `owner/repo` casing with `/` replaced by `__`. O
 - Treat verdicts and license kinds as heuristics; tell users to read the license before commercial use.
 - Coverage is limited to trending, top-starred, new and configured topics; niche repositories may be missing.
 
-An MCP server with the same data is available: `npx -y github:kiddongwook/star-board` (tools: get_repo, search_repos, trending, category, compare, summary).
+## MCP servers
+
+- MCP verdicts: proven (real usage and active maintenance), active (maintained, moderate usage), early (new, little track record), weak (little evidence of real use), risky (bulk publisher with 50+ servers, archived, deprecated or repository missing).
+- Before recommending or installing an MCP server, check its entry: quote stars, 90-day commits, downloads and flags, list the API keys it needs (`pk[].env` / `rm[].h` with `s: 1` = secret), and show the install command to the user before running it.
+
+An MCP server with the same data is available: `npx -y github:kiddongwook/star-board` (tools: find_mcp, check_mcp, install_config, get_repo, search_repos, trending, category, compare, summary).

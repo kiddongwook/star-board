@@ -62,8 +62,22 @@ No install, no API key. Add this to Claude Desktop, Cursor, VS Code or any MCP c
 
 Claude Code: `claude mcp add github-star-board -- npx -y github:kiddongwook/star-board`
 
+**Find MCP servers you can trust.** The official MCP Registry lists 55,000+ servers and grows by thousands a month, many of them bulk-published or abandoned. Star Board checks every one against its GitHub repo (stars, commits in the last 90 days, issues closed, license, archived or stale) and npm downloads, weekly, and ranks them by that evidence:
+
+```
+You:   my agent needs to read PDF files
+Agent: find_mcp("read PDF files")      -> ranked servers with trust score, evidence, flags, required keys
+       check_mcp("owner/repo")         -> before installing: real use, maintenance, better alternatives
+       install_config("...", "cursor") -> exact command or JSON for Claude Code, Claude Desktop, Cursor, VS Code, Windsurf
+```
+
+The agent shows you the command and asks before installing. Nothing is installed by Star Board itself.
+
 | Tool | What it does |
 |-|-|
+| `find_mcp` | MCP servers for a task, from the official registry, ranked by real-use evidence; flags bulk-published, archived, deprecated, stale |
+| `check_mcp` | Check one MCP server before installing: evidence, keys it needs, flags, better-trusted alternatives |
+| `install_config` | Exact install command or config for your client, from the server's registry entry |
 | `get_repo` | Verdict, scores and evidence for one repository |
 | `search_repos` | Filter by language, license kind, verdict, minimum utility or stars |
 | `trending` | GitHub Trending by period and language, with verdicts |

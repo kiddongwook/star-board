@@ -13,7 +13,7 @@ const REG = 'https://registry.modelcontextprotocol.io/v0.1/servers';
 const UA = 'github-star-board-mcp-collector';
 const TOKEN = process.env.GITHUB_TOKEN || '';
 const LIMIT = +process.env.MCP_LIMIT || 0;
-const NPM_MAX = +(process.env.NPM_MAX || 2500);
+const NPM_MAX = +(process.env.NPM_MAX || 1500);
 const DAY = 864e5, NOW = Date.now();
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
@@ -53,7 +53,7 @@ function normalize(x) {
   const g = (s.repository?.url || '').match(GH);
   const repo = g ? (g[1] + '/' + g[2].replace(/\.git$/i, '')) : null;
   return {
-    n: s.name, ti: clip(s.title, 60) || undefined, d: clip(s.description, 220), v: s.version, ns: s.name.split('/')[0],
+    n: s.name, ti: clip(s.title, 60) || undefined, d: clip(s.description, 220), ver: s.version, ns: s.name.split('/')[0],
     repo, sub: s.repository?.subfolder || undefined, web: s.websiteUrl || undefined,
     st: m.status || 'active', pub: (m.publishedAt || '').slice(0, 10), up: (m.updatedAt || m.publishedAt || '').slice(0, 10),
     pk: (s.packages || []).map(p => ({ t: p.registryType, id: p.identifier, v: p.version, tr: p.transport?.type || 'stdio', rh: p.runtimeHint || undefined,
@@ -98,7 +98,7 @@ async function fetchRepos(names) {
     try { j = await gql(`query($s90:GitTimestamp!){${body}\nrateLimit{remaining cost}}`, { s90 }); }
     catch (e) { if (batch > 10) { batch = Math.max(10, batch >> 1); log('batch error, smaller batch', batch, e.message); continue; } log('skip batch', i, e.message); i += part.length; continue; }
     part.forEach((n, k) => { const d = j.data['r' + k]; out.set(n.toLowerCase(), d ? {
-      s: d.stargazerCount, f: d.forkCount, a: d.isArchived ? 1 : 0, fk: d.isFork ? 1 : 0, c: d.createdAt?.slice(0, 10), p: d.pushedAt?.slice(0, 10),
+      nw: d.nameWithOwner, s: d.stargazerCount, f: d.forkCount, a: d.isArchived ? 1 : 0, fk: d.isFork ? 1 : 0, c: d.createdAt?.slice(0, 10), p: d.pushedAt?.slice(0, 10),
       lic: d.licenseInfo?.spdxId && d.licenseInfo.spdxId !== 'NOASSERTION' ? d.licenseInfo.spdxId : null,
       tp: d.repositoryTopics.nodes.map(x => x.topic.name), oi: d.openIssues.totalCount, ci: d.closedIssues.totalCount, h90: d.defaultBranchRef?.target?.h90?.totalCount ?? null } : null); });
     lastRem = j.data.rateLimit; i += part.length;
@@ -148,13 +148,19 @@ function score(e, nsCount) {
   } else sc += 8;
   if (e.dl) sc += 15 * lg(e.dl.m, 5);           // 100k downloads/month = full
   if (domainNs) sc += 2;                       // publisher proved a domain (not just a GitHub login)
+  const nsOwner = (/^io\.github\.(.+)$/i.exec(e.ns || '') || [])[1];
+  if (nsOwner && e.repo && e.repo.split('/')[0].toLowerCase() !== nsOwner.toLowerCase() && !fl.includes('bulk-publisher')) fl.push('repo-not-owned');
+  if (g?.nw && e.repo && g.nw.toLowerCase() !== e.repo.toLowerCase()) fl.push('repo-renamed');
   if (fl.includes('bulk-publisher')) sc -= 25;
+  if (fl.includes('repo-not-owned')) sc = Math.min(sc, 30);
+  if (fl.includes('repo-renamed')) sc = Math.min(sc, 35);
   if (fl.includes('archived') || fl.includes('deprecated')) sc -= 40;
   if (fl.includes('stale')) sc -= 15;
   if (fl.includes('fork')) sc -= 8;
   sc = Math.max(0, Math.min(100, Math.round(sc)));
   let v = 'weak';
   if (fl.some(f => ['deprecated', 'archived', 'bulk-publisher', 'repo-missing'].includes(f))) v = 'risky';
+  else if (fl.includes('repo-not-owned')) v = 'weak';
   else if (sc >= 62) v = 'proven';
   else if (sc >= 40) v = 'active';
   else if (fl.includes('new')) v = 'early';
@@ -191,7 +197,7 @@ async function main() {
     for (const [name, r] of Object.entries(board.repos || {})) {
       if (inReg.has(name.toLowerCase()) || !MCPRE.test(name + ' ' + (r.d || '') + ' ' + (r.t || []).join(' '))) continue;
       const D = r.deep || {};
-      const e = { n: 'github:' + name, ti: name.split('/')[1], d: clip(r.d, 220), v: D.tag || '', ns: 'github', repo: name, st: 'active', pub: (r.c || '').slice(0, 10), up: (r.p || '').slice(0, 10), src: 'board',
+      const e = { n: 'github:' + name, ti: name.split('/')[1], d: clip(r.d, 220), ver: D.tag || '', ns: 'github', repo: name, st: 'active', pub: (r.c || '').slice(0, 10), up: (r.p || '').slice(0, 10), src: 'board',
         pk: r.dl?.e === 'npm' && r.dl.k ? [{ t: 'npm', id: r.dl.k, tr: 'stdio', env: [], args: [] }] : r.dl?.e === 'pypi' && r.dl.k ? [{ t: 'pypi', id: r.dl.k, tr: 'stdio', env: [], args: [] }] : [], rm: [],
         g: { s: r.s, f: r.f, a: r.a ? 1 : 0, fk: 0, c: (r.c || '').slice(0, 10), p: (r.p || '').slice(0, 10), lic: r.lic || null, tp: (r.t || []).slice(0, 6), oi: D.oi ?? r.oi ?? 0, ci: D.ci ?? 0, h90: D.c90 ?? null },
         dl: r.dl?.m != null ? { e: r.dl.e, k: r.dl.k, m: r.dl.m } : undefined };

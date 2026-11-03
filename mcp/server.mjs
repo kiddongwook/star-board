@@ -71,11 +71,30 @@ async function loadMcpIndex() {
       if (!buf) { const top = await getJson('data/mcp/top.json'); if (!top) throw new Error('MCP index unavailable: ' + e.message); mcpMem = { t: Date.now(), v: top }; return top; }
     }
   }
-  const v = JSON.parse(zlib.gunzipSync(buf).toString('utf8'));
+  const v = prepIndex(JSON.parse(zlib.gunzipSync(buf).toString('utf8')));
   mcpMem = { t: Date.now(), v }; return v;
 }
 
-const STOP = new Set('a an the and or for to of in on with my me i we our your you that this it is are be can could would should want need let make give help please server mcp tool tools agent ai use using via from into so do does how what which some any get'.split(' '));
+// listed repo owned by a different GitHub account than the publisher: its stars say nothing about this server
+function prepIndex(v) {
+  const df = new Map(); let n = 0;
+  for (const e of v.servers || []) {
+    e.fl = e.fl || [];
+    const m = /^io\.github\.(.+)$/i.exec(e.ns || '');
+    const owner = (e.repo || '').split('/')[0].toLowerCase();
+    if (m && e.repo && owner !== m[1].toLowerCase() && !e.fl.includes('repo-not-owned') && !e.fl.includes('bulk-publisher')) {
+      e.fl.push('repo-not-owned'); e.sc = Math.min(e.sc ?? 0, 30); if (e.v === 'proven' || e.v === 'active') e.v = 'weak';
+    }
+    if (e.g?.nw && e.repo && e.g.nw.toLowerCase() !== e.repo.toLowerCase() && !e.fl.includes('repo-renamed')) { e.fl.push('repo-renamed'); e.sc = Math.min(e.sc ?? 0, 35); if (e.v === 'proven') e.v = 'active'; }
+    e._w = new Set([...words(e.n.split('/').pop() + ' ' + (e.ti || '')), ...(e.g?.tp || []).flatMap(words), ...e.pk.flatMap(p => words(p.id)), ...words(e.d)]);
+    for (const w of e._w) df.set(w, (df.get(w) || 0) + 1); n++;
+  }
+  v._df = df; v._n = n; return v;
+}
+const idf = (idx, w) => Math.log(1 + idx._n / (1 + (idx._df?.get(w) || 0)));
+
+const STOP = new Set(('a an the and or for to of in on with my me i we our your you that this it is are be can could would should want need let make give help please server servers mcp tool tools agent agents ai use using via from into so do does how what which some any get ' +
+  'control read write query post send work manage access list create find run call connect open add update delete check show see look like able allow lets thing things stuff all new data info messages message page pages folder way').split(' '));
 const SYN = { browser: ['browser', 'chrome', 'chromium', 'playwright', 'puppeteer', 'headless'], web: ['web', 'website', 'webpage', 'browser', 'scrape', 'crawl', 'fetch'], scrape: ['scrape', 'scraping', 'scraper', 'crawl', 'crawler', 'extract'],
   pdf: ['pdf', 'document', 'documents'], database: ['database', 'db', 'sql', 'postgres', 'postgresql', 'mysql', 'sqlite', 'mongodb'], db: ['database', 'db', 'sql'], sql: ['sql', 'database', 'postgres', 'mysql', 'sqlite'],
   file: ['file', 'files', 'filesystem', 'folder', 'directory'], files: ['file', 'files', 'filesystem'], email: ['email', 'mail', 'gmail', 'imap', 'smtp', 'outlook'], mail: ['email', 'mail', 'gmail'],
@@ -84,18 +103,58 @@ const SYN = { browser: ['browser', 'chrome', 'chromium', 'playwright', 'puppetee
   slack: ['slack'], notion: ['notion'], jira: ['jira', 'atlassian'], figma: ['figma', 'design'], design: ['design', 'figma', 'ui'], map: ['map', 'maps', 'geo', 'location'], weather: ['weather', 'forecast'],
   stock: ['stock', 'stocks', 'finance', 'market', 'trading'], finance: ['finance', 'stock', 'payments', 'accounting'], translate: ['translate', 'translation', 'language'], docs: ['docs', 'documentation', 'library'] };
 const words = s => String(s || '').toLowerCase().split(/[^a-z0-9.+#-]+/).filter(Boolean);
-function terms(q) { return [...new Set(words(q).filter(w => w.length > 1 && !STOP.has(w)))].map(w => ({ w, alts: SYN[w] || SYN[w.replace(/s$/, '')] || [w.replace(/s$/, '') === w ? w : w.replace(/s$/, ''), w] })); }
-function textScore(e, T) {
+// concept clusters: words of the same idea in a task count as ONE requirement, matched by any member
+const CLUSTERS = [
+  ['browser', 'browsers', 'headless', 'chrome', 'chromium', 'playwright', 'puppeteer', 'selenium', 'webdriver', 'web', 'webpage', 'webpages', 'website', 'websites', 'browse', 'browsing', 'devtools'],
+  ['scrape', 'scraping', 'scraper', 'crawl', 'crawler', 'crawling', 'extract', 'web', 'website', 'firecrawl'],
+  ['search', 'web-search', 'websearch', 'google', 'bing', 'brave', 'tavily', 'exa', 'serp', 'duckduckgo', 'web'],
+  ['database', 'databases', 'db', 'sql', 'postgres', 'postgresql', 'mysql', 'sqlite', 'mariadb', 'supabase', 'mongodb', 'mongo'],
+  ['file', 'files', 'filesystem', 'folder', 'folders', 'disk', 'fs'],
+  ['github', 'git', 'gitlab', 'repository', 'repositories', 'repo', 'repos', 'pull', 'pr', 'prs', 'issue', 'issues', 'requests', 'commit', 'commits'],
+  ['email', 'emails', 'mail', 'gmail', 'imap', 'smtp', 'outlook', 'inbox'],
+  ['calendar', 'calendars', 'schedule', 'scheduling', 'events', 'meeting', 'meetings'],
+  ['memory', 'remember', 'knowledge', 'notes', 'recall'],
+  ['pdf', 'pdfs', 'document', 'documents', 'docx'],
+  ['image', 'images', 'picture', 'pictures', 'photo', 'photos', 'vision', 'screenshot', 'screenshots'],
+  ['slack'], ['notion'], ['jira', 'atlassian', 'confluence'], ['figma'], ['youtube'], ['stripe', 'payments', 'payment'], ['docker', 'container', 'containers', 'kubernetes', 'k8s'],
+];
+// product names inside a cluster are also a requirement of their own ("postgres" must not return MongoDB)
+const SPECIFIC = { postgres: ['postgres', 'postgresql', 'pg'], postgresql: ['postgres', 'postgresql', 'pg'], mysql: ['mysql', 'mariadb'], mariadb: ['mariadb', 'mysql'], sqlite: ['sqlite'], mongodb: ['mongodb', 'mongo'], mongo: ['mongodb', 'mongo'], supabase: ['supabase'],
+  github: ['github'], gitlab: ['gitlab'], chrome: ['chrome', 'chromium', 'devtools'], playwright: ['playwright'], puppeteer: ['puppeteer'], selenium: ['selenium', 'seleniumbase'], gmail: ['gmail'], outlook: ['outlook'],
+  google: ['google'], bing: ['bing'], brave: ['brave'], tavily: ['tavily'], exa: ['exa'], duckduckgo: ['duckduckgo'], firecrawl: ['firecrawl'], youtube: ['youtube'], stripe: ['stripe'], docker: ['docker'], kubernetes: ['kubernetes', 'k8s'], k8s: ['kubernetes', 'k8s'] };
+function terms(q) {
+  const ws = [...new Set(words(q).filter(w => w.length > 1 && !STOP.has(w)))];
+  const groups = [], used = new Set();
+  for (const w of ws) if (SPECIFIC[w]) groups.push({ w, alts: SPECIFIC[w], specific: true });
+  for (const w of ws) {
+    if (used.has(w)) continue;
+    const cs = CLUSTERS.filter(c => c.includes(w));
+    if (cs.length) {
+      const c = cs.find(c => ws.some(o => o !== w && c.includes(o))) || cs[0];
+      ws.filter(o => c.includes(o)).forEach(o => used.add(o));
+      groups.push({ w, alts: c, cluster: true });
+    } else { used.add(w); groups.push({ w, alts: SYN[w] || [w, w.replace(/s$/, '')] }); }
+  }
+  return groups;
+}
+// field weight x term rarity (idf): "playwright" or "postgres" decide the match, common words barely count
+function textScore(e, T, idx) {
   if (!T.length) return 0;
   const F = [[3, words(e.n.split('/').pop() + ' ' + (e.ti || ''))], [2, (e.g?.tp || []).concat(e.pk.map(p => p.id)).flatMap(words)], [1, words(e.d)]];
-  let hit = 0, got = 0;
-  for (const t of T) { let best = 0; for (const [w, ws] of F) if (ws.some(x => t.alts.some(a => x === a || (a.length > 3 && x.startsWith(a))))) best = Math.max(best, w); if (best) got++; hit += best; }
-  return got ? (hit / (3 * T.length)) * (0.5 + 0.5 * got / T.length) : 0;
+  let hit = 0, tot = 0, got = 0;
+  for (const t of T) {
+    const wt = t.specific ? 4 : t.cluster ? 3 : (idx ? Math.min(3, idf(idx, t.w)) : 1); tot += 3 * wt;
+    let best = 0; for (const [w, ws] of F) if (ws.some(x => t.alts.some(a => x === a || (a.length > 3 && x.startsWith(a)) || (a.length > 4 && x.includes(a))))) best = Math.max(best, w);
+    if (best) got++; hit += best * wt;
+  }
+  return got ? (hit / tot) * (0.6 + 0.4 * got / T.length) : 0;
 }
 const VMCP = { proven: 'proven: real usage and active maintenance', active: 'active: maintained, moderate usage', early: 'early: new, little track record yet', weak: 'weak: little evidence of real use', risky: 'risky: see flags' };
 const FLAGS = { 'bulk-publisher': 'publisher has 50+ servers in the registry (bulk publishing)', 'no-repo': 'no source repository listed', 'repo-missing': 'listed GitHub repo not found (deleted or private)',
   archived: 'repository archived', deprecated: 'marked deprecated in the registry', stale: 'no push in 6+ months', fork: 'repository is a fork', new: 'repository created < 30 days ago', unchecked: 'GitHub not checked this week',
-  'not-in-registry': 'not in the official MCP Registry (found on GitHub Star Board); follow its README for setup' };
+  'not-in-registry': 'not in the official MCP Registry (found on GitHub Star Board); follow its README for setup',
+  'repo-not-owned': 'the listed GitHub repo belongs to a different account than the publisher, so its stars and activity may not be this server\'s',
+  'repo-renamed': 'the listed repo redirects to a differently named repo, so its stars may not be this server\'s' };
 function evidence(e) {
   const g = e.g, b = [];
   if (g) b.push(`${fmt(g.s)} stars`, g.h90 != null ? `${fmt(g.h90)} commits in 90 days` : null, g.p ? `last push ${g.p}` : null, (g.oi + g.ci) >= 5 ? `${Math.round(100 * g.ci / (g.oi + g.ci))}% issues closed` : null, g.lic ? `license ${g.lic}` : 'no license');
@@ -123,7 +182,7 @@ function findEntry(idx, q) {
   if (!hits.length) hits = L.filter(e => e.n.toLowerCase().endsWith('/' + low) || (e.ti || '').toLowerCase() === low);
   return hits.sort((a, b) => b.sc - a.sc);
 }
-const short = e => e.n.split('/').pop().replace(/[^a-z0-9-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 40) || 'server';
+const short = e => { let s = e.n.split('/').pop(); if (/^(mcp|server|mcp-server|server-mcp|main|official)$/i.test(s)) s = (e.ns || '').split('.').filter(x => !/^(io|com|ai|dev|net|org|app|github)$/i.test(x)).pop() || s; return s.replace(/[^a-z0-9-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 40) || 'server'; };
 
 function buildConfig(e, client, prefer) {
   const p = e.pk.find(x => x.t === 'npm') || e.pk.find(x => x.t === 'pypi') || e.pk.find(x => x.t === 'oci') || e.pk[0];
@@ -170,7 +229,7 @@ const TOOLS = [
       let L = idx.servers.filter(e => (include_risky || e.v !== 'risky'));
       if (transport === 'local') L = L.filter(e => e.pk.length); if (transport === 'remote') L = L.filter(e => e.rm.length);
       if (no_keys) L = L.filter(e => !needs(e).startsWith('needs'));
-      const ranked = L.map(e => ({ e, t: textScore(e, T) })).filter(x => x.t > 0.25).map(x => ({ ...x, r: x.t * (0.3 + 0.7 * (x.e.sc || 0) / 100) })).sort((a, b) => b.r - a.r);
+      const ranked = L.map(e => ({ e, t: textScore(e, T, idx) })).filter(x => x.t > 0.3).map(x => ({ ...x, r: Math.pow(x.t, 1.5) * (0.1 + 0.9 * (x.e.sc || 0) / 100) })).sort((a, b) => b.r - a.r);
       const seen = new Set(), out = [];
       for (const x of ranked) { const k = x.e.repo ? x.e.repo.toLowerCase() : x.e.n; if (seen.has(k)) continue; seen.add(k); out.push(x.e); if (out.length >= Math.min(limit, 15)) break; }
       if (!out.length) return `No MCP server in the registry matched "${task}"${include_risky ? '' : ' (risky ones hidden; try include_risky: true)'}. Index ${idx.generatedAt?.slice(0, 10)}, ${fmt(idx.servers.length)} servers.`;
@@ -189,8 +248,8 @@ const TOOLS = [
         return `${server} is not in the official MCP Registry (${fmt(idx.servers.length)} servers, ${idx.generatedAt?.slice(0, 10)}). Treat it as unverified: check its repository, license and who publishes it before installing.`;
       }
       const e = hits[0], g = e.g;
-      const alt = idx.servers.filter(x => x !== e && x.v !== 'risky' && x.sc > e.sc && textScore(x, terms(e.d)) > 0.45).sort((a, b) => b.sc - a.sc).slice(0, 3);
-      return [`# ${e.ti || e.n}  [${e.n}] v${e.v}`, e.d, '',
+      const alt = idx.servers.filter(x => x !== e && x.v !== 'risky' && x.sc > e.sc && textScore(x, terms((e.ti || '') + ' ' + e.d), idx) > 0.7).sort((a, b) => b.sc - a.sc).slice(0, 3);
+      return [`# ${e.ti || e.n}  [${e.n}]${(e.ver || e.pk[0]?.v) ? ' v' + (e.ver || e.pk[0]?.v) : ''}`, e.d, '',
         `Trust ${e.sc}/100: ${VMCP[e.v] || e.v}`, e.fl?.length ? 'Flags: ' + e.fl.map(f => FLAGS[f] || f).join('; ') : 'Flags: none',
         g ? `GitHub ${e.repo}: ${fmt(g.s)} stars, ${fmt(g.f)} forks, ${g.h90 != null ? fmt(g.h90) + ' commits in 90 days, ' : ''}last push ${g.p}, created ${g.c}, issues ${fmt(g.ci)} closed / ${fmt(g.oi)} open, license ${g.lic || 'none'}${g.tp?.length ? ', topics ' + g.tp.join(' ') : ''}` : (e.repo ? `GitHub ${e.repo}: not found or not checked` : 'No source repository listed'),
         e.dl ? `npm ${e.dl.k}: ${fmt(e.dl.m)} downloads last month` : '',
@@ -210,7 +269,7 @@ const TOOLS = [
       const e = hits[0], c = buildConfig(e, client, prefer);
       return [`# Install ${e.ti || e.n} in ${client}`, `Type: ${c.kind}. Trust ${e.sc}/100 (${e.v})${e.fl?.length ? ', flags: ' + e.fl.join(', ') : ''}.`, '', c.text, '',
         c.secrets.length ? 'Replace the placeholders: ' + c.secrets.map(x => `${x.n}${x.s ? ' (secret)' : ''}${x.d ? ': ' + x.d : ''}`).join('; ') + '. Keep secrets in the config or environment, not in chat.' : 'No required keys listed.',
-        `Source: official MCP Registry entry ${e.n} v${e.v}${e.repo ? ', repo https://github.com/' + e.repo : ''}. Show this to the user and ask before running it.`].join('\n');
+        `Source: official MCP Registry entry ${e.n}${(e.ver || e.pk[0]?.v) ? ' v' + (e.ver || e.pk[0]?.v) : ''}${e.repo ? ', repo https://github.com/' + e.repo : ''}. Show this to the user and ask before running it.`].join('\n');
     } },
   { name: 'get_repo', description: 'Verdict, scores and evidence for one GitHub repository ("owner/repo" or URL): is it actually used and maintained, license risk, growth.',
     inputSchema: { type: 'object', properties: { repo: { type: 'string', description: 'owner/repo or https://github.com/owner/repo' } }, required: ['repo'] },

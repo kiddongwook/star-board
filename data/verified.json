@@ -64,6 +64,27 @@
       "ran": "README install, then the one setup command",
       "result": ["One command in 0.39 s created 29 files"],
       "catch": "Agent folders may hold tokens: add them to .gitignore."
+    },
+    {
+      "repo": "garrytan/gstack", "date": "2026-11-06", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Install gstack, then test its /careful guard with risky commands an agent might run",
+      "ran": "README install step 1 (git clone ... ~/.claude/skills/gstack && ./setup), then the careful hook with 8 commands in a small repo",
+      "result": ["Setup finished (exit 0) and added 66 skills in 175 s on 2 cores", "2 of 8 commands blocked (force-push to main, rm -rf ~), 4 asked first, 2 allowed; 0.14 s per check"],
+      "catch": "/careful is per session: type it each time. Needs Bun. README says 31 s setup on 4 cores; ours took about 3 minutes."
+    },
+    {
+      "repo": "vercel-labs/agent-browser", "date": "2026-11-06", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Test a small todo app (with one planted bug) the way an agent would",
+      "ran": "README install and quick start, then open / snapshot -i / fill / click / errors on the todo app",
+      "result": ["Refs found the textbox and buttons; the added item showed up on re-read", "Clear done left the item, and errors --json named the bug (ReferenceError: doneItems is not defined); 0.016 s per page read"],
+      "catch": "On Ubuntu 26.04 Chrome would not start (no usable sandbox) until unprivileged user namespaces were allowed."
+    },
+    {
+      "repo": "Nutlope/hallmark", "date": "2026-11-06", "kind": "daily", "stamp": "STILL EARLY",
+      "task": "Check pages for the tells that make a site look AI-made",
+      "ran": "README install (npx skills add nutlope/hallmark -g), then sloplint on three pages",
+      "result": ["Its AI-slop test page: 24 FAIL in 0.12 s; its example page: 0", "Our own site: 24 FAIL, 21 of them colour codes outside the palette"],
+      "catch": "No release yet and few contributors for its stars. skills.sh rated it Med Risk at install."
     }
   ]
 }

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Starby Verified: we run your tool and say if it's worth using | GitHub Star Board</title>
+<meta name="description" content="Starby verification: we run your open-source tool on a clean machine with your README, measure what comes out, and publish an honest verdict, a short video and a badge. The verdict is not for sale.">
+<link rel="canonical" href="https://kiddongwook.github.io/star-board/verify.html">
+<meta property="og:title" content="Starby Verified · GitHub Star Board">
+<meta property="og:description" content="We don't count stars. We run your tool and tell people if it's worth using.">
+<meta property="og:image" content="https://kiddongwook.github.io/star-board/assets/starby.png">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0d1117;color:#e6edf3;font:16px/1.65 -apple-system,"Segoe UI","Malgun Gothic",sans-serif}
+a{color:#58a6ff}header{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid #30363d;background:#161b22}
+header .sp{flex:1}.lang button{background:none;border:1px solid #30363d;color:#8b949e;border-radius:20px;padding:3px 12px;cursor:pointer;font:inherit;font-size:13px}
+.lang button.on{color:#e6edf3;border-color:#3fb950}main{max-width:920px;margin:0 auto;padding:28px 24px 60px}
+.hero{display:grid;grid-template-columns:1fr 220px;gap:24px;align-items:center}.hero img{width:220px;filter:drop-shadow(0 16px 24px #0008)}
+h1{font-size:40px;line-height:1.15;margin:.1em 0 .3em;letter-spacing:-1px}h1 em{font-style:normal;color:#ffd23f}
+.sub{font-size:18px;color:#c9d1d9}.cta{display:inline-block;margin-top:16px;background:#238636;color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:12px 22px}
+.mail{display:block;margin-top:8px;color:#8b949e;font-size:14px}h2{font-size:22px;margin:42px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}.card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px}
+.card b{display:block;font-size:17px;margin-bottom:4px}.card span{color:#c9d1d9;font-size:15px}.n{color:#ffd23f;font-weight:900;font-size:22px}
+.rules li{margin:6px 0}.rules b{color:#3fb950}ol.steps{padding-left:20px}ol.steps li{margin:8px 0}
+.ex{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}.ex a{display:block;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px 14px;text-decoration:none;color:#e6edf3}
+.ex a:hover{border-color:#3fb950}.ex .st{font-size:12px;font-weight:800;letter-spacing:1px;border:2px solid;border-radius:6px;padding:0 6px;margin-left:6px}.ex small{display:block;color:#8b949e;margin-top:4px}
+.box{background:#0f1f14;border:1px solid #238636;border-radius:12px;padding:16px 18px}.muted{color:#8b949e;font-size:14px}
+pre{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;white-space:pre-wrap;font:13px/1.5 ui-monospace,Consolas,monospace}
+@media(max-width:640px){.hero{grid-template-columns:1fr}.hero img{width:160px;order:-1}h1{font-size:30px}}
+body:not(.en) [data-l="en"]{display:none!important}body.en [data-l="ko"]{display:none!important}
+</style>
+</head>
+<body>
+<header><a href="./"><b>GitHub Star Board</b></a><span class="sp"></span>
+<span class="lang"><button id="bko" class="on" onclick="setL('ko')">한국어</button> <button id="ben" onclick="setL('en')">English</button></span></header>
+<main>
+<section class="hero">
+<div>
+<div class="muted">Starby Verified</div>
+<h1 data-l="ko">별 개수 말고,<br><em>직접 돌려 보고</em> 판정해요.</h1>
+<h1 data-l="en">We don't count stars.<br>We <em>run your tool</em> and say if it's worth using.</h1>
+<p class="sub" data-l="ko">오픈소스 도구를 깨끗한 컴퓨터에서 README대로 실행하고, 무엇이 나왔는지 재서 솔직한 판정과 50초 쇼츠, 검증 배지로 알려 드려요.</p>
+<p class="sub" data-l="en">We run your open-source tool on a clean machine exactly as your README says, measure what comes out, and publish an honest verdict, a 50-second Short and a badge.</p>
+<a class="cta" id="cta" href="#">✉ <span data-l="ko">검증 신청하기</span><span data-l="en">Request a check</span></a>
+<span class="mail">starby.verify@gmail.com</span>
+</div>
+<img src="assets/starby.png" alt="Starby">
+</section>
+
+<h2 data-l="ko">받으시는 것</h2><h2 data-l="en">What you get</h2>
+<div class="grid">
+<div class="card"><b data-l="ko">① 실제 실행 테스트</b><b data-l="en">① A real run</b><span data-l="ko">비밀값 없는 깨끗한 GitHub Actions 컴퓨터(2 vCPU)에서 README 사용법 그대로. 시간·메모리 같은 숫자는 직접 잰 값만 써요.</span><span data-l="en">Your README usage on a clean GitHub Actions runner (2 vCPU, no secrets). Every number is measured by us.</span></div>
+<div class="card"><b data-l="ko">② 50초 검증 쇼츠</b><b data-l="en">② A 50-second Short</b><span data-l="ko">Starby가 "할 일 → 실행 → 결과 → 판정"을 보여 주는 영상. 유튜브 쇼츠와 인스타 릴스에 올라가요.</span><span data-l="en">Starby shows the task, what ran, what came out and the verdict. Posted to YouTube Shorts and Instagram Reels.</span></div>
+<div class="card"><b data-l="ko">③ 검증 페이지 + 배지</b><b data-l="en">③ A verification page + badge</b><span data-l="ko">Star Board에 실행 결과 페이지가 생기고, README에 붙일 "✓ real-run verified" 배지를 드려요. 데이터와 함께 매일 갱신돼요.</span><span data-l="en">A results page on Star Board and a "✓ real-run verified" badge for your README, refreshed daily with the data.</span></div>
+<div class="card"><b data-l="ko">④ 고칠 점 리포트</b><b data-l="en">④ A fix-it report</b><span data-l="ko">설치가 막히거나 결과가 기대와 다르면, 어디서 막혔는지 비공개로 먼저 알려 드려요.</span><span data-l="en">If install breaks or results miss the claim, you get a private report of where it failed first.</span></div>
+</div>
+
+<h2 data-l="ko">지키는 원칙</h2><h2 data-l="en">Rules we keep</h2>
+<div class="box"><ul class="rules">
+<li data-l="ko"><b>판정은 돈으로 살 수 없어요.</b> 결과가 좋지 않으면 공개 여부는 의뢰하신 분이 정하고, 공개하면 판정은 그대로 나가요.</li>
+<li data-l="en"><b>The verdict is not for sale.</b> If the result is weak, you decide whether it is published; if it is, the verdict stays as it is.</li>
+<li data-l="ko"><b>의뢰받은 검증은 영상과 페이지에 "의뢰 검증"이라고 표시해요.</b></li>
+<li data-l="en"><b>Commissioned checks are labelled "commissioned"</b> in the video and on the page.</li>
+<li data-l="ko"><b>우리가 실제로 돌린 결과만 보여 줘요.</b> API 키나 유료 계정이 필요한 부분은 README·공식 데모 기반이라고 밝혀요.</li>
+<li data-l="en"><b>We only show what we ran.</b> Parts that need API keys or paid accounts are marked as README/official-demo based.</li>
+<li data-l="ko"><b>격리 실행:</b> 낯선 코드는 비밀값이 없는 별도 환경에서만 실행해요.</li>
+<li data-l="en"><b>Isolated runs:</b> unfamiliar code only runs in a separate environment with no secrets.</li>
+</ul></div>
+
+<h2 data-l="ko">진행 순서</h2><h2 data-l="en">How it works</h2>
+<ol class="steps">
+<li data-l="ko">이메일로 저장소 링크와 검증받고 싶은 기능(한두 가지)을 보내 주세요.</li>
+<li data-l="en">Email us your repo link and the one or two things you want checked.</li>
+<li data-l="ko">실행 가능 여부를 보고 회신드려요. 키나 장치가 필요한 경우 검증 범위를 먼저 맞춰요.</li>
+<li data-l="en">We check that it can run and reply. If keys or hardware are needed, we agree on the scope first.</li>
+<li data-l="ko">실행 → 숫자 측정 → 판정 → 쇼츠 제작.</li>
+<li data-l="en">Run → measure → verdict → Short.</li>
+<li data-l="ko">결과를 먼저 보내 드리고, 공개 후 페이지와 배지를 드려요.</li>
+<li data-l="en">You see the result first; after publishing you get the page and the badge.</li>
+</ol>
+<p class="muted" data-l="ko">가격: 파일럿 진행 중이에요. 이메일로 문의해 주세요.</p>
+<p class="muted" data-l="en">Pricing: pilot in progress. Ask by email.</p>
+
+<h2 data-l="ko">지금까지 검증한 도구 <span class="n" id="cnt"></span></h2><h2 data-l="en">Tools we have checked <span class="n" id="cnt2"></span></h2>
+<div class="ex" id="ex"></div>
+
+<h2 data-l="ko">신청 메일 양식</h2><h2 data-l="en">Request template</h2>
+<pre id="tpl"></pre>
+<p class="muted" data-l="ko">이 페이지의 판정은 공개된 GitHub 데이터와 우리 실행 결과를 바탕으로 한 의견이에요. 상업적 사용 전에는 라이선스를 직접 확인하세요.</p>
+<p class="muted" data-l="en">Verdicts are opinions based on public GitHub data and our own runs. Check the license yourself before commercial use.</p>
+</main>
+<script>
+const MAIL = 'starby.verify@gmail.com';
+const TPL = { ko: '제목: [Starby 검증 신청] owner/repo\n\n저장소: https://github.com/owner/repo\n검증받고 싶은 기능: (예: 설치 후 OO 명령으로 OO가 되는지)\n실행에 필요한 것: (없음 / API 키 / 특정 OS 등)\n연락처: 이름, 이메일\n공개 희망 여부: 결과 확인 후 결정 / 바로 공개',
+  en: 'Subject: [Starby check] owner/repo\n\nRepo: https://github.com/owner/repo\nWhat to check: (e.g. after install, does command X produce Y)\nWhat it needs to run: (nothing / API key / specific OS)\nContact: name, email\nPublishing: decide after seeing the result / publish right away' };
+function setL(l) { document.body.classList.toggle('en', l === 'en'); document.documentElement.lang = l; bko.classList.toggle('on', l === 'ko'); ben.classList.toggle('on', l === 'en');
+  tpl.textContent = TPL[l]; const t = TPL[l].split('\n'); cta.href = 'mailto:' + MAIL + '?subject=' + encodeURIComponent(t[0].replace(/^(제목|Subject): /, '')) + '&body=' + encodeURIComponent(t.slice(2).join('\n')); }
+setL(/^en/.test(new URLSearchParams(location.search).get('lang') || (navigator.language || 'ko')) ? 'en' : 'ko');
+fetch('api/verified.json').then(r => r.json()).then(d => { const it = (d.items || []).slice().sort((a, b) => b.date.localeCompare(a.date)); cnt.textContent = cnt2.textContent = it.length;
+  ex.innerHTML = it.map(v => { const c = v.stamp === 'ACTUALLY USED' ? '#3fb950' : '#d29922'; return '<a href="r/' + v.repo + '/"><b>' + v.repo + '</b><span class="st" style="color:' + c + ';border-color:' + c + '">' + v.stamp + '</span><small>' + v.date + ' · ' + (v.result && v.result[0] || '') + '</small></a>'; }).join(''); }).catch(() => {});
+</script>
+</body>
+</html>

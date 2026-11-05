@@ -1,0 +1,69 @@
+{
+  "note": "Starby real-run checks. Every entry is a run we did ourselves on a clean GitHub Actions runner (2 vCPU, no secrets) with the repo's own README usage. kind: daily = picked from trending by us; commissioned = requested by the maintainer (the verdict is not for sale). Contact: starby.verify@gmail.com",
+  "contact": "starby.verify@gmail.com",
+  "items": [
+    {
+      "repo": "lightpanda-io/browser", "date": "2026-11-02", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Turn a demo shop page into text (markdown) an AI agent can read",
+      "ran": "./lightpanda fetch --dump markdown --wait-until networkidle <page> (nightly 1.1.0, telemetry off)",
+      "result": ["Product name, price ($244.99) and details came out as clean markdown", "Same page, same runner, median of 3: Lightpanda 0.27 s / 22 MB vs headless Chrome 1.94 s / 430 MB (PSS)"],
+      "catch": "Pages that load products late need --wait-until networkidle (--wait-ms 3000 still showed Loading). Telemetry is on by default."
+    },
+    {
+      "repo": "shiyu-coder/Kronos", "date": "2026-11-02", "kind": "daily", "stamp": "MOSTLY HYPE",
+      "task": "Give the model 400 real 5-minute price candles and ask for the next 120",
+      "ran": "README predictor example, Kronos-small + Kronos-Tokenizer-base, CPU only, same call with seeds 0-4",
+      "result": ["All 5 forecasts said down (137.9-141.2); the real price went up, 153.6 to 161.6", "About 51 s per forecast on CPU, average error 7.4-8.1%"],
+      "catch": "One test set cannot judge the whole model. Not financial advice. No commits in the 90 days before the run."
+    },
+    {
+      "repo": "vercel-labs/agent-desktop", "date": "2026-11-03", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Let an AI operate a real desktop app: calculate 7 x 8 in gnome-calculator",
+      "ran": "README commands against gnome-calculator on a virtual Linux desktop",
+      "result": ["The app showed 56", "0 mouse moves: it worked through the accessibility tree, not screen pixels"],
+      "catch": "Needed a window manager (openbox) on the runner."
+    },
+    {
+      "repo": "D4Vinci/Scrapling", "date": "2026-11-03", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Crawl a whole quotes site with the README spider",
+      "ran": "README spider code, unchanged",
+      "result": ["100 quotes saved from 10 pages", "Median about 1 second for the whole crawl"],
+      "catch": ""
+    },
+    {
+      "repo": "max-sixty/worktrunk", "date": "2026-11-04", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Give 3 AI agents their own folder on one repo",
+      "ran": "wt switch --create (x3), wt list, wt merge main, wt remove (wt v0.81.0)",
+      "result": ["3 branches and 3 worktree folders from 3 commands (28 characters vs 71 with plain git)", "wt merge main merged and removed the folder; wt remove refused a folder with an unsaved file"],
+      "catch": "Without wt config shell install it cannot change your directory."
+    },
+    {
+      "repo": "JustVugg/colibri", "date": "2026-11-04", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Run a large language model on a small machine with no GPU",
+      "ran": "README usage on a 2-core runner",
+      "result": ["13.6 GB model file ran with 1.8 GB peak RAM on 2 cores, no GPU"],
+      "catch": ""
+    },
+    {
+      "repo": "floci-io/floci", "date": "2026-11-04", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Run AWS services locally without an AWS account",
+      "ran": "README quick start, compared with LocalStack latest on the same runner",
+      "result": ["Floci was ready in 0.09 s", "LocalStack latest exited with code 55 (it now needs a token)"],
+      "catch": ""
+    },
+    {
+      "repo": "mattpocock/skills", "date": "2026-11-04", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Install every skill into a fresh Claude Code project",
+      "ran": "npx skills@latest add mattpocock/skills -a claude-code --skill '*' -y (3 fresh projects)",
+      "result": ["38 skills installed, median 1.39 s", "103 files: 99 text (markdown/yaml), 4 code"],
+      "catch": "Using the skills needs an agent and a model; that part was not run. Pick the plugin or skills.sh, not both."
+    },
+    {
+      "repo": "github/spec-kit", "date": "2026-11-05", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Make a project agent-ready with Spec Kit",
+      "ran": "README install, then the one setup command",
+      "result": ["One command in 0.39 s created 29 files"],
+      "catch": "Agent folders may hold tokens: add them to .gitignore."
+    }
+  ]
+}

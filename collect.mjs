@@ -726,7 +726,16 @@ function aiSnapshot(r, out, siteUrl) {
     '', 'Scores are heuristics from public GitHub data; check the license text before commercial use.'].join('\n');
 }
 
-function repoPage(r, out, siteUrl, boardRepo) {
+function verifiedBlock(v, root) {
+  if (!v) return '';
+  const col = v.stamp === 'ACTUALLY USED' ? '#3fb950' : '#d29922';
+  return `<section class="vf"><div class="muted">Starby real-run check · ${hesc(v.date)} · ${v.kind === 'commissioned' ? 'commissioned by the maintainer (verdict not for sale)' : 'picked from trending by us'}</div>` +
+    `<div class="vs" style="color:${col};border-color:${col}">✓ ${hesc(v.stamp)}</div>` +
+    `<table>${[['Task', v.task], ['What we ran', v.ran]].map(([k, x]) => `<tr><th>${k}</th><td>${hesc(x)}</td></tr>`).join('')}<tr><th>What came out</th><td><ul>${(v.result || []).map(x => `<li>${hesc(x)}</li>`).join('')}</ul></td></tr>${v.catch ? `<tr><th>Catch</th><td>${hesc(v.catch)}</td></tr>` : ''}${v.film ? `<tr><th>Short</th><td><a href="${hesc(v.film)}">watch</a></td></tr>` : ''}</table>` +
+    `<p class="muted">Run on a clean GitHub Actions runner (2 vCPU, no secrets) with the repo's own README usage. Want your tool checked? <a href="${root}verify.html">Starby verification</a></p></section>`;
+}
+
+function repoPage(r, out, siteUrl, boardRepo, ver) {
   const sc = r.sc || {}, D = r.deep, day = out.generatedAt.slice(0, 10), url = `${siteUrl}${pagePath(r.n)}`, root = '../../../';
   const ven = VERDICT_EN[sc.v] || sc.v, vko = VERDICTS[sc.v] || sc.vt;
   const en = (r.wc || []).map(([s, c, p]) => [s, WHY_EN[c] ? WHY_EN[c](p || {}) : c]);
@@ -750,13 +759,14 @@ h1{margin:.2em 0;font-size:26px;word-break:break-all}h2{font-size:17px;margin:26
 .sc{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}.sc div{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px 14px}.sc b{display:block;font-size:22px}
 table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #30363d;vertical-align:top}th{color:#8b949e;font-weight:500;width:38%}
 li.p::marker{color:#3fb950}li.m::marker{color:#f85149}li.i::marker{color:#8b949e}textarea{width:100%;min-height:150px;background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:6px;font:12px/1.5 ui-monospace,Consolas,monospace;padding:8px}
-button{background:#238636;color:#fff;border:0;border-radius:6px;padding:7px 14px;font:inherit;cursor:pointer;margin-top:6px}header{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid #30363d;background:#161b22}</style></head><body>
+.vf{background:#0f1f14;border:1px solid #238636;border-radius:10px;padding:12px 16px;margin:14px 0}.vs{display:inline-block;border:3px solid;border-radius:8px;padding:2px 12px;font-weight:800;letter-spacing:1px;margin:6px 0}.vf ul{margin:0;padding-left:18px}button{background:#238636;color:#fff;border:0;border-radius:6px;padding:7px 14px;font:inherit;cursor:pointer;margin-top:6px}header{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid #30363d;background:#161b22}</style></head><body>
 <header><a href="${root}"><b>GitHub Star Board</b></a><a href="${root}?lang=ko">한국어 대시보드</a>${boardRepo ? `<a href="https://github.com/${boardRepo}">★ Star this project</a>` : ''}</header>
 <main>
 <div class="muted">Repository verdict · data as of ${day} (updated daily)</div>
 <h1><a href="https://github.com/${hesc(r.n)}">${hesc(r.n)}</a></h1>
 <p>${hesc(r.d || '')}</p>
 <div class="v v-${sc.v}">${hesc(ven)} · ${hesc(vko)}</div>${boardRepo ? `<p class="muted">Wrong verdict? <a href="https://github.com/${boardRepo}/issues/new?template=verdict.yml&title=${encodeURIComponent('Verdict: ' + r.n)}&repository=${encodeURIComponent(r.n)}&current=${encodeURIComponent(ven)}">Report it</a> · 판정이 틀렸다면 알려주세요</p>` : ''}
+${verifiedBlock(ver, root)}
 <div class="sc"><div>Utility<b>${sc.util ?? '-'}</b></div><div>Popularity<b>${sc.pop ?? '-'}</b></div><div>best-of quality<b>${sc.bo ?? '-'}</b></div><div>Stars<b>${nf(r.s)}</b></div><div>7-day gain<b>${sc.g7 != null ? '+' + nf(sc.g7) : '-'}</b></div></div>
 <h2>Evidence</h2><ul>${li(en)}</ul>
 <h2>근거 (한국어)</h2><ul>${li(r.why || [])}</ul>
@@ -777,15 +787,19 @@ async function writePages(fs, path, root, out, siteUrl, boardRepo) {
   await fs.rm(path.join(root, 'r'), { recursive: true, force: true });
   await fs.mkdir(path.join(root, 'api', 'badge'), { recursive: true });
   const list = Object.values(out.repos).filter(r => r.sc);
+  let VER = {}; try { for (const v of JSON.parse(await fs.readFile(path.join(root, 'data', 'verified.json'), 'utf8')).items || []) VER[v.repo] = v; } catch {}
   for (const r of list) {
     const dir = path.join(root, 'r', ...r.n.split('/'));
     await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, 'index.html'), repoPage(r, out, siteUrl, boardRepo));
+    await fs.writeFile(path.join(dir, 'index.html'), repoPage(r, out, siteUrl, boardRepo, VER[r.n]));
     await fs.writeFile(path.join(root, 'api', 'badge', repoFile(r.n)), JSON.stringify({ schemaVersion: 1, label: 'Star Board',
-      message: `${VERDICT_EN[r.sc.v] || r.sc.v}${r.sc.util != null ? ` · utility ${r.sc.util}` : ''}`, color: BADGE_COLOR[r.sc.v] || 'lightgrey', cacheSeconds: 21600 }));
+      message: VER[r.n] ? `✓ real-run verified · ${VER[r.n].stamp.toLowerCase()}` : `${VERDICT_EN[r.sc.v] || r.sc.v}${r.sc.util != null ? ` · utility ${r.sc.util}` : ''}`, color: VER[r.n] ? (VER[r.n].stamp === 'ACTUALLY USED' ? 'brightgreen' : 'orange') : BADGE_COLOR[r.sc.v] || 'lightgrey', cacheSeconds: 21600 }));
   }
+  // verified repos that are no longer on today's board keep their badge
+  for (const v of Object.values(VER)) if (!out.repos[v.repo]) await fs.writeFile(path.join(root, 'api', 'badge', repoFile(v.repo)), JSON.stringify({ schemaVersion: 1, label: 'Star Board', message: `✓ real-run verified · ${v.stamp.toLowerCase()}`, color: v.stamp === 'ACTUALLY USED' ? 'brightgreen' : 'orange', cacheSeconds: 21600 }));
+  await fs.writeFile(path.join(root, 'api', 'verified.json'), JSON.stringify({ generatedAt: out.generatedAt, items: Object.values(VER) }));
   const day = out.generatedAt.slice(0, 10);
-  const urls = [siteUrl, `${siteUrl}?lang=en`, `${siteUrl}?lang=ko`, `${siteUrl}?lang=ja`, `${siteUrl}?lang=zh`, ...list.map(r => `${siteUrl}${pagePath(r.n)}`)];
+  const urls = [siteUrl, `${siteUrl}verify.html`, `${siteUrl}?lang=en`, `${siteUrl}?lang=ko`, `${siteUrl}?lang=ja`, `${siteUrl}?lang=zh`, ...list.map(r => `${siteUrl}${pagePath(r.n)}`)];
   await fs.writeFile(path.join(root, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `<url><loc>${hesc(u)}</loc><lastmod>${day}</lastmod><changefreq>daily</changefreq></url>`).join('\n')}\n</urlset>\n`);
 }
 

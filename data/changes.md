@@ -4,21 +4,21 @@
 
 ## 스타 급상승 (1일)
 
-- +3.6k [morluto/rea](https://github.com/morluto/rea) ★437.8k · 검증된 인기 · 실효 95 · Reverse engineer anything with agents, from app behavior down to native binaries
+- +3.7k [morluto/rea](https://github.com/morluto/rea) ★437.8k · 검증된 인기 · 실효 95 · Reverse engineer anything with agents, from app behavior down to native binaries
 - +3.0k [storytold/craft-anything](https://github.com/storytold/craft-anything) ★17.9k · 검증된 인기 · 실효 79 · Craft Anything: understand how any software works, and craft your own.
-- +2.5k [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) ★63.8k · 하이프 주의 · 실효 36 · A coding-agent skill for multi-phase security audits with independently verified
+- +2.5k [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) ★63.9k · 하이프 주의 · 실효 36 · A coding-agent skill for multi-phase security audits with independently verified
 - +1.9k [milind-soni/OpenMausBot](https://github.com/milind-soni/OpenMausBot) ★15.1k · 검증된 인기 · 실효 81 · Open-source Grok Bot alternative with a virtual machine that bots can use
 - +1.8k [sherlock-project/sherlock](https://github.com/sherlock-project/sherlock) ★98.4k · 검증된 인기 · 실효 76 · Hunt down social media accounts by username across social networks
 - +1.7k [NVIDIA/auto-ontology](https://github.com/NVIDIA/auto-ontology) ★8.9k · 검증된 인기 · 실효 61 · Auto Ontology is a Python framework for building semantic, graph-based reasoning
 - +1.7k [zortos293/Lichii](https://github.com/zortos293/Lichii) ★3.9k · 검증된 인기 · 실효 77 · VERY experimental Nintendo Switch 2 emulator
 - +1.6k [Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model) ★63.9k · 검증된 인기 · 실효 74 · 在 dsh 里装上这个插件即可，无需登录、注册或填 API Key，就能使用包括 DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型——完全
-- +1.5k [mattpocock/skills](https://github.com/mattpocock/skills) ★316.6k · 검증된 인기 · 실효 74 · Skills for Real Engineers. Straight from my .agents directory.
+- +1.5k [mattpocock/skills](https://github.com/mattpocock/skills) ★316.7k · 검증된 인기 · 실효 74 · Skills for Real Engineers. Straight from my .agents directory.
 - +1.5k [ccch1mneyyy/dsh-Go](https://github.com/ccch1mneyyy/dsh-Go) ★12.9k · 참여 대비 스타 과다 · 실효 66 · dsh-go — DeepSeek Harness 装进口袋：手机本机运行，也能遥控你的电脑。
 - +1.5k [pingdotgg/t3code](https://github.com/pingdotgg/t3code) ★49.7k · 검증된 인기 · 실효 83
 - +1.3k [vercel-labs/agent-desktop](https://github.com/vercel-labs/agent-desktop) ★18.1k · 참여 대비 스타 과다 · 실효 71 · Computer use CLI for AI agents
 - +1.2k [stablyai/orca](https://github.com/stablyai/orca) ★117.8k · 검증된 인기 · 실효 81 · Orca lets you run a fleet of coding agents (e.g. Claude Code, Codex) with your o
 - +1.1k [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) ★274.9k · 검증된 인기 · 실효 69 · DeepSeek Harness: Everything is a Plugin.
-- +954 [debpalash/VoiceStudio](https://github.com/debpalash/VoiceStudio) ★102.8k · 검증된 인기 · 실효 86 · VoiceStudio is the open-source, fully-local ElevenLabs alternative — voice cloni
+- +963 [debpalash/VoiceStudio](https://github.com/debpalash/VoiceStudio) ★102.8k · 검증된 인기 · 실효 86 · VoiceStudio is the open-source, fully-local ElevenLabs alternative — voice cloni
 
 ## 신규 진입
 

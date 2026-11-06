@@ -85,6 +85,20 @@
       "ran": "README install (npx skills add nutlope/hallmark -g), then sloplint on three pages",
       "result": ["Its AI-slop test page: 24 FAIL in 0.12 s; its example page: 0", "Our own site: 24 FAIL, 21 of them colour codes outside the palette"],
       "catch": "No release yet and few contributors for its stars. skills.sh rated it Med Risk at install."
+    },
+    {
+      "repo": "astral-sh/ruff", "date": "2026-11-07", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Clean up a small todo app full of typical AI-code leftovers, and compare speed with Flake8",
+      "ran": "README commands (uvx ruff@0.17.4 check, ruff check --fix, ruff format) on the app; ruff vs flake8 on CPython 3.14 Lib/, default rules, 3 runs each",
+      "result": ["13 problems found in 0.024 s; --fix fixed 7, and one warning left (response never used) pointed at a real typo bug", "CPython Lib (1,830 files): Flake8 91.6 s vs Ruff 0.98 s, about 94x faster"],
+      "catch": "Default rules are light: == None passed and the misspelled name was not flagged directly (a star import hid it). Turn on more rules."
+    },
+    {
+      "repo": "prometheus/prometheus", "date": "2026-11-07", "kind": "daily", "stamp": "ACTUALLY USED",
+      "task": "Watch a small todo API and alert when it fails or goes down",
+      "ran": "README release binary v3.16.0, a /metrics page via prometheus-client, two alert rules (up == 0 for 15s, errors > 5%); a bug switched on, then the app killed 3 times",
+      "result": ["Error alert firing 21.3 s after 1 in 5 todo requests started failing", "Down alert firing 21.8 s after the app was killed (median of 3; 15 s of it is the for: wait)"],
+      "catch": "Prometheus only flags alerts; a phone or chat message needs Alertmanager."
     }
   ]
 }

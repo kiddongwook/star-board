@@ -99,6 +99,19 @@
       "ran": "README release binary v3.16.0, a /metrics page via prometheus-client, two alert rules (up == 0 for 15s, errors > 5%); a bug switched on, then the app killed 3 times",
       "result": ["Error alert firing 21.3 s after 1 in 5 todo requests started failing", "Down alert firing 21.8 s after the app was killed (median of 3; 15 s of it is the for: wait)"],
       "catch": "Prometheus only flags alerts; a phone or chat message needs Alertmanager."
+    },
+    {
+      "repo": "meta/astryx",
+      "date": "2026-11-08",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Add a design system to a fresh React todo app and let it pick the page for an agent",
+      "ran": "README install (@astryxdesign/core, theme-neutral, stylex, cli 0.7.11), npx astryx init, astryx build \"todo list app with tasks and due dates\", astryx template, README Vite setup, vite build, astryx doctor --built",
+      "result": [
+        "init wrote 35 lines of agent rules into AGENTS.md in 0.66 s (start from a template, no raw div, no raw hex/px)",
+        "build picked a template; the 1,218-line page built first try with 0 type errors and 0 raw divs; doctor 12 pass, 0 fail"
+      ],
+      "catch": "At 430 px phone width the task-title column disappeared and the right columns were cut off. Beta, React 19+ only."
     }
   ]
 }

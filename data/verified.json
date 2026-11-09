@@ -112,6 +112,19 @@
         "build picked a template; the 1,218-line page built first try with 0 type errors and 0 raw divs; doctor 12 pass, 0 fail"
       ],
       "catch": "At 430 px phone width the task-title column disappeared and the right columns were cut off. Beta, React 19+ only."
+    },
+    {
+      "repo": "garrytan/gbrain",
+      "date": "2026-11-10",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Give a coding agent a memory of a small todo app's decisions that survives a new session, with no API key",
+      "ran": "README install (bun install -g github:garrytan/gbrain#stable, gbrain 0.60.620.0), gbrain init --pglite --no-embedding, gbrain remember x3 with --provenance, gbrain recall from a separate process, gbrain import of 3 notes + keyword search, gbrain setup claude-code --dry-run",
+      "result": [
+        "A brand-new process recalled 3 of 3 saved decisions with their sources in 0.87 s (median of 3)",
+        "Install 10.5 s, keyless brain ready in 7.2 s; keyword search found the right note for SQLite, due dates and hex codes"
+      ],
+      "catch": "With no key it only matches words: \"database\" found nothing and \"which database do we use\" ranked the wrong note first. Install from GitHub; the npm gbrain package is unrelated."
     }
   ]
 }

@@ -5,7 +5,7 @@
 ## 스타 급상승 (1일)
 
 - +3.3k [huamidev/GestaltX](https://github.com/huamidev/GestaltX) ★4.6k · 검증된 인기 · 실효 62 · An MobileGestalt editor for iOS 27.x, featuring region-code tweaks, device prese
-- +3.0k [morluto/rea](https://github.com/morluto/rea) ★449.8k · 검증된 인기 · 실효 95 · Reverse engineer anything with agents, from app behavior down to native binaries
+- +3.1k [morluto/rea](https://github.com/morluto/rea) ★449.8k · 검증된 인기 · 실효 95 · Reverse engineer anything with agents, from app behavior down to native binaries
 - +2.8k [meta/astryx](https://github.com/meta/astryx) ★22.6k · 검증된 인기 · 실효 84 · An open source design system that's fully customizable and agent ready
 - +2.4k [Minireel/HGhub](https://github.com/Minireel/HGhub) ★8.1k · 학습/문서형 · 실효 41 · YellowFruit third-party client
 - +2.0k [sherlock-project/sherlock](https://github.com/sherlock-project/sherlock) ★108.9k · 검증된 인기 · 실효 76 · Hunt down social media accounts by username across social networks
@@ -13,8 +13,8 @@
 - +1.8k [janestreet/agent_skills](https://github.com/janestreet/agent_skills) ★3.7k · 학습/문서형 · 실효 30 · Agent skills
 - +1.7k [anefzaoui/misterdownloadmanager](https://github.com/anefzaoui/misterdownloadmanager) ★5.5k · 검증된 인기 · 실효 69 · misterdownloadmanager: The ultimate open-source, clean-room download manager wri
 - +1.6k [pingdotgg/t3code](https://github.com/pingdotgg/t3code) ★55.7k · 검증된 인기 · 실효 83
-- +1.6k [NotRexed/Hookshot](https://github.com/NotRexed/Hookshot) ★6.4k · 검증된 인기 · 실효 85 · A Native Recompilation Of The Legend Of Zelda: Ocarina Of Time Nintendo Switch 2
-- +1.4k [expo/exact](https://github.com/expo/exact) ★2.1k · 하이프 주의 · 실효 46
+- +1.6k [NotRexed/Hookshot](https://github.com/NotRexed/Hookshot) ★6.5k · 검증된 인기 · 실효 85 · A Native Recompilation Of The Legend Of Zelda: Ocarina Of Time Nintendo Switch 2
+- +1.4k [expo/exact](https://github.com/expo/exact) ★2.1k · 하이프 주의 · 실효 45
 - +1.4k [anthropics/skills](https://github.com/anthropics/skills) ★192.2k · 하이프 주의 · 실효 50 · Public repository for Agent Skills
 - +1.3k [Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model) ★68.7k · 검증된 인기 · 실효 74 · 在 dsh 里装上这个插件即可，无需登录、注册或填 API Key，就能使用包括 DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型——完全
 - +1.2k [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) ★69.2k · 하이프 주의 · 실효 36 · A coding-agent skill for multi-phase security audits with independently verified
@@ -40,8 +40,8 @@
 
 ## 실효성 점수 상승
 
-- +17 [expo/exact](https://github.com/expo/exact) ★2.1k · 하이프 주의 · 실효 46
 - +16 [huamidev/GestaltX](https://github.com/huamidev/GestaltX) ★4.6k · 검증된 인기 · 실효 62 · An MobileGestalt editor for iOS 27.x, featuring region-code tweaks, device prese
+- +16 [expo/exact](https://github.com/expo/exact) ★2.1k · 하이프 주의 · 실효 45
 - +10 [paipiange/nvzhuang](https://github.com/paipiange/nvzhuang) ★2.7k · 참여 대비 스타 과다 · 실효 52 · 1407 张 AI 女装参考图集与虚拟试穿网站，支持中英检索、OpenAI Images / Gemini / 豆包及自定义 Base URL、API Key、
 - +6 [AgriciDaniel/claude-seo](https://github.com/AgriciDaniel/claude-seo) ★27.9k · 검증된 인기 · 실효 85 · Universal SEO skill for Claude Code. 26 sub-skills + 19 sub-agents covering tech
 - +5 [motdotla/dotenv](https://github.com/motdotla/dotenv) ★20.6k · 검증된 인기 · 실효 74 · Loads environment variables from .env for nodejs projects.
@@ -56,7 +56,7 @@
 ## 새 루키 (7일 내 생성, 스타순)
 
 - [Minireel/HGhub](https://github.com/Minireel/HGhub) ★8.1k · 학습/문서형 · 실효 41 · YellowFruit third-party client
-- [NotRexed/Hookshot](https://github.com/NotRexed/Hookshot) ★6.4k · 검증된 인기 · 실효 85 · A Native Recompilation Of The Legend Of Zelda: Ocarina Of Time Nintendo Switch 2
+- [NotRexed/Hookshot](https://github.com/NotRexed/Hookshot) ★6.5k · 검증된 인기 · 실효 85 · A Native Recompilation Of The Legend Of Zelda: Ocarina Of Time Nintendo Switch 2
 - [huamidev/GestaltX](https://github.com/huamidev/GestaltX) ★4.6k · 검증된 인기 · 실효 62 · An MobileGestalt editor for iOS 27.x, featuring region-code tweaks, device prese
 - [KKKKhazix/agent-autoloop](https://github.com/KKKKhazix/agent-autoloop) ★4.4k · 검증된 인기 · 실효 82 · 让你的命令行 Agent 在后台自己接活、自己跟进到底；平时不烦你，遇到拿不准的事才发卡片找你拍板。
 - [janestreet/agent_skills](https://github.com/janestreet/agent_skills) ★3.7k · 학습/문서형 · 실효 30 · Agent skills

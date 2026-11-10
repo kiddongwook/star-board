@@ -125,6 +125,20 @@
         "Install 10.5 s, keyless brain ready in 7.2 s; keyword search found the right note for SQLite, due dates and hex codes"
       ],
       "catch": "With no key it only matches words: \"database\" found nothing and \"which database do we use\" ranked the wrong note first. Install from GitHub; the npm gbrain package is unrelated."
+    },
+    {
+      "repo": "addyosmani/agent-skills",
+      "date": "2026-11-11",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Catch the shortcuts an agent takes to make failing tests look green in a small todo app",
+      "ran": "README install (npx skills add addyosmani/agent-skills --agent claude-code -y), the floor guard from the constraint-driven-development skill (references/floor-guard.md) run as documented with --base main on a hand-written shortcut change and on a real fix",
+      "result": [
+        "25 skills installed into .claude/skills in 1.03 s",
+        "Shortcut change (test.skip, @ts-ignore, empty catch, coverage bar 80% to 60%) made npm test green with the bug still in; the guard flagged all 4 and exited 1 in 0.04 s (median of 3)",
+        "The real fix passed 5 of 5 tests and the guard said clean (exit 0)"
+      ],
+      "catch": "The guard is a simple pattern check (its docs: deliberately regex-shallow), so it catches lazy shortcuts, not a change hidden on purpose. It is a reference script you copy into your project. No AI agent was run; we wrote both changes."
     }
   ]
 }

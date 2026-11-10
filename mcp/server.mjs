@@ -240,7 +240,9 @@ const TOOLS = [
     } },
   { name: 'check_mcp', description: 'Check one MCP server before installing it: real-use evidence, maintenance, license, required keys, warning flags, and better-trusted alternatives. Accepts a registry name (io.github.owner/server), a GitHub repo, an npm/PyPI package or a remote URL.',
     inputSchema: { type: 'object', properties: { server: { type: 'string', description: 'registry name, owner/repo, GitHub URL, package id or remote URL' } }, required: ['server'] },
-    run: async ({ server }) => {
+    run: async (a = {}) => {
+      const server = String(a.server ?? a.query ?? a.name ?? a.repo ?? '').trim();
+      if (!server) return 'check_mcp needs "server": a registry name (io.github.owner/server), owner/repo, package id or remote URL.';
       const idx = await loadMcpIndex(), hits = findEntry(idx, server);
       if (!hits.length) {
         const { name } = await resolveName(server).catch(() => ({}));

@@ -139,6 +139,20 @@
         "The real fix passed 5 of 5 tests and the guard said clean (exit 0)"
       ],
       "catch": "The guard is a simple pattern check (its docs: deliberately regex-shallow), so it catches lazy shortcuts, not a change hidden on purpose. It is a reference script you copy into your project. No AI agent was run; we wrote both changes."
+    },
+    {
+      "repo": "GoogleChrome/modern-web-guidance-src",
+      "date": "2026-11-12",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Find the old web patterns in a small sign-up page written the way coding agents often write it",
+      "ran": "README Try-it-out commands (npx modern-web-guidance@latest legacy-scan . / search / retrieve) on the page before and after applying the fixes the guides name, plus the README skills install (npx skills add GoogleChrome/modern-web-guidance)",
+      "result": [
+        "legacy-scan found 8 modernization opportunities across 7 guides, each with file:line, in 0.64 s (median of 3)",
+        "After the guide fixes (field-sizing, details + interpolate-size, :user-invalid, scrollbar-color, color-scheme with fallback, SRI, autocomplete) the rescan found 0; app.js went from 12 lines to 4",
+        "The skill installed in 1.92 s (2 skills: modern-web-guidance, chrome-extensions)"
+      ],
+      "catch": "legacy-scan covers 33 guides (about 20% of the corpus) and calls its results provisional. Newer CSS is not in every browser yet; the guides add fallbacks. No AI agent was run; we wrote the page and the fixes."
     }
   ]
 }

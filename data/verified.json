@@ -3,101 +3,183 @@
   "contact": "starby.verify@gmail.com",
   "items": [
     {
-      "repo": "lightpanda-io/browser", "date": "2026-11-02", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "lightpanda-io/browser",
+      "date": "2026-11-02",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Turn a demo shop page into text (markdown) an AI agent can read",
       "ran": "./lightpanda fetch --dump markdown --wait-until networkidle <page> (nightly 1.1.0, telemetry off)",
-      "result": ["Product name, price ($244.99) and details came out as clean markdown", "Same page, same runner, median of 3: Lightpanda 0.27 s / 22 MB vs headless Chrome 1.94 s / 430 MB (PSS)"],
+      "result": [
+        "Product name, price ($244.99) and details came out as clean markdown",
+        "Same page, same runner, median of 3: Lightpanda 0.27 s / 22 MB vs headless Chrome 1.94 s / 430 MB (PSS)"
+      ],
       "catch": "Pages that load products late need --wait-until networkidle (--wait-ms 3000 still showed Loading). Telemetry is on by default."
     },
     {
-      "repo": "shiyu-coder/Kronos", "date": "2026-11-02", "kind": "daily", "stamp": "MOSTLY HYPE",
+      "repo": "shiyu-coder/Kronos",
+      "date": "2026-11-02",
+      "kind": "daily",
+      "stamp": "MOSTLY HYPE",
       "task": "Give the model 400 real 5-minute price candles and ask for the next 120",
       "ran": "README predictor example, Kronos-small + Kronos-Tokenizer-base, CPU only, same call with seeds 0-4",
-      "result": ["All 5 forecasts said down (137.9-141.2); the real price went up, 153.6 to 161.6", "About 51 s per forecast on CPU, average error 7.4-8.1%"],
+      "result": [
+        "All 5 forecasts said down (137.9-141.2); the real price went up, 153.6 to 161.6",
+        "About 51 s per forecast on CPU, average error 7.4-8.1%"
+      ],
       "catch": "One test set cannot judge the whole model. Not financial advice. No commits in the 90 days before the run."
     },
     {
-      "repo": "vercel-labs/agent-desktop", "date": "2026-11-03", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "vercel-labs/agent-desktop",
+      "date": "2026-11-03",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Let an AI operate a real desktop app: calculate 7 x 8 in gnome-calculator",
       "ran": "README commands against gnome-calculator on a virtual Linux desktop",
-      "result": ["The app showed 56", "0 mouse moves: it worked through the accessibility tree, not screen pixels"],
+      "result": [
+        "The app showed 56",
+        "0 mouse moves: it worked through the accessibility tree, not screen pixels"
+      ],
       "catch": "Needed a window manager (openbox) on the runner."
     },
     {
-      "repo": "D4Vinci/Scrapling", "date": "2026-11-03", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "D4Vinci/Scrapling",
+      "date": "2026-11-03",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Crawl a whole quotes site with the README spider",
       "ran": "README spider code, unchanged",
-      "result": ["100 quotes saved from 10 pages", "Median about 1 second for the whole crawl"],
+      "result": [
+        "100 quotes saved from 10 pages",
+        "Median about 1 second for the whole crawl"
+      ],
       "catch": ""
     },
     {
-      "repo": "max-sixty/worktrunk", "date": "2026-11-04", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "max-sixty/worktrunk",
+      "date": "2026-11-04",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Give 3 AI agents their own folder on one repo",
       "ran": "wt switch --create (x3), wt list, wt merge main, wt remove (wt v0.81.0)",
-      "result": ["3 branches and 3 worktree folders from 3 commands (28 characters vs 71 with plain git)", "wt merge main merged and removed the folder; wt remove refused a folder with an unsaved file"],
+      "result": [
+        "3 branches and 3 worktree folders from 3 commands (28 characters vs 71 with plain git)",
+        "wt merge main merged and removed the folder; wt remove refused a folder with an unsaved file"
+      ],
       "catch": "Without wt config shell install it cannot change your directory."
     },
     {
-      "repo": "JustVugg/colibri", "date": "2026-11-04", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "JustVugg/colibri",
+      "date": "2026-11-04",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Run a large language model on a small machine with no GPU",
       "ran": "README usage on a 2-core runner",
-      "result": ["13.6 GB model file ran with 1.8 GB peak RAM on 2 cores, no GPU"],
+      "result": [
+        "13.6 GB model file ran with 1.8 GB peak RAM on 2 cores, no GPU"
+      ],
       "catch": ""
     },
     {
-      "repo": "floci-io/floci", "date": "2026-11-04", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "floci-io/floci",
+      "date": "2026-11-04",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Run AWS services locally without an AWS account",
       "ran": "README quick start, compared with LocalStack latest on the same runner",
-      "result": ["Floci was ready in 0.09 s", "LocalStack latest exited with code 55 (it now needs a token)"],
+      "result": [
+        "Floci was ready in 0.09 s",
+        "LocalStack latest exited with code 55 (it now needs a token)"
+      ],
       "catch": ""
     },
     {
-      "repo": "mattpocock/skills", "date": "2026-11-04", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "mattpocock/skills",
+      "date": "2026-11-04",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Install every skill into a fresh Claude Code project",
       "ran": "npx skills@latest add mattpocock/skills -a claude-code --skill '*' -y (3 fresh projects)",
-      "result": ["38 skills installed, median 1.39 s", "103 files: 99 text (markdown/yaml), 4 code"],
+      "result": [
+        "38 skills installed, median 1.39 s",
+        "103 files: 99 text (markdown/yaml), 4 code"
+      ],
       "catch": "Using the skills needs an agent and a model; that part was not run. Pick the plugin or skills.sh, not both."
     },
     {
-      "repo": "github/spec-kit", "date": "2026-11-05", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "github/spec-kit",
+      "date": "2026-11-05",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Make a project agent-ready with Spec Kit",
       "ran": "README install, then the one setup command",
-      "result": ["One command in 0.39 s created 29 files"],
+      "result": [
+        "One command in 0.39 s created 29 files"
+      ],
       "catch": "Agent folders may hold tokens: add them to .gitignore."
     },
     {
-      "repo": "garrytan/gstack", "date": "2026-11-06", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "garrytan/gstack",
+      "date": "2026-11-06",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Install gstack, then test its /careful guard with risky commands an agent might run",
       "ran": "README install step 1 (git clone ... ~/.claude/skills/gstack && ./setup), then the careful hook with 8 commands in a small repo",
-      "result": ["Setup finished (exit 0) and added 66 skills in 175 s on 2 cores", "2 of 8 commands blocked (force-push to main, rm -rf ~), 4 asked first, 2 allowed; 0.14 s per check"],
+      "result": [
+        "Setup finished (exit 0) and added 66 skills in 175 s on 2 cores",
+        "2 of 8 commands blocked (force-push to main, rm -rf ~), 4 asked first, 2 allowed; 0.14 s per check"
+      ],
       "catch": "/careful is per session: type it each time. Needs Bun. README says 31 s setup on 4 cores; ours took about 3 minutes."
     },
     {
-      "repo": "vercel-labs/agent-browser", "date": "2026-11-06", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "vercel-labs/agent-browser",
+      "date": "2026-11-06",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Test a small todo app (with one planted bug) the way an agent would",
       "ran": "README install and quick start, then open / snapshot -i / fill / click / errors on the todo app",
-      "result": ["Refs found the textbox and buttons; the added item showed up on re-read", "Clear done left the item, and errors --json named the bug (ReferenceError: doneItems is not defined); 0.016 s per page read"],
+      "result": [
+        "Refs found the textbox and buttons; the added item showed up on re-read",
+        "Clear done left the item, and errors --json named the bug (ReferenceError: doneItems is not defined); 0.016 s per page read"
+      ],
       "catch": "On Ubuntu 26.04 Chrome would not start (no usable sandbox) until unprivileged user namespaces were allowed."
     },
     {
-      "repo": "Nutlope/hallmark", "date": "2026-11-06", "kind": "daily", "stamp": "STILL EARLY",
+      "repo": "Nutlope/hallmark",
+      "date": "2026-11-06",
+      "kind": "daily",
+      "stamp": "STILL EARLY",
       "task": "Check pages for the tells that make a site look AI-made",
       "ran": "README install (npx skills add nutlope/hallmark -g), then sloplint on three pages",
-      "result": ["Its AI-slop test page: 24 FAIL in 0.12 s; its example page: 0", "Our own site: 24 FAIL, 21 of them colour codes outside the palette"],
+      "result": [
+        "Its AI-slop test page: 24 FAIL in 0.12 s; its example page: 0",
+        "Our own site: 24 FAIL, 21 of them colour codes outside the palette"
+      ],
       "catch": "No release yet and few contributors for its stars. skills.sh rated it Med Risk at install."
     },
     {
-      "repo": "astral-sh/ruff", "date": "2026-11-07", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "astral-sh/ruff",
+      "date": "2026-11-07",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Clean up a small todo app full of typical AI-code leftovers, and compare speed with Flake8",
       "ran": "README commands (uvx ruff@0.17.4 check, ruff check --fix, ruff format) on the app; ruff vs flake8 on CPython 3.14 Lib/, default rules, 3 runs each",
-      "result": ["13 problems found in 0.024 s; --fix fixed 7, and one warning left (response never used) pointed at a real typo bug", "CPython Lib (1,830 files): Flake8 91.6 s vs Ruff 0.98 s, about 94x faster"],
+      "result": [
+        "13 problems found in 0.024 s; --fix fixed 7, and one warning left (response never used) pointed at a real typo bug",
+        "CPython Lib (1,830 files): Flake8 91.6 s vs Ruff 0.98 s, about 94x faster"
+      ],
       "catch": "Default rules are light: == None passed and the misspelled name was not flagged directly (a star import hid it). Turn on more rules."
     },
     {
-      "repo": "prometheus/prometheus", "date": "2026-11-07", "kind": "daily", "stamp": "ACTUALLY USED",
+      "repo": "prometheus/prometheus",
+      "date": "2026-11-07",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
       "task": "Watch a small todo API and alert when it fails or goes down",
       "ran": "README release binary v3.16.0, a /metrics page via prometheus-client, two alert rules (up == 0 for 15s, errors > 5%); a bug switched on, then the app killed 3 times",
-      "result": ["Error alert firing 21.3 s after 1 in 5 todo requests started failing", "Down alert firing 21.8 s after the app was killed (median of 3; 15 s of it is the for: wait)"],
+      "result": [
+        "Error alert firing 21.3 s after 1 in 5 todo requests started failing",
+        "Down alert firing 21.8 s after the app was killed (median of 3; 15 s of it is the for: wait)"
+      ],
       "catch": "Prometheus only flags alerts; a phone or chat message needs Alertmanager."
     },
     {
@@ -153,6 +235,20 @@
         "The skill installed in 1.92 s (2 skills: modern-web-guidance, chrome-extensions)"
       ],
       "catch": "legacy-scan covers 33 guides (about 20% of the corpus) and calls its results provisional. Newer CSS is not in every browser yet; the guides add fallbacks. No AI agent was run; we wrote the page and the fixes."
+    },
+    {
+      "repo": "nvm-sh/nvm",
+      "date": "2026-11-13",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Run a new todo app (written with Object.groupBy, the way coding agents often write it) next to an old project pinned to Node 18, on one machine",
+      "ran": "README install script (v0.41.0) and the README .nvmrc usage: echo \"<version>\" > .nvmrc, nvm install, nvm use in each project folder",
+      "result": [
+        "On Node 18 the todo app crashed: TypeError: Object.groupBy is not a function (exit 1)",
+        "nvm install read the folder's .nvmrc (24) and set up Node v24.22.3 in 2.1 s including the download; the app then ran (todo: 2, done: 1)",
+        "Switching between the two folders with nvm use took 0.21 s (median of 3); a folder without .nvmrc exits 127, as documented"
+      ],
+      "catch": "Per terminal: new shells start on the default version unless you run nvm use or add the README auto-switch snippet. Plain Windows needs WSL or Git Bash (nvm-windows is a separate project). nvm was preinstalled on the runner, so install time was not measured. No AI agent was run; we wrote both projects."
     }
   ]
 }

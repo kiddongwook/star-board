@@ -4,7 +4,7 @@
 
 ## 스타 급상승 (1일)
 
-- +2.6k [morluto/rea](https://github.com/morluto/rea) ★455.1k · 검증된 인기 · 실효 95 · Reverse engineer anything with agents, from app behavior down to native binaries
+- +2.6k [morluto/rea](https://github.com/morluto/rea) ★455.2k · 검증된 인기 · 실효 95 · Reverse engineer anything with agents, from app behavior down to native binaries
 - +2.0k [janestreet/agent_skills](https://github.com/janestreet/agent_skills) ★7.7k · 학습/문서형 · 실효 31 · Agent skills
 - +1.6k [Lee-xeo/Claude-Cage](https://github.com/Lee-xeo/Claude-Cage) ★4.7k · 검증된 인기 · 실효 64 · Cage：为 Claude 特化的轻量化虚拟机，彻底杜绝网络泄露。多平台适配，支持多账号管理、远程部署、移动端操控。
 - +1.6k [meta/astryx](https://github.com/meta/astryx) ★26.4k · 검증된 인기 · 실효 84 · An open source design system that's fully customizable and agent ready
@@ -13,12 +13,12 @@
 - +1.3k [Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model) ★71.3k · 검증된 인기 · 실효 74 · 在 dsh 里装上这个插件即可，无需登录、注册或填 API Key，就能使用包括 DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型——完全
 - +1.1k [GoogleChrome/modern-web-guidance-src](https://github.com/GoogleChrome/modern-web-guidance-src) ★2.8k · 학습/문서형 · 실효 78 · Keep your coding agent up to date with the latest web best practices
 - +1.1k [stablyai/orca](https://github.com/stablyai/orca) ★123.4k · 검증된 인기 · 실효 81 · Orca lets you run a fleet of coding agents (e.g. Claude Code, Codex) with your o
-- +1.0k [anefzaoui/misterdownloadmanager](https://github.com/anefzaoui/misterdownloadmanager) ★7.8k · 검증된 인기 · 실효 72 · misterdownloadmanager: The ultimate open-source, clean-room download manager wri
+- +1.1k [anefzaoui/misterdownloadmanager](https://github.com/anefzaoui/misterdownloadmanager) ★7.8k · 검증된 인기 · 실효 72 · misterdownloadmanager: The ultimate open-source, clean-room download manager wri
 - +1.0k [NotRexed/Hookshot](https://github.com/NotRexed/Hookshot) ★8.7k · 검증된 인기 · 실효 87 · A Native Recompilation Of The Legend Of Zelda: Ocarina Of Time Nintendo Switch 2
-- +1.0k [shanselman/gputaskman](https://github.com/shanselman/gputaskman) ★2.7k · 검증된 인기 · 실효 60 · A GPU task manager for Windows, Linux, and WSL: per-process VRAM, GPU activity, 
+- +1.0k [shanselman/gputaskman](https://github.com/shanselman/gputaskman) ★2.7k · 검증된 인기 · 실효 61 · A GPU task manager for Windows, Linux, and WSL: per-process VRAM, GPU activity, 
 - +1.0k [ccch1mneyyy/dsh-Go](https://github.com/ccch1mneyyy/dsh-Go) ★20.7k · 참여 대비 스타 과다 · 실효 66 · dsh-go — DeepSeek Harness 装进口袋：手机本机运行，也能遥控你的电脑。
 - +1.0k [mattpocock/skills](https://github.com/mattpocock/skills) ★323.0k · 검증된 인기 · 실효 74 · Skills for Real Engineers. Straight from my .agents directory.
-- +967 [we-promise/sure](https://github.com/we-promise/sure) ★13.8k · 검증된 인기 · 실효 84 · The personal finance app for everyone (by everyone)
+- +979 [we-promise/sure](https://github.com/we-promise/sure) ★13.9k · 검증된 인기 · 실효 84 · The personal finance app for everyone (by everyone)
 
 ## 신규 진입
 
@@ -55,7 +55,7 @@
 
 - [NotRexed/Hookshot](https://github.com/NotRexed/Hookshot) ★8.7k · 검증된 인기 · 실효 87 · A Native Recompilation Of The Legend Of Zelda: Ocarina Of Time Nintendo Switch 2
 - [huamidev/GestaltX](https://github.com/huamidev/GestaltX) ★6.9k · 검증된 인기 · 실효 68 · An MobileGestalt editor for iOS 27.x, featuring region-code tweaks, device prese
-- [tangerineturtle1/NX2navi](https://github.com/tangerineturtle1/NX2navi) ★3.5k · 검증된 인기 · 실효 59
+- [tangerineturtle1/NX2navi](https://github.com/tangerineturtle1/NX2navi) ★3.6k · 검증된 인기 · 실효 59
 - [jhaizhou-ops/S2Arm](https://github.com/jhaizhou-ops/S2Arm) ★2.8k · 검증된 인기 · 실효 72 · Run your own Switch games natively on iPhone, iPad and Mac: game code rewritten 
 - [jamesondh/chimera-vocal-synth](https://github.com/jamesondh/chimera-vocal-synth) ★2.1k · 검증된 인기 · 실효 55 · the ultimate vocal synthesizer - sing, speak, beatbox, and more
 - [JenkinWoo/sheeridVerify](https://github.com/JenkinWoo/sheeridVerify) ★2.1k · 참여 대비 스타 과다 · 실효 27
@@ -66,7 +66,7 @@
 
 ## 스타 조작 의심
 
-- [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) ★189.7k · 참여 대비 스타 과다 · 실효 77 · Makes your AI agent think like the laziest senior dev in the room. The best code
+- [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) ★189.8k · 참여 대비 스타 과다 · 실효 77 · Makes your AI agent think like the laziest senior dev in the room. The best code
 - [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) ★61.0k · 참여 대비 스타 과다 · 실효 62 · A skill to stop your coding agent from burying the answer. ADHD-friendly output.
 - [Nutlope/hallmark](https://github.com/Nutlope/hallmark) ★54.0k · 참여 대비 스타 과다 · 실효 53 · Anti-AI-slop design skill for Claude Code, Cursor, and Codex.
 - [ifixai-ai/iFixAi](https://github.com/ifixai-ai/iFixAi) ★45.0k · 참여 대비 스타 과다 · 실효 76 · Independent Auditing of AI Agents. Run by human or the agent itself, to answer t

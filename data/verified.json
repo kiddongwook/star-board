@@ -249,6 +249,20 @@
         "Switching between the two folders with nvm use took 0.21 s (median of 3); a folder without .nvmrc exits 127, as documented"
       ],
       "catch": "Per terminal: new shells start on the default version unless you run nvm use or add the README auto-switch snippet. Plain Windows needs WSL or Git Bash (nvm-windows is a separate project). nvm was preinstalled on the runner, so install time was not measured. No AI agent was run; we wrote both projects."
+    },
+    {
+      "repo": "ChromeDevTools/chrome-devtools-mcp",
+      "date": "2026-11-14",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Check a small landing page written the way AI-built pages often come out (signup script looks for the wrong form id, image without alt, icon button without a name, faint grey text), then check the fixed version the same way",
+      "ran": "The package CLI from its README and CLI guide (chrome-devtools-mcp 1.13.0, headless Chrome 157): navigate_page, list_console_messages (with stack traces), lighthouse_audit, usage statistics off",
+      "result": [
+        "list_console_messages found the dead signup button: Uncaught TypeError: Cannot read properties of null (reading 'addEventListener') at app.js:2:6, in 0.12 s (median of 3)",
+        "lighthouse_audit: Accessibility 56 with 8 failed checks (button-name, image-alt, color-contrast 1.67, html-has-lang, landmark-one-main, ...), about 4.5 s (median of 3)",
+        "After fixing what it named: no TypeError, Accessibility 100, Agentic Browsing 100; 2 checks still failing (favicon 404 console error, no meta description)"
+      ],
+      "catch": "Usage statistics go to Google by default (--no-usage-statistics or CI to opt out), and the agent can read everything in that browser. Performance traces may send URLs to the CrUX API unless --no-performance-crux. No AI agent was run; we wrote the page and the fixes."
     }
   ]
 }

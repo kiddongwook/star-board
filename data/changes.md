@@ -4,21 +4,21 @@
 
 ## 스타 급상승 (1일)
 
-- +2.3k [morluto/rea](https://github.com/morluto/rea) ★457.5k · 검증된 인기 · 실효 95 · Reverse engineer anything with agents, from app behavior down to native binaries
-- +1.9k [GoogleChrome/modern-web-guidance-src](https://github.com/GoogleChrome/modern-web-guidance-src) ★4.7k · 학습/문서형 · 실효 77 · Keep your coding agent up to date with the latest web best practices
+- +2.4k [morluto/rea](https://github.com/morluto/rea) ★457.5k · 검증된 인기 · 실효 95 · Reverse engineer anything with agents, from app behavior down to native binaries
+- +1.9k [GoogleChrome/modern-web-guidance-src](https://github.com/GoogleChrome/modern-web-guidance-src) ★4.8k · 학습/문서형 · 실효 77 · Keep your coding agent up to date with the latest web best practices
 - +1.6k [storytold/craft-anything](https://github.com/storytold/craft-anything) ★31.4k · 검증된 인기 · 실효 82 · Craft Anything: understand how any software works, and craft your own.
 - +1.5k [Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model) ★72.8k · 검증된 인기 · 실효 74 · 在 dsh 里装上这个插件即可，无需登录、注册或填 API Key，就能使用包括 DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型——完全
-- +1.2k [pingdotgg/t3code](https://github.com/pingdotgg/t3code) ★59.5k · 검증된 인기 · 실효 84 · The best way to control Claude Code, Codex and more from any computer or phone
+- +1.3k [pingdotgg/t3code](https://github.com/pingdotgg/t3code) ★59.5k · 검증된 인기 · 실효 84 · The best way to control Claude Code, Codex and more from any computer or phone
 - +1.1k [ccch1mneyyy/dsh-Go](https://github.com/ccch1mneyyy/dsh-Go) ★21.8k · 참여 대비 스타 과다 · 실효 67 · dsh-go — DeepSeek Harness 装进口袋：手机本机运行，也能遥控你的电脑。
-- +1.0k [anefzaoui/misterdownloadmanager](https://github.com/anefzaoui/misterdownloadmanager) ★8.8k · 검증된 인기 · 실효 73 · misterdownloadmanager: The ultimate open-source, clean-room download manager wri
-- +931 [stablyai/orca](https://github.com/stablyai/orca) ★124.4k · 검증된 인기 · 실효 81 · Orca lets you run a fleet of coding agents (e.g. Claude Code, Codex) with your o
-- +912 [meta/astryx](https://github.com/meta/astryx) ★27.4k · 검증된 인기 · 실효 84 · An open source design system that's fully customizable and agent ready
-- +825 [we-promise/sure](https://github.com/we-promise/sure) ★14.7k · 검증된 인기 · 실효 84 · The personal finance app for everyone (by everyone)
-- +799 [mattpocock/skills](https://github.com/mattpocock/skills) ★323.8k · 검증된 인기 · 실효 74 · Skills for Real Engineers. Straight from my .agents directory.
-- +787 [debpalash/VoiceStudio](https://github.com/debpalash/VoiceStudio) ★109.9k · 검증된 인기 · 실효 87 · VoiceStudio is the open-source, fully-local ElevenLabs alternative — voice cloni
-- +745 [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) ★115.0k · 참여 대비 스타 과다 · 실효 77 · Agent skills that give coding agents taste: art direction, reference images and 
-- +722 [openai/codex-security](https://github.com/openai/codex-security) ★13.1k · 검증된 인기 · 실효 79 · OpenAI's Codex Security CLI and TypeScript SDK for finding, validating, and fixi
-- +711 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) ★280.5k · 검증된 인기 · 실효 69 · DeepSeek Harness: Everything is a Plugin.
+- +1.0k [anefzaoui/misterdownloadmanager](https://github.com/anefzaoui/misterdownloadmanager) ★8.9k · 검증된 인기 · 실효 73 · misterdownloadmanager: The ultimate open-source, clean-room download manager wri
+- +941 [stablyai/orca](https://github.com/stablyai/orca) ★124.4k · 검증된 인기 · 실효 81 · Orca lets you run a fleet of coding agents (e.g. Claude Code, Codex) with your o
+- +918 [meta/astryx](https://github.com/meta/astryx) ★27.4k · 검증된 인기 · 실효 84 · An open source design system that's fully customizable and agent ready
+- +839 [we-promise/sure](https://github.com/we-promise/sure) ★14.7k · 검증된 인기 · 실효 84 · The personal finance app for everyone (by everyone)
+- +812 [mattpocock/skills](https://github.com/mattpocock/skills) ★323.8k · 검증된 인기 · 실효 74 · Skills for Real Engineers. Straight from my .agents directory.
+- +802 [debpalash/VoiceStudio](https://github.com/debpalash/VoiceStudio) ★109.9k · 검증된 인기 · 실효 87 · VoiceStudio is the open-source, fully-local ElevenLabs alternative — voice cloni
+- +754 [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) ★115.0k · 참여 대비 스타 과다 · 실효 77 · Agent skills that give coding agents taste: art direction, reference images and 
+- +732 [openai/codex-security](https://github.com/openai/codex-security) ★13.1k · 검증된 인기 · 실효 79 · OpenAI's Codex Security CLI and TypeScript SDK for finding, validating, and fixi
+- +714 [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness) ★280.5k · 검증된 인기 · 실효 69 · DeepSeek Harness: Everything is a Plugin.
 
 ## 신규 진입
 
@@ -41,9 +41,13 @@
 ## 실효성 점수 상승
 
 - +13 [JaidedAI/EasyOCR](https://github.com/JaidedAI/EasyOCR) ★30.1k · 성숙/유지보수 · 실효 65 · Ready-to-use OCR with 80+ supported languages and all popular writing scripts in
-- +10 [Tencent/LoopForge](https://github.com/Tencent/LoopForge) ★666 · 검증된 인기 · 실효 75 · Self-hosted workflows for coding-agent delivery. Orchestrate CodeBuddy, Codex an
+- +10 [Tencent/LoopForge](https://github.com/Tencent/LoopForge) ★667 · 검증된 인기 · 실효 75 · Self-hosted workflows for coding-agent delivery. Orchestrate CodeBuddy, Codex an
 - +9 [Fractal-Compute-Orchestrations/FractalWorkspace](https://github.com/Fractal-Compute-Orchestrations/FractalWorkspace) ★9.2k · 초기/정체 · 실효 46 · A unified ecosystem and workspace for large-scale federated learning of Large Mo
 - +7 [garrytan/gstack](https://github.com/garrytan/gstack) ★141.5k · 검증된 인기 · 실효 95 · Use Garry Tan's exact Claude Code setup: 23 opinionated tools that serve as CEO,
+
+## 실효성 점수 하락
+
+- -5 [motdotla/dotenv](https://github.com/motdotla/dotenv) ★20.6k · 검증된 인기 · 실효 69 · Loads environment variables from .env for nodejs projects.
 
 ## 새 루키 (7일 내 생성, 스타순)
 
@@ -68,5 +72,5 @@
 - [titanwings/distilly](https://github.com/titanwings/distilly) ★26.6k · 참여 대비 스타 과다 · 실효 53 · Distilly — Distill how they think into reusable Skills for any Agent or Bot. For
 - [deepseek-ai/DeepInfer](https://github.com/deepseek-ai/DeepInfer) ★26.0k · 참여 대비 스타 과다 · 실효 39 · DeepInfer: High-performance, large-scale inference framework for DeepSeek models
 - [ccch1mneyyy/dsh-Go](https://github.com/ccch1mneyyy/dsh-Go) ★21.8k · 참여 대비 스타 과다 · 실효 67 · dsh-go — DeepSeek Harness 装进口袋：手机本机运行，也能遥控你的电脑。
-- [heydamir/unslop](https://github.com/heydamir/unslop) ★15.6k · 참여 대비 스타 과다 · 실효 42 · A Claude skill that turns vibecoded, AI-looking UI into a designed interface
+- [heydamir/unslop](https://github.com/heydamir/unslop) ★15.7k · 참여 대비 스타 과다 · 실효 42 · A Claude skill that turns vibecoded, AI-looking UI into a designed interface
 - [spinabot/brigade](https://github.com/spinabot/brigade) ★11.4k · 참여 대비 스타 과다 · 실효 63 · Brigade — Your personal intelligence, built enterprise-grade

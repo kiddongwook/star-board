@@ -263,6 +263,20 @@
         "After fixing what it named: no TypeError, Accessibility 100, Agentic Browsing 100; 2 checks still failing (favicon 404 console error, no meta description)"
       ],
       "catch": "Usage statistics go to Google by default (--no-usage-statistics or CI to opt out), and the agent can read everything in that browser. Performance traces may send URLs to the CrUX API unless --no-performance-crux. No AI agent was run; we wrote the page and the fixes."
+    },
+    {
+      "repo": "JuliusBrussee/caveman",
+      "date": "2026-11-15",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Run a small todo app test suite the size real projects have (301 tests, debug logs left in the code, one real bug so 1 test fails) and see how much an AI agent would have to read, with and without caveman",
+      "ran": "The README's command caveman shrink -- npm test (@caveman-ai/cli 4.1.0, engine from caveman setup --install), then caveman retrieve with the handle it printed; telemetry off (DO_NOT_TRACK=1); tokens counted with gpt-tokenizer o200k_base",
+      "result": [
+        "Plain npm test: 2,213 lines, 40,579 tokens. caveman shrink -- npm test: 124 lines, 1,625 tokens incl. its footer (its own count 40,575 -> 1,566, about 96% less)",
+        "Kept the failing test name, AssertionError, 1 !== 0 and store.test.js:15, and passed exit code 1 through; caveman retrieve gave back all 2,213 lines",
+        "Time: 0.41 s -> 0.65 s per test run (median of 3, about +0.24 s)"
+      ],
+      "catch": "The CLI sends usage stats by default (caveman telemetry off or DO_NOT_TRACK=1). The shrunk output is a summary the model reads instead of every line (lossless_to_model false); the original stays recoverable. HTML has no compressor yet (README). No AI agent was run; we wrote the app and tests."
     }
   ]
 }

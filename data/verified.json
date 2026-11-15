@@ -277,6 +277,20 @@
         "Time: 0.41 s -> 0.65 s per test run (median of 3, about +0.24 s)"
       ],
       "catch": "The CLI sends usage stats by default (caveman telemetry off or DO_NOT_TRACK=1). The shrunk output is a summary the model reads instead of every line (lossless_to_model false); the original stays recoverable. HTML has no compressor yet (README). No AI agent was run; we wrote the app and tests."
+    },
+    {
+      "repo": "NVIDIA/SkillEvaluator",
+      "date": "2026-11-16",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Check a project skill in a small todo app (.claude/skills/deploy) written in a hurry: vague description, name Deploy, a fake AWS key pasted into its script; then fix what the report says and check again",
+      "ran": "The README's Tier 1 command skillevaluator validate <skill> --tiers 1 (skillevaluator 0.9.0 via uv, no API key; it fetched SkillSpector 2.13.3 and Gitleaks 8.30.0 itself; Bandit 1.9.4 added), 3 versions of the same skill, 3 runs each",
+      "result": [
+        "Rushed skill: 4 of 11 checks failed (name format, AWS key in the PII scan, 2 keys found by Gitleaks on deploy.py lines 3-4, quality D 62.0/100), 2.4 s median",
+        "Fix 1 (key from an env variable, missing sections added): quality A 96.5 but still 1 fail: SkillSpector flagged HIGH that the S3_BUCKET setting flows straight into subprocess.run",
+        "Fix 2 (bucket name read into a variable and pattern-checked first): 11/11 passed, 2.8 s; the data-flow note stays as a MEDIUM warning"
+      ],
+      "catch": "Tier 1 grades how a skill is written (format, secrets, security heuristics), not whether it helps the agent (that is Tier 3: a model key + Docker). Without Bandit the code scan does not run and validate exits 1. Adding allowed-tools to the frontmatter turned on 3 HIGH least-privilege errors in our run. README support level: Experimental. We wrote the skill; the key is fake; no AI model was run."
     }
   ]
 }

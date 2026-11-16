@@ -1,43 +1,45 @@
 {
- "generatedAt": "2026-11-09T00:59:25.013Z",
- "servers": 59825,
- "withGithub": 39166,
- "uniqueRepos": 30714,
- "reposFound": 26594,
- "remotes": 39909,
- "packages": 23739,
+ "generatedAt": "2026-11-16T01:28:24.672Z",
+ "servers": 64895,
+ "withGithub": 41579,
+ "uniqueRepos": 32411,
+ "reposFound": 28220,
+ "remotes": 43937,
+ "packages": 24960,
  "verdicts": {
-  "proven": 953,
-  "active": 3565,
-  "risky": 17280,
-  "weak": 34323,
-  "early": 3704
+  "proven": 1001,
+  "active": 3832,
+  "risky": 18599,
+  "weak": 37607,
+  "early": 3856
  },
  "firstSeenByMonth": {
-  "2026-07": 3641,
-  "2026-11": 11927,
-  "2026-09": 9980,
-  "2026-04": 1582,
-  "2026-10": 18778,
-  "2026-08": 5815,
-  "2026-02": 884,
-  "2026-03": 1475,
-  "2026-05": 2023,
-  "2026-06": 2487,
+  "2026-07": 3580,
+  "2026-11": 18806,
+  "2026-09": 9795,
+  "2026-04": 1573,
+  "2026-10": 17380,
+  "2026-08": 5727,
+  "2026-02": 876,
+  "2026-03": 1466,
+  "2026-05": 2007,
+  "2026-06": 2458,
   "2025-10": 223,
   "2025-09": 344,
-  "2026-01": 286,
-  "2025-11": 139,
-  "2025-12": 203,
-  "2025-03": 8,
+  "2026-01": 287,
+  "2025-11": 137,
+  "2025-12": 199,
+  "2024-11": 4,
+  "2025-03": 7,
   "2023-05": 1,
-  "2025-06": 2,
   "2025-04": 3,
   "2024-08": 2,
+  "2022-02": 1,
+  "2025-01": 1,
   "2025-08": 2,
-  "2024-11": 5,
   "2024-05": 2,
   "2018-11": 1,
+  "2025-06": 1,
   "2024-01": 1,
   "2022-08": 2,
   "2025-07": 1,
@@ -56,12 +58,12 @@
    "servers": 2366
   },
   {
-   "ns": "io.github.pipeworx-io",
-   "servers": 1915
+   "ns": "io.github.mrfentmen",
+   "servers": 2055
   },
   {
-   "ns": "io.github.mrfentmen",
-   "servers": 1804
+   "ns": "io.github.pipeworx-io",
+   "servers": 1936
   },
   {
    "ns": "io.github.mcp-dir",
@@ -69,15 +71,19 @@
   },
   {
    "ns": "io.usefulapi",
-   "servers": 884
-  },
-  {
-   "ns": "io.github.theluckystrike",
-   "servers": 409
+   "servers": 972
   },
   {
    "ns": "io.github.CloudCorpRecords",
-   "servers": 386
+   "servers": 448
+  },
+  {
+   "ns": "io.github.theluckystrike",
+   "servers": 412
+  },
+  {
+   "ns": "dev.cotlet",
+   "servers": 401
   },
   {
    "ns": "io.github.Evozim",
@@ -105,11 +111,15 @@
   },
   {
    "ns": "com.a2awire",
-   "servers": 134
+   "servers": 135
   },
   {
    "ns": "com.textforagents",
-   "servers": 131
+   "servers": 135
+  },
+  {
+   "ns": "com.mambabuilt",
+   "servers": 133
   },
   {
    "ns": "io.github.codespar",
@@ -120,12 +130,8 @@
    "servers": 125
   },
   {
-   "ns": "com.mambabuilt",
-   "servers": 113
-  },
-  {
    "ns": "io.github.Servosity",
-   "servers": 107
+   "servers": 108
   },
   {
    "ns": "eu.ansvar",
@@ -136,6 +142,10 @@
    "servers": 101
   },
   {
+   "ns": "io.github.Nero-Engine",
+   "servers": 96
+  },
+  {
    "ns": "ai.getvda",
    "servers": 95
   },
@@ -144,34 +154,26 @@
    "servers": 95
   },
   {
+   "ns": "io.github.WYRE-AI",
+   "servers": 90
+  },
+  {
    "ns": "com.modevc",
    "servers": 88
   },
   {
-   "ns": "io.github.WYRE-AI",
-   "servers": 88
-  },
-  {
-   "ns": "io.github.Nero-Engine",
-   "servers": 86
-  },
-  {
    "ns": "io.github.chrischall",
-   "servers": 81
+   "servers": 84
   },
   {
    "ns": "io.github.nirholas",
-   "servers": 80
+   "servers": 81
   },
   {
    "ns": "com.mcparmory",
    "servers": 76
-  },
-  {
-   "ns": "io.github.sepehr071",
-   "servers": 76
   }
  ],
- "indexBytesGz": 7302147,
+ "indexBytesGz": 7879414,
  "indexUrl": "https://github.com/kiddongwook/star-board/releases/download/mcp-index/mcp-index.json.gz"
 }

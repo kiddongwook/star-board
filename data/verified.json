@@ -291,6 +291,20 @@
         "Fix 2 (bucket name read into a variable and pattern-checked first): 11/11 passed, 2.8 s; the data-flow note stays as a MEDIUM warning"
       ],
       "catch": "Tier 1 grades how a skill is written (format, secrets, security heuristics), not whether it helps the agent (that is Tier 3: a model key + Docker). Without Bandit the code scan does not run and validate exits 1. Adding allowed-tools to the frontmatter turned on 3 HIGH least-privilege errors in our run. README support level: Experimental. We wrote the skill; the key is fake; no AI model was run."
+    },
+    {
+      "repo": "kajisho5/ffmpeg-skill",
+      "date": "2026-11-17",
+      "kind": "daily",
+      "stamp": "STILL EARLY",
+      "task": "Check a finished YouTube Short (our own latest Star Board film, 52.8 s, 1080x1920) against the Shorts and Reels delivery specs, fix what fails, and check again",
+      "ran": "The README install (sudo apt install ffmpeg, npx ffmpeg-skill 3.10.1) and its shell tools: python3 check.py film.mp4 --platform shorts, then python3 loudness.py film.mp4 (-14 LUFS, -1 dBTP), then check.py again; 3 runs each. No API key, nothing uploaded",
+      "result": [
+        "As rendered: 1 of 12 Shorts checks failed, loudness -17.9 LUFS (target -14 ± 2); aspect, resolution, codec and the rest passed. 1.07 s median",
+        "After loudness.py: -14.2 LUFS, true peak -1.0 dBTP, 12/12 checks pass (Reels 13/13); video stream copied, input file unchanged. 3.78 s median",
+        "Same check on all 46 films of our channel (on our own PC): 46 of 46 failed on loudness alone, -18.2 to -17.2 LUFS"
+      ],
+      "catch": "The -14 LUFS target is the tool's own platform table (marked judgement); platforms re-level audio themselves. Needs FFmpeg installed (doctor flagged the runner's Ubuntu FFmpeg 8.0.1 as older than an upstream CVE fix). The project is 74 days old with 9 contributors. On our PC (FFmpeg 8.1) the first encode overshot the -1 dBTP peak and the tool re-encoded by itself. The films are ours; this is a delivery check, not a judgement of their content."
     }
   ]
 }

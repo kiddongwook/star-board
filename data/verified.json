@@ -305,6 +305,20 @@
         "Same check on all 46 films of our channel (on our own PC): 46 of 46 failed on loudness alone, -18.2 to -17.2 LUFS"
       ],
       "catch": "The -14 LUFS target is the tool's own platform table (marked judgement); platforms re-level audio themselves. Needs FFmpeg installed (doctor flagged the runner's Ubuntu FFmpeg 8.0.1 as older than an upstream CVE fix). The project is 74 days old with 9 contributors. On our PC (FFmpeg 8.1) the first encode overshot the -1 dBTP peak and the tool re-encoded by itself. The films are ours; this is a delivery check, not a judgement of their content."
+    },
+    {
+      "repo": "affaan-m/ECC",
+      "date": "2026-11-18",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Check a small to-do app's Claude Code setup (CLAUDE.md, .claude/settings.json, .mcp.json) of the kind people copy from blog posts, fix it, and check again",
+      "ran": "ECC's included config scanner AgentShield, pinned as the README asks (npm ecc-agentshield 1.6.0): agentshield scan --path . on a careless setup we wrote (fake keys), then scan --fix on a copy, then a setup we cleaned by hand, then its own agentshield init starter; 3 timed runs. No API key (no --opus), no AI agent ran",
+      "result": [
+        "Careless setup: grade D (40/100), 29 findings, 8 critical: the key pasted in CLAUDE.md, a GitHub token in .mcp.json, Bash(*), a SessionStart hook piping a remote script to bash, ${file} in a hook. 0.19 s per scan (median of 3)",
+        "scan --fix applied 3 of 4 auto-fixes (GitHub token to an env var, two silenced errors): 40 -> 51, still D; the CLAUDE.md key and Bash(*) stayed",
+        "Cleaned by hand: grade B (76/100), secrets, hooks and MCP at 100; its own init starter scanned as is: grade C (72/100)"
+      ],
+      "catch": "Picky: 12 of the 18 findings left on the cleaned setup are \"missing prompt defense\" lines it wants in CLAUDE.md (the Agents score stays 0 without them). Auto-fix only handles a few safe patterns. AgentShield is a separate npm package (affaan-m/agentshield) that ECC includes; the README asks for a reviewed, pinned version. The --opus deep analysis needs an Anthropic API key. The test setups are ours, written for this check."
     }
   ]
 }

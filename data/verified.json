@@ -319,6 +319,20 @@
         "Cleaned by hand: grade B (76/100), secrets, hooks and MCP at 100; its own init starter scanned as is: grade C (72/100)"
       ],
       "catch": "Picky: 12 of the 18 findings left on the cleaned setup are \"missing prompt defense\" lines it wants in CLAUDE.md (the Agents score stays 0 without them). Auto-fix only handles a few safe patterns. AgentShield is a separate npm package (affaan-m/agentshield) that ECC includes; the README asks for a reviewed, pinned version. The --opus deep analysis needs an Anthropic API key. The test setups are ours, written for this check."
+    },
+    {
+      "repo": "sherlock-project/sherlock",
+      "date": "2026-11-21",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Check how many of 400+ sites already have a page for a name, the way you would before naming an app or a handle (our own names only)",
+      "ran": "Sherlock 0.16.2 installed the README way (pipx install sherlock-project, 13.7 s), then sherlock <name> --print-all --csv with default settings on a GitHub Actions runner: our mascot name starby (3 timed runs), our handle ai.starboard, and a random name we made up as a control",
+      "result": [
+        "starby: 418 sites checked, 80 found (79 / 80 / 80 over 3 runs), 123.5 s per run (median of 3)",
+        "ai.starboard (a longer name): 7 found (Bandcamp, BoardGameGeek, BugCrowd, Giphy, Patched, Twitch, omg.lol)",
+        "A made-up random name still came back found on 1 site (Bandcamp); 2 in an earlier run (Bandcamp, DeviantArt)"
+      ],
+      "catch": "\"Found\" means a page answered, not proof that an account exists or belongs to that person: even a made-up name got hits. Results print in site order, so one slow site held the output for about 110 s; 21 sites blocked it as a bot and 14 had connection errors. Search only names you own."
     }
   ]
 }

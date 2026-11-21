@@ -333,6 +333,20 @@
         "A made-up random name still came back found on 1 site (Bandcamp); 2 in an earlier run (Bandcamp, DeviantArt)"
       ],
       "catch": "\"Found\" means a page answered, not proof that an account exists or belongs to that person: even a made-up name got hits. Results print in site order, so one slow site held the output for about 110 s; 21 sites blocked it as a bot and 14 had connection errors. Search only names you own."
+    },
+    {
+      "repo": "jingyaogong/minimind",
+      "date": "2026-11-22",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Run their tiny 64M chat model and start training one from zero on a free computer with no graphics card, the way a viewer without a GPU would try it tonight",
+      "ran": "The README Quick Start on a GitHub Actions runner (2 vCPU, no GPU, CPU PyTorch): git clone the repo + pip install -r requirements.txt, git clone https://huggingface.co/jingyaogong/minimind-3, python eval_llm.py --load_from ./minimind-3 with 4 English and 8 built-in questions, then cd trainer && python train_pretrain.py with the README default settings and data (pretrain_t2t_mini.jsonl), stopped after 3 steps",
+      "result": [
+        "The 64M model (134 MB) answered at 41-49 tokens a second on the CPU (median about 47), peak memory 887 MB",
+        "It wrote a correct is_even Python function, but called itself \"Qwen, created by Alibaba Cloud\" and gave nonsense landing page tips",
+        "Training from zero: about 87 s per step; the trainer estimated 59,270 minutes (about 41 days) for stage one, vs about 1.2 h on one RTX 3090 in the README"
+      ],
+      "catch": "A model this small is for learning how chat AI is built, not for real answers: it mixes up facts and its own name. The \"2 hours / RMB 3\" claim needs a GPU (one RTX 3090 in the README); on a CPU alone training is not practical."
     }
   ]
 }

@@ -347,6 +347,20 @@
         "Training from zero: about 87 s per step; the trainer estimated 59,270 minutes (about 41 days) for stage one, vs about 1.2 h on one RTX 3090 in the README"
       ],
       "catch": "A model this small is for learning how chat AI is built, not for real answers: it mixes up facts and its own name. The \"2 hours / RMB 3\" claim needs a GPU (one RTX 3090 in the README); on a CPU alone training is not practical."
+    },
+    {
+      "repo": "we-promise/sure",
+      "date": "2026-11-23",
+      "kind": "daily",
+      "stamp": "ACTUALLY USED",
+      "task": "Self-host a free personal finance app in place of a paid one (YNAB is $109 a year) and check it really works with a realistic household",
+      "ran": "The official Docker guide as written on a GitHub Actions runner (2 vCPU, 7.9 GB): compose.example.yml + .env.example, a new SECRET_KEY_BASE, docker compose up -d (image v0.7.6-hotfix.2), then the README sample data (rake demo_data:default) and a headless browser on the dashboard, transactions, budgets and reports",
+      "result": [
+        "Login page answered 23 s after docker compose up -d (after a 22 s image download); restarts 14.5 s and 14.0 s",
+        "Sample family loaded in 47 s: 23 accounts, 8,079 transactions, 22 categories; budgets, cash flow and reports filled in",
+        "Memory about 788 MB in total (app 366 MB, worker 364 MB, database 53 MB, Redis 6 MB)"
+      ],
+      "catch": "With no keys, prices and exchange rates need a data provider and AI chat needs an OpenAI key. Automatic bank links need your own provider account (Plaid: approval can take over 24 h, and the app must be online behind a domain with SSL). Set your own encryption keys before linking banks."
     }
   ]
 }

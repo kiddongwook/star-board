@@ -1,83 +1,80 @@
-# Star Board 2026-11-22
+# Star Board 2026-11-23
 
-저장소 1493개 · 심층 분석 1493개 · 비교 기준 2026-11-21 · [대시보드](https://kiddongwook.github.io/star-board/)
+저장소 1496개 · 심층 분석 1496개 · 비교 기준 2026-11-22 · [대시보드](https://kiddongwook.github.io/star-board/)
 
 ## 스타 급상승 (1일)
 
-- +10.1k [ItsNotRexed/Leonida](https://github.com/ItsNotRexed/Leonida) ★14.5k · 검증된 인기 · 실효 72 · Leonida Is A Native PC Recompilation Of The Xbox Version Of Grand Theft Auto 6
-- +2.0k [pingdotgg/t3code](https://github.com/pingdotgg/t3code) ★71.5k · 검증된 인기 · 실효 85 · The best way to control Claude Code, Codex and more from any computer or phone
-- +1.8k [elementalsouls/Claude-BugHunter](https://github.com/elementalsouls/Claude-BugHunter) ★17.7k · 검증된 인기 · 실효 76 · A Claude Code skill bundle for bug hunting and external red-team work - 82 skill
-- +1.3k [morluto/rea](https://github.com/morluto/rea) ★474.0k · 검증된 인기 · 실효 97 · Reverse engineer anything with agents, from app behavior down to native binaries
-- +1.2k [havenicec/google-qr-sms-helper](https://github.com/havenicec/google-qr-sms-helper) ★3.0k · 하이프 주의 · 실효 34 · Chrome Extension (MV3) to switch Google's mandatory QR code verification back to
-- +1.1k [anefzaoui/misterdownloadmanager](https://github.com/anefzaoui/misterdownloadmanager) ★16.5k · 검증된 인기 · 실효 79 · misterdownloadmanager: The ultimate open-source, clean-room download manager wri
-- +1.0k [stablyai/orca](https://github.com/stablyai/orca) ★132.9k · 검증된 인기 · 실효 81 · Orca lets you run a fleet of bots with your own subscription (e.g. Claude Code, 
-- +900 [storytold/craft-anything](https://github.com/storytold/craft-anything) ★41.2k · 검증된 인기 · 실효 82 · Craft Anything: understand how any software works, and craft your own.
-- +869 [firecrawl/firecrawl](https://github.com/firecrawl/firecrawl) ★207.0k · 검증된 인기 · 실효 88 · Knowledge infrastructure to make your agents smarter. Search, scrape and access 
-- +861 [Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model) ★83.9k · 검증된 인기 · 실효 74 · 在 dsh 里装上这个插件即可，无需登录、注册或填 API Key，就能使用包括 DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型——完全
-- +718 [mattpocock/skills](https://github.com/mattpocock/skills) ★330.5k · 검증된 인기 · 실효 73 · Skills for Real Engineers. Straight from my .agents directory.
-- +715 [mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill) ★72.7k · 검증된 인기 · 실효 90 · AI agent skill that researches any topic across Reddit, X, YouTube, HN, Polymark
-- +704 [HKUDS/CLI-Anything](https://github.com/HKUDS/CLI-Anything) ★62.7k · 검증된 인기 · 실효 63 · "CLI-Anything: Making ALL Software Agent-Native" -- CLI-Hub: https://clianything
-- +682 [XiaoYouChR/Ghost-Downloader-3](https://github.com/XiaoYouChR/Ghost-Downloader-3) ★15.1k · 검증된 인기 · 실효 79 · The only downloader you need. 下载器的集大成者。
-- +650 [affaan-m/ECC](https://github.com/affaan-m/ECC) ★309.0k · 검증된 인기 · 실효 93 · The agent harness performance optimization system. Skills, instincts, memory, se
+- +3.1k [pingdotgg/t3code](https://github.com/pingdotgg/t3code) ★74.6k · 검증된 인기 · 실효 85 · The best way to control Claude Code, Codex and more from any computer or phone
+- +1.9k [elementalsouls/Claude-BugHunter](https://github.com/elementalsouls/Claude-BugHunter) ★19.6k · 검증된 인기 · 실효 77 · A Claude Code skill bundle for bug hunting and external red-team work - 82 skill
+- +1.5k [stablyai/orca](https://github.com/stablyai/orca) ★134.4k · 검증된 인기 · 실효 81 · Orca lets you run a fleet of bots with your own subscription (e.g. Claude Code, 
+- +1.5k [morluto/rea](https://github.com/morluto/rea) ★475.5k · 검증된 인기 · 실효 97 · Reverse engineer anything with agents, from app behavior down to native binaries
+- +1.3k [havenicec/google-qr-sms-helper](https://github.com/havenicec/google-qr-sms-helper) ★4.3k · 하이프 주의 · 실효 34 · Chrome Extension (MV3) to switch Google's mandatory QR code verification back to
+- +1.3k [EL4CTEO/fast-anything](https://github.com/EL4CTEO/fast-anything) ★3.1k · 검증된 인기 · 실효 64 · Don't rewrite it in Rust. Rewrite the 5% that's slow: profile Python, Node or Ru
+- +1.2k [XiaoYouChR/Ghost-Downloader-3](https://github.com/XiaoYouChR/Ghost-Downloader-3) ★16.3k · 검증된 인기 · 실효 79 · The only downloader you need. 下载器的集大成者。
+- +1.1k [Ebony-Vinyl/dsh-our-free-model](https://github.com/Ebony-Vinyl/dsh-our-free-model) ★85.0k · 검증된 인기 · 실효 74 · 在 dsh 里装上这个插件即可，无需登录、注册或填 API Key，就能使用包括 DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型——完全
+- +1.0k [os6/nospeaker](https://github.com/os6/nospeaker) ★1.4k · 참여 대비 스타 과다 · 실효 32 · make your macbook's trackpad talk using its haptic motor
+- +952 [pierridotite/mobile-agent-testers](https://github.com/pierridotite/mobile-agent-testers) ★1.4k · 하이프 주의 · 실효 43 · 20 AI testers on 20 different phones, in parallel, on GitHub's free runners: Cla
+- +948 [zhouxiaoka/autoclip](https://github.com/zhouxiaoka/autoclip) ★14.3k · 검증된 인기 · 실효 78 · AutoClip｜一个链接，一键出片。开源 AI 视频剪辑桌面工具，将播客、访谈、课程等长视频自动剪成短视频，生成字幕、封面和发布文案，适配抖音、小红书、Tik
+- +945 [mjmirza/app-store-compliance](https://github.com/mjmirza/app-store-compliance) ★4.9k · 검증된 인기 · 실효 61 · Avoid common App Store and Google Play rejections. Open playbook and pre-submiss
+- +896 [storytold/craft-anything](https://github.com/storytold/craft-anything) ★42.1k · 검증된 인기 · 실효 82 · Craft Anything: understand how any software works, and craft your own.
+- +885 [mattpocock/skills](https://github.com/mattpocock/skills) ★331.3k · 검증된 인기 · 실효 73 · Skills for Real Engineers. Straight from my .agents directory.
+- +865 [obra/superpowers](https://github.com/obra/superpowers) ★325.0k · 검증된 인기 · 실효 69 · An agentic skills framework & software development methodology that works.
 
 ## 신규 진입
 
-- [altstoreio/AltStore](https://github.com/altstoreio/AltStore) ★15.0k · 성숙/유지보수 · 실효 50 · AltStore is an alternative app store for non-jailbroken iOS devices.
-- [mg-chao/snow-shot](https://github.com/mg-chao/snow-shot) ★7.3k · 검증된 인기 · 실효 78 · Snow Shot is free, open-source screenshot software and a screen recording tool f
-- [ardia-browser/ardia](https://github.com/ardia-browser/ardia) ★2.8k · 검증된 인기 · 실효 79 · A free Chromium browser for the Mac: Arc's sidebar, Dia's polish. Chat on Discor
-- [XinaTian/MROffice](https://github.com/XinaTian/MROffice) ★2.1k · 하이프 주의 · 실효 46 · The editors of MR Office, the free office closest to Microsoft Office: documents
-- [JosssphZhou/poki](https://github.com/JosssphZhou/poki) ★1.8k · 검증된 인기 · 실효 75 · Poki uses your iPhone like you do. An open-source agent app that runs on your iP
-- [EL4CTEO/fast-anything](https://github.com/EL4CTEO/fast-anything) ★1.8k · 검증된 인기 · 실효 59 · Don't rewrite it in Rust. Rewrite the 5% that's slow: profile Python, Node or Ru
-- [realdody/americas-recomp](https://github.com/realdody/americas-recomp) ★499 · 학습/문서형 · 실효 39
-- [INK-Q/agy-fast](https://github.com/INK-Q/agy-fast) ★497 · 하이프 주의 · 실효 53 · Non-invasive MCP accelerator plugin for Google Antigravity (CLI/Desktop/IDE): cu
-- [pierridotite/mobile-agent-testers](https://github.com/pierridotite/mobile-agent-testers) ★479 · 하이프 주의 · 실효 43 · 20 AI testers on 20 different phones, in parallel, on GitHub's free runners: Cla
-- [ItsNotRexed/Hookshot](https://github.com/ItsNotRexed/Hookshot) ★407 · 검증된 인기 · 실효 68 · Hookshot Is A Native PC Recompilation Of The Switch 2 Ocarina Of Time Remake
-- [ThreatDefence/agentic-attack-detections](https://github.com/ThreatDefence/agentic-attack-detections) ★380 · 검증된 인기 · 실효 60 · Detection rules and IOCs for AI agent attack frameworks: ARTEX, Cairn, PentAGI, 
-- [sshkeda/minecraft-server-on-orange-cloud](https://github.com/sshkeda/minecraft-server-on-orange-cloud) ★376 · 하이프 주의 · 실효 18 · Run a Minecraft Java server entirely on Cloudflare. Sleeps when nobody's playing
-- [nkjDSLcvanv/antigravity-codex-theme](https://github.com/nkjDSLcvanv/antigravity-codex-theme) ★369 · 하이프 주의 · 실효 47 · Google Antigravity 的 Codex 风格浅色与深色主题，提供简体中文界面、实时会话状态和每轮 Token 统计。主题、汉化和Token统计模块
-- [w01fb0ss/PiBot](https://github.com/w01fb0ss/PiBot) ★368 · 하이프 주의 · 실효 51 · Open-source, local-first AI agent team for your desktop: multi-agent group chats
-- [os6/nospeaker](https://github.com/os6/nospeaker) ★366 · 하이프 주의 · 실효 31 · make your macbook's trackpad talk using its haptic motor
+- [yetone/magpie](https://github.com/yetone/magpie) ★40.4k · 검증된 인기 · 실효 75 · Every agent's model. One place. Codex on DeepSeek, Claude Code on Kimi, from the
+- [qier222/YesPlayMusic](https://github.com/qier222/YesPlayMusic) ★33.7k · 검증된 인기 · 실효 66 · 高颜值的原生桌面音乐播放器，支持本地音乐、媒体服务器与第三方插件 。｜A better-looking desktop music player for loc
+- [ProjectLeonida/Leonida](https://github.com/ProjectLeonida/Leonida) ★33.0k · 검증된 인기 · 실효 74 · Leonida Is A Native PC Recompilation Of The Xbox Version Of Grand Theft Auto 6
+- [seerge/g-helper](https://github.com/seerge/g-helper) ★16.2k · 검증된 인기 · 실효 78 · Lightweight Armoury Crate alternative for Asus laptops with nearly the same func
+- [FongMi/TV](https://github.com/FongMi/TV) ★10.8k · 검증된 인기 · 실효 71
+- [Fei-Craft/DS-Bot](https://github.com/Fei-Craft/DS-Bot) ★8.8k · 검증된 인기 · 실효 75 · A team of long-lived bots for DeepSeek Harness, with main bots, bot-to-bot messa
+- [samuelgursky/davinci-resolve-mcp](https://github.com/samuelgursky/davinci-resolve-mcp) ★4.3k · 검증된 인기 · 실효 86 · MCP server integration for DaVinci Resolve Studio
+- [atuizz/posewear](https://github.com/atuizz/posewear) ★1.9k · 검증된 인기 · 실효 67 · 姿势、服装、人像参考图库，附中英文提示词，可在浏览器里 AI 试穿 · Pose, outfit & portrait reference library wi
+- [AFK-surf/xnulinux](https://github.com/AFK-surf/xnulinux) ★1.9k · 하이프 주의 · 실효 47 · XNU as a loadable kernel module inside Linux (macOS personality for arm64 Linux)
+- [haziqahmedqasmi/PeakCut](https://github.com/haziqahmedqasmi/PeakCut) ★1.8k · 하이프 주의 · 실효 53 · AI clipping for long videos and live streams. Self-hosted, bring your own AI key
+- [misakano7545/workbuddy2api-panel](https://github.com/misakano7545/workbuddy2api-panel) ★1.4k · 검증된 인기 · 실효 83 · 把腾讯WorkBuddy账号变成 OpenAI 兼容 API 的多账号网关，同时自动完成任务中心全部任务，附 Web 管理面板（账号池可视化 / 积分任务 / 
+- [ivall/xcl](https://github.com/ivall/xcl) ★1.2k · 검증된 인기 · 실효 61 · Xbox Series compatibility layer for Windows - runs console game code natively, r
+- [Ahmet-Dedeler/awesome-gta6-reverse-engineering](https://github.com/Ahmet-Dedeler/awesome-gta6-reverse-engineering) ★525 · 학습/문서형 · 실효 38 · Curated list of open-source GTA VI (GTA 6) reverse engineering tools, RAGE 9 / R
+- [Faceplugin-ltd/FaceRecognition-LivenessDetection-Android](https://github.com/Faceplugin-ltd/FaceRecognition-LivenessDetection-Android) ★475 · 초기/정체 · 실효 50 · Face Recognition, Face Liveness Detection, Face Anti-Spoofing, Face Detection, F
+- [erkamyaman/safe-anything](https://github.com/erkamyaman/safe-anything) ★470 · 하이프 주의 · 실효 46 · Find the holes before someone else does. A fast, 100% Rust vulnerability scanner
 
 ## 실효성 점수 상승
 
-- +15 [omonkeyz/xbox-emulator](https://github.com/omonkeyz/xbox-emulator) ★1.3k · 하이프 주의 · 실효 50 · Progress notes for running Xbox Series X|S builds on PC (TomBox + rage9)
-- +13 [bojieli/ai-agent-book](https://github.com/bojieli/ai-agent-book) ★59.1k · 학습/문서형 · 실효 89 · 《深入理解 AI Agent：设计原理与工程实践》（李博杰 著）开源主仓库：全书正文、编译版 PDF 与按章配套代码
-- +10 [kby-ai/Face-Recognition-SDK](https://github.com/kby-ai/Face-Recognition-SDK) ★166 · 학습/문서형 · 실효 29 · Face recognition SDK with Face liveness, face recognition, face matching, face i
-- +9 [MewX/light-novel-library_Wenku8_Android](https://github.com/MewX/light-novel-library_Wenku8_Android) ★3.7k · 검증된 인기 · 실효 78 · 轻小说文库 (Wenku8.com) 安卓版第三方公益App，始于2014年的初版Material Design风格、非盈利、Play Store上安装包最小的
-- +9 [kby-ai/FaceLivenessDetection-Docker](https://github.com/kby-ai/FaceLivenessDetection-Docker) ★62 · 초기/정체 · 실효 33 · Face Liveness Detection
-- +9 [kby-ai/FaceRecognition-iOS](https://github.com/kby-ai/FaceRecognition-iOS) ★39 · 초기/정체 · 실효 33 · Face recognition, face liveness detection, face matching, face compare, face com
-- +8 [Hut-hzf/ung220z-tool](https://github.com/Hut-hzf/ung220z-tool) ★2.4k · 참여 대비 스타 과다 · 실효 36 · ung220z-tool 是一个针对 UNG220Z，另含中兴/烽火/华为/九联多厂商适配、固件指纹识别与分家族排障建议的一键凭据提取工具，仅限在你自己的设备上
-- +8 [bojieli/ai-infra-book](https://github.com/bojieli/ai-infra-book) ★8.2k · 학습/문서형 · 실효 69 · 《深入理解 AI Infra：量化分析与系统设计》（李博杰 著）开源书稿：从硬件约束和模型架构出发，量化推导 LLM 推理与训练系统设计。含全书正文、PDF、配
-- +8 [kby-ai/FaceRecognition-Docker](https://github.com/kby-ai/FaceRecognition-Docker) ★68 · 초기/정체 · 실효 32 · Face Recognition Docker, Face Liveness Detection, Face Search, Face Identificati
-- +7 [leanprover-community/riemann-hypothesis](https://github.com/leanprover-community/riemann-hypothesis) ★605 · 검증된 인기 · 실효 61 · Independent Comparator setup for the Lean formalization of the Riemann Hypothesi
+- +13 [Motionsites-AI/claude-skill](https://github.com/Motionsites-AI/claude-skill) ★2.5k · 하이프 주의 · 실효 44 · Free Claude skill: make Claude build award-level, cinematic landing pages. By Mo
+- +10 [HolyArrs/HolyArrs](https://github.com/HolyArrs/HolyArrs) ★2.8k · 검증된 인기 · 실효 71 · One self-hosted app for your shows, movies and music.
+- +8 [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) ★169.9k · 검증된 인기 · 실효 76 · A complete AI agency at your fingertips - From frontend wizards to Reddit commun
+- +8 [LadybirdBrowser/ladybird](https://github.com/LadybirdBrowser/ladybird) ★67.7k · 검증된 인기 · 실효 87 · Truly independent web browser
+- +7 [ThreatDefence/agentic-attack-detections](https://github.com/ThreatDefence/agentic-attack-detections) ★559 · 검증된 인기 · 실효 67 · Detection rules and IOCs for AI agent attack frameworks: ARTEX, Cairn, PentAGI, 
+- +6 [janestreet/agent_skills](https://github.com/janestreet/agent_skills) ★11.3k · 학습/문서형 · 실효 40 · Agent skills
+- +6 [ZiChuanLan/freebie-radar](https://github.com/ZiChuanLan/freebie-radar) ★2.4k · 검증된 인기 · 실효 63 · 白嫖与资讯资源聚合雷达：100+个源定时采集 + AI 二审过滤假福利 + 获取方式分级隔离抽奖/试用/推广 + Telegram 即时推送
+- +5 [EL4CTEO/fast-anything](https://github.com/EL4CTEO/fast-anything) ★3.1k · 검증된 인기 · 실효 64 · Don't rewrite it in Rust. Rewrite the 5% that's slow: profile Python, Node or Ru
 
 ## 실효성 점수 하락
 
-- -11 [msitarzewski/agency-agents](https://github.com/msitarzewski/agency-agents) ★169.8k · 검증된 인기 · 실효 68 · A complete AI agency at your fingertips - From frontend wizards to Reddit commun
-- -5 [mukul975/Anthropic-Cybersecurity-Skills](https://github.com/mukul975/Anthropic-Cybersecurity-Skills) ★36.6k · 하이프 주의 · 실효 49 · 817 structured cybersecurity skills for AI agents · Mapped to 6 frameworks: MITR
+- -7 [motdotla/dotenv](https://github.com/motdotla/dotenv) ★20.6k · 검증된 인기 · 실효 67 · Loads environment variables from .env for nodejs projects.
 
 ## 새 루키 (7일 내 생성, 스타순)
 
-- [ItsNotRexed/Leonida](https://github.com/ItsNotRexed/Leonida) ★14.5k · 검증된 인기 · 실효 72 · Leonida Is A Native PC Recompilation Of The Xbox Version Of Grand Theft Auto 6
-- [erkamyaman/rust-anything](https://github.com/erkamyaman/rust-anything) ★8.0k · 검증된 인기 · 실효 72 · Rewrite your whole app in Rust, one piece at a time, checked against the origina
-- [bookwjitchieni1986/blender-ai-mcp-addon](https://github.com/bookwjitchieni1986/blender-ai-mcp-addon) ★2.7k · 학습/문서형 · 실효 32 · AI assistant and MCP server for Blender: visual chat, scene tools, multi-agent w
-- [Hut-hzf/ung220z-tool](https://github.com/Hut-hzf/ung220z-tool) ★2.4k · 참여 대비 스타 과다 · 실효 36 · ung220z-tool 是一个针对 UNG220Z，另含中兴/烽火/华为/九联多厂商适配、固件指纹识别与分家族排障建议的一键凭据提取工具，仅限在你自己的设备上
-- [iamajmeena/neonclipping](https://github.com/iamajmeena/neonclipping) ★2.1k · 하이프 주의 · 실효 54 · Paste a link, get captioned 9:16 clips in ~2 min. Free, local, open-source clipp
-- [sybil-solutions/inference-optimisation-skill](https://github.com/sybil-solutions/inference-optimisation-skill) ★1.9k · 하이프 주의 · 실효 26 · Agent skill for hill-climbing local LLM serving speed (decode, speculative decod
-- [EL4CTEO/fast-anything](https://github.com/EL4CTEO/fast-anything) ★1.8k · 검증된 인기 · 실효 59 · Don't rewrite it in Rust. Rewrite the 5% that's slow: profile Python, Node or Ru
-- [joshpuckett/allo](https://github.com/joshpuckett/allo) ★1.4k · 참여 대비 스타 과다 · 실효 41 · Allo is your friendly neighborhood typeface, free and open source
-- [R0Y00/Xbox2Windows](https://github.com/R0Y00/Xbox2Windows) ★1.3k · 검증된 인기 · 실효 71 · GTA VI static recompilation research for x64 Windows. Source-built EXEs run on W
-- [omonkeyz/xbox-emulator](https://github.com/omonkeyz/xbox-emulator) ★1.3k · 하이프 주의 · 실효 50 · Progress notes for running Xbox Series X|S builds on PC (TomBox + rage9)
+- [ProjectLeonida/Leonida](https://github.com/ProjectLeonida/Leonida) ★33.0k · 검증된 인기 · 실효 74 · Leonida Is A Native PC Recompilation Of The Xbox Version Of Grand Theft Auto 6
+- [erkamyaman/rust-anything](https://github.com/erkamyaman/rust-anything) ★8.7k · 검증된 인기 · 실효 71 · Rewrite your whole app in Rust, one piece at a time, checked against the origina
+- [EL4CTEO/fast-anything](https://github.com/EL4CTEO/fast-anything) ★3.1k · 검증된 인기 · 실효 64 · Don't rewrite it in Rust. Rewrite the 5% that's slow: profile Python, Node or Ru
+- [bookwjitchieni1986/blender-ai-mcp-addon](https://github.com/bookwjitchieni1986/blender-ai-mcp-addon) ★2.8k · 학습/문서형 · 실효 32 · AI assistant and MCP server for Blender: visual chat, scene tools, multi-agent w
+- [iamajmeena/neonclipping](https://github.com/iamajmeena/neonclipping) ★2.3k · 검증된 인기 · 실효 58 · Paste a link, get captioned 9:16 clips in ~2 min. Free, local, open-source clipp
+- [sybil-solutions/inference-optimisation-skill](https://github.com/sybil-solutions/inference-optimisation-skill) ★2.1k · 하이프 주의 · 실효 26 · Agent skill for hill-climbing local LLM serving speed (decode, speculative decod
+- [AFK-surf/xnulinux](https://github.com/AFK-surf/xnulinux) ★1.9k · 하이프 주의 · 실효 47 · XNU as a loadable kernel module inside Linux (macOS personality for arm64 Linux)
+- [omonkeyz/xbox-emulator](https://github.com/omonkeyz/xbox-emulator) ★1.6k · 하이프 주의 · 실효 53 · Progress notes for running Xbox Series X|S builds on PC (TomBox + rage9)
+- [R0Y00/Xbox2Windows](https://github.com/R0Y00/Xbox2Windows) ★1.5k · 검증된 인기 · 실효 73 · Static recompilation research for Xbox Series X|S software on x64 Windows, with 
+- [pierridotite/mobile-agent-testers](https://github.com/pierridotite/mobile-agent-testers) ★1.4k · 하이프 주의 · 실효 43 · 20 AI testers on 20 different phones, in parallel, on GitHub's free runners: Cla
 
 ## 스타 조작 의심
 
-- [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) ★120.1k · 참여 대비 스타 과다 · 실효 76 · Agent skills that give coding agents taste: art direction, reference images and 
-- [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) ★62.0k · 참여 대비 스타 과다 · 실효 61 · A skill to stop your coding agent from burying the answer. ADHD-friendly output.
-- [Nutlope/hallmark](https://github.com/Nutlope/hallmark) ★59.5k · 참여 대비 스타 과다 · 실효 53 · Anti-AI-slop design skill for Claude Code, Cursor, and Codex.
-- [hmjz100/LinkSwift](https://github.com/hmjz100/LinkSwift) ★40.9k · 참여 대비 스타 과다 · 실효 62 · 一个基于 JavaScript 的网盘文件下载地址获取工具。基于【网盘直链下载助手】修改 ，支持 百度网盘 / 阿里云盘 / 中国移动云盘 / 天翼云盘 / 迅
-- [titanwings/distilly](https://github.com/titanwings/distilly) ★26.8k · 참여 대비 스타 과다 · 실효 50 · Distilly — Distill how they think into reusable Skills for any Agent or Bot. For
-- [Vincentwei1021/video-shotcraft](https://github.com/Vincentwei1021/video-shotcraft) ★22.1k · 참여 대비 스타 과다 · 실효 66 · AI video skill for Claude Code & Codex — cinematic, editable product promos with
-- [heydamir/unslop](https://github.com/heydamir/unslop) ★20.2k · 참여 대비 스타 과다 · 실효 49 · A Claude skill that turns vibecoded, AI-looking UI into a designed interface
-- [JuneYaooo/rea-video](https://github.com/JuneYaooo/rea-video) ★12.2k · 참여 대비 스타 과다 · 실효 68 · Reverse-engineer any video, shot by shot: filmed, AI-generated or coded, and how
+- [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) ★120.6k · 참여 대비 스타 과다 · 실효 76 · Agent skills that give coding agents taste: art direction, reference images and 
+- [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) ★62.1k · 참여 대비 스타 과다 · 실효 61 · A skill to stop your coding agent from burying the answer. ADHD-friendly output.
+- [Nutlope/hallmark](https://github.com/Nutlope/hallmark) ★60.0k · 참여 대비 스타 과다 · 실효 53 · Anti-AI-slop design skill for Claude Code, Cursor, and Codex.
+- [hmjz100/LinkSwift](https://github.com/hmjz100/LinkSwift) ★41.1k · 참여 대비 스타 과다 · 실효 62 · 一个基于 JavaScript 的网盘文件下载地址获取工具。基于【网盘直链下载助手】修改 ，支持 百度网盘 / 阿里云盘 / 中国移动云盘 / 天翼云盘 / 迅
+- [titanwings/distilly](https://github.com/titanwings/distilly) ★26.8k · 참여 대비 스타 과다 · 실효 49 · Distilly — Distill how they think into reusable Skills for any Agent or Bot. For
+- [Vincentwei1021/video-shotcraft](https://github.com/Vincentwei1021/video-shotcraft) ★22.3k · 참여 대비 스타 과다 · 실효 66 · AI video skill for Claude Code & Codex — cinematic, editable product promos with
+- [heydamir/unslop](https://github.com/heydamir/unslop) ★20.8k · 참여 대비 스타 과다 · 실효 49 · A Claude skill that turns vibecoded, AI-looking UI into a designed interface
+- [JuneYaooo/rea-video](https://github.com/JuneYaooo/rea-video) ★12.6k · 참여 대비 스타 과다 · 실효 68 · Reverse-engineer any video, shot by shot: filmed, AI-generated or coded, and how
 - [spinabot/brigade](https://github.com/spinabot/brigade) ★11.4k · 참여 대비 스타 과다 · 실효 62 · Brigade — Your personal intelligence, built enterprise-grade
-- [RoutineMiku/apkstart](https://github.com/RoutineMiku/apkstart) ★9.2k · 참여 대비 스타 과다 · 실효 51 · Windows 上的安卓应用运行器：双击 APK 即装，应用以独立窗口与桌面图标运行，自持 QEMU 运行时
+- [RoutineMiku/apkstart](https://github.com/RoutineMiku/apkstart) ★9.5k · 참여 대비 스타 과다 · 실효 51 · Windows 上的安卓应用运行器：双击 APK 即装，应用以独立窗口与桌面图标运行，自持 QEMU 运行时

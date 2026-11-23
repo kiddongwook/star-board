@@ -1,65 +1,64 @@
 {
- "generatedAt": "2026-11-16T01:28:24.672Z",
- "servers": 64895,
- "withGithub": 41579,
- "uniqueRepos": 32411,
- "reposFound": 28220,
- "remotes": 43937,
- "packages": 24960,
+ "generatedAt": "2026-11-23T02:15:49.868Z",
+ "servers": 70288,
+ "withGithub": 44349,
+ "uniqueRepos": 34026,
+ "reposFound": 29841,
+ "remotes": 47955,
+ "packages": 26523,
  "verdicts": {
-  "proven": 1001,
-  "active": 3832,
-  "risky": 18599,
-  "weak": 37607,
-  "early": 3856
+  "proven": 1046,
+  "active": 4034,
+  "risky": 19980,
+  "weak": 41194,
+  "early": 4034
  },
  "firstSeenByMonth": {
-  "2026-07": 3580,
-  "2026-11": 18806,
-  "2026-09": 9795,
-  "2026-04": 1573,
-  "2026-10": 17380,
-  "2026-08": 5727,
-  "2026-02": 876,
-  "2026-03": 1466,
-  "2026-05": 2007,
-  "2026-06": 2458,
-  "2025-10": 223,
+  "2026-07": 3471,
+  "2026-11": 25831,
+  "2026-09": 9553,
+  "2026-04": 1540,
+  "2026-10": 16460,
+  "2026-08": 5635,
+  "2026-02": 838,
+  "2026-03": 1429,
+  "2026-05": 1981,
+  "2026-06": 2342,
+  "2025-10": 219,
   "2025-09": 344,
-  "2026-01": 287,
-  "2025-11": 137,
-  "2025-12": 199,
-  "2024-11": 4,
-  "2025-03": 7,
+  "2026-01": 281,
+  "2025-11": 136,
+  "2025-12": 193,
+  "2025-07": 1,
+  "2024-01": 1,
   "2023-05": 1,
   "2025-04": 3,
-  "2024-08": 2,
-  "2022-02": 1,
+  "2025-03": 7,
   "2025-01": 1,
-  "2025-08": 2,
-  "2024-05": 2,
+  "2024-08": 2,
+  "2023-06": 1,
   "2018-11": 1,
+  "2025-08": 1,
+  "2024-11": 4,
+  "2024-05": 2,
   "2025-06": 1,
-  "2024-01": 1,
   "2022-08": 2,
-  "2025-07": 1,
   "2021-11": 1,
   "2014-05": 1,
   "2024-12": 1,
   "2025-02": 1,
   "2024-10": 1,
-  "2023-06": 1,
   "2020-08": 1,
   "2021-03": 1
  },
  "bulkPublishers": [
   {
-   "ns": "io.github.sadri-dridi",
-   "servers": 2366
+   "ns": "io.github.mrfentmen",
+   "servers": 2740
   },
   {
-   "ns": "io.github.mrfentmen",
-   "servers": 2055
+   "ns": "io.github.sadri-dridi",
+   "servers": 2366
   },
   {
    "ns": "io.github.pipeworx-io",
@@ -67,23 +66,23 @@
   },
   {
    "ns": "io.github.mcp-dir",
-   "servers": 1115
+   "servers": 1120
   },
   {
    "ns": "io.usefulapi",
-   "servers": 972
+   "servers": 1104
   },
   {
    "ns": "io.github.CloudCorpRecords",
-   "servers": 448
+   "servers": 562
   },
   {
    "ns": "io.github.theluckystrike",
-   "servers": 412
+   "servers": 428
   },
   {
    "ns": "dev.cotlet",
-   "servers": 401
+   "servers": 398
   },
   {
    "ns": "io.github.Evozim",
@@ -99,11 +98,23 @@
   },
   {
    "ns": "io.github.cyanheads",
-   "servers": 166
+   "servers": 165
   },
   {
    "ns": "io.github.jmshinhwa",
    "servers": 155
+  },
+  {
+   "ns": "com.mambabuilt",
+   "servers": 148
+  },
+  {
+   "ns": "org.aimlds",
+   "servers": 147
+  },
+  {
+   "ns": "software.brainiac",
+   "servers": 147
   },
   {
    "ns": "io.github.CYAN-ECLIPSE-TECHNOLOGIES-LLC",
@@ -118,10 +129,6 @@
    "servers": 135
   },
   {
-   "ns": "com.mambabuilt",
-   "servers": 133
-  },
-  {
    "ns": "io.github.codespar",
    "servers": 127
   },
@@ -134,15 +141,15 @@
    "servers": 108
   },
   {
-   "ns": "eu.ansvar",
-   "servers": 106
-  },
-  {
    "ns": "io.github.Br0ski777",
    "servers": 101
   },
   {
    "ns": "io.github.Nero-Engine",
+   "servers": 98
+  },
+  {
+   "ns": "io.github.sepehr071",
    "servers": 96
   },
   {
@@ -163,17 +170,9 @@
   },
   {
    "ns": "io.github.chrischall",
-   "servers": 84
-  },
-  {
-   "ns": "io.github.nirholas",
-   "servers": 81
-  },
-  {
-   "ns": "com.mcparmory",
-   "servers": 76
+   "servers": 85
   }
  ],
- "indexBytesGz": 7879414,
+ "indexBytesGz": 8447529,
  "indexUrl": "https://github.com/kiddongwook/star-board/releases/download/mcp-index/mcp-index.json.gz"
 }

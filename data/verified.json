@@ -361,6 +361,20 @@
         "Memory about 788 MB in total (app 366 MB, worker 364 MB, database 53 MB, Redis 6 MB)"
       ],
       "catch": "With no keys, prices and exchange rates need a data provider and AI chat needs an OpenAI key. Automatic bank links need your own provider account (Plaid: approval can take over 24 h, and the app must be online behind a domain with SSL). Set your own encryption keys before linking banks."
+    },
+    {
+      "repo": "Leonxlnx/taste-skill",
+      "date": "2026-11-24",
+      "kind": "daily",
+      "stamp": "MOSTLY HYPE",
+      "task": "Ask an AI agent for \"a landing page for a coffee shop\" twice, once without and once with the skill, and see whether the skill page really comes out cleaner",
+      "ran": "Two fresh sessions of the same AI model built the pages (the skill one followed design-taste-frontend 2.5.1 step by step); then both pages were judged on a GitHub Actions runner (2 vCPU, Chrome 157) with the skill's own commands: copy-lint, consistency.mjs at 1440 and 390 px, and the gate.mjs finish gate",
+      "result": [
+        "Finish gate: plain page FAIL with 82 open problems; skill page PASS with 0 open (1 item waived with a written reason)",
+        "Caught on the plain page: a fake phone number, a made-up street address with ZIP code, social links that go nowhere, 35 fade-ins on scroll; the skill page used 10 credited Wikimedia Commons photos",
+        "Time to a finished page: about 5 minutes without the skill, about 35 with it (its own first full check found 54 problems)"
+      ],
+      "catch": "The judge is the skill's own rulebook, so some problems are taste (fade-ins on scroll). Seven times slower to a finished page in our test. Needs Node 22+ and Chrome or Edge. Star data: 120K stars but 22 contributors."
     }
   ]
 }
